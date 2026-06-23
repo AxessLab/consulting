@@ -1,0 +1,19 @@
+companyId: 0
+consultants:
+  - canonicalName: Joel Holmberg
+    aliases:
+      - Joel
+      - Joel Holmberg
+      - J Holmberg
+    cinodeCompanyUserId: 89506
+    mainRoles:
+      - fullstack
+      - backend
+      - frontend
+      - architect
+      - accessibility
+      - ai-assisted-development
+    locations:
+      - stockholm
+    cvSummaryFile: cv-summaries/joel-holmberg.md
+    active: true
