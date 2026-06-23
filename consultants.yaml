@@ -1,0 +1,13 @@
+companyId: 0
+consultants:
+  - canonicalName: Example Consultant
+    aliases:
+      - Example
+      - E Consultant
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - frontend
+    locations:
+      - stockholm
+    cvSummaryFile: cv-summaries/_template.md
+    active: true

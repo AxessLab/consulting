@@ -1,0 +1,12 @@
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.env
+.env.*
+!.env.example
+secrets/
+*.key
+*.pem
+*.p12
+*.log

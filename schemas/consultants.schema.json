@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AxessLab/consulting/schemas/consultants.schema.json",
+  "title": "Consultant metadata",
+  "description": "Schema for consultants.yaml, the source of truth for consultant lookup metadata used by Cursor Automations.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "companyId",
+    "consultants"
+  ],
+  "properties": {
+    "companyId": {
+      "description": "Cinode company id. Use a placeholder value until configured in automation secrets/env vars.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "consultants": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "canonicalName",
+          "aliases",
+          "cinodeCompanyUserId",
+          "mainRoles",
+          "locations",
+          "cvSummaryFile",
+          "active"
+        ],
+        "properties": {
+          "canonicalName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "cinodeCompanyUserId": {
+            "description": "Cinode company user id used in the CompanyUserProfile endpoint.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "mainRoles": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "locations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "cvSummaryFile": {
+            "type": "string",
+            "pattern": "^cv-summaries/.+\\.md$"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}
