@@ -5,8 +5,7 @@ consultants:
       - Joel
       - Joel Holmberg
       - J Holmberg
-    # TODO: Replace 0 with the real Cinode company user id before live profile fetches.
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 89506
     mainRoles:
       - fullstack
       - backend
