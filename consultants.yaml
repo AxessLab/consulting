@@ -1,13 +1,20 @@
 companyId: 0
 consultants:
-  - canonicalName: Example Consultant
+  - canonicalName: Joel Holmberg
     aliases:
-      - Example
-      - E Consultant
+      - Joel
+      - Joel Holmberg
+      - J Holmberg
+    # TODO: Replace 0 with the real Cinode company user id before live profile fetches.
     cinodeCompanyUserId: 0
     mainRoles:
+      - fullstack
+      - backend
       - frontend
+      - architect
+      - accessibility
+      - ai-assisted-development
     locations:
       - stockholm
-    cvSummaryFile: cv-summaries/_template.md
+    cvSummaryFile: cv-summaries/joel-holmberg.md
     active: true
