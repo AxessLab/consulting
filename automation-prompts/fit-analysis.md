@@ -18,7 +18,7 @@ fit 12345 Joel Andersson
 - Slack parent message and thread.
 - User's thread reply containing the `fit` command.
 - `consultants.yaml`.
-- Curated CV summary referenced by `cvSummaryFile`.
+- Curated CV summaries for the consultant's active `cvs` variants.
 - Cinode CompanyUserProfile response.
 - Full online assignment ad page.
 
@@ -36,9 +36,38 @@ fit 12345 Joel Andersson
 8. Use the consultant's `cinodeCompanyUserId` and company id to fetch the Cinode
    CompanyUserProfile:
    `GET https://api.cinode.com/v0.1/companies/{companyId}/users/{companyUserId}/profile`
-9. Load the consultant's curated CV summary from this repo.
-10. Fetch the assignment ad page.
-11. Compare the assignment with the consultant data and curated summary.
+9. Fetch the assignment ad page.
+10. Select the best-matching active CV variant for this assignment (see below).
+11. Load the selected variant's curated CV summary from this repo.
+12. Compare the assignment with the consultant data, selected CV variant, and
+    curated summary.
+
+## CV variant selection
+
+Each consultant may have multiple CV variants in `cvs`. Pick the best-matching
+**active** variant for the specific assignment before loading its summary.
+
+Score each active variant using:
+
+- variant `roles` and `emphasis` against assignment title, must-haves, and tech stack
+- curated summary content: positioning, main roles, skills, domains, recent assignments
+- seniority and role fit
+- domain fit
+- language requirements
+- location or remote-work fit
+
+Rules:
+
+- Use only variants where `active` is true.
+- Prefer the variant with the strongest evidence for the assignment's core role
+  and must-haves, not the broadest general CV.
+- If two variants score similarly, choose the one with fresher or more specific
+  evidence for the assignment and mention the runner-up briefly.
+- State the chosen variant `label` and `id` in the Slack reply.
+- Do not read raw files from `cvs/` for fit analysis; use the curated summary
+  referenced by `summaryFile`.
+- Cinode profile data is shared across variants and supplements the selected
+  summary; do not expect separate Cinode profiles per variant.
 
 ## Fit comparison criteria
 
@@ -54,13 +83,15 @@ Assess:
 - availability or constraints, if known
 - strength and freshness of evidence
 
-Do not invent facts. Clearly separate evidence from assumptions. Use curated CV
-summary content for application advice and Cinode data for profile evidence.
+Do not invent facts. Clearly separate evidence from assumptions. Use the
+selected CV variant's curated summary for application advice and Cinode data
+for profile evidence.
 
 ## Slack reply format
 
 Reply in the Slack thread with:
 
+- `CV used`: the selected variant `label` and brief reason it was chosen.
 - `Overall fit`: Strong, Medium, or Weak.
 - `Evidence`: concise bullets tied to assignment requirements.
 - `Gaps`: missing or weak evidence.

@@ -27,8 +27,7 @@
           "cinodeCompanyUserId",
           "mainRoles",
           "locations",
-          "cvSummaryFile",
-          "sourceCvFiles",
+          "cvs",
           "active"
         ],
         "properties": {
@@ -67,48 +66,65 @@
             },
             "uniqueItems": true
           },
-          "cvSummaryFile": {
-            "type": "string",
-            "pattern": "^cv-summaries/.+\\.md$"
-          },
-          "sourceCvFiles": {
-            "description": "Existing source CV files available for assignment-specific DOCX generation.",
+          "cvs": {
+            "description": "Curated CV variants for this consultant. Automations pick the best-matching active variant per assignment.",
             "type": "array",
+            "minItems": 1,
             "items": {
               "type": "object",
               "additionalProperties": false,
               "required": [
-                "path",
-                "language",
-                "role",
-                "default"
+                "id",
+                "label",
+                "summaryFile",
+                "roles",
+                "active"
               ],
               "properties": {
-                "path": {
-                  "description": "Path to the source CV in this repository.",
+                "id": {
+                  "description": "Stable machine-readable identifier for this CV variant.",
                   "type": "string",
-                  "pattern": "^cvs/.+\\.(pdf|PDF|docx|DOCX)$"
+                  "pattern": "^[a-z0-9-]+$"
                 },
-                "language": {
-                  "description": "Language of the source CV.",
-                  "type": "string",
-                  "enum": [
-                    "english",
-                    "swedish"
-                  ]
-                },
-                "role": {
-                  "description": "Role variant inferred from the source CV filename, ignoring client names.",
+                "label": {
+                  "description": "Human-readable label shown in Slack replies.",
                   "type": "string",
                   "minLength": 1
                 },
-                "default": {
-                  "description": "Whether this is the default source CV when no better role or language match is found.",
+                "summaryFile": {
+                  "description": "Path to the curated Markdown summary for this variant.",
+                  "type": "string",
+                  "pattern": "^cv-summaries/.+\\.md$"
+                },
+                "rawFiles": {
+                  "description": "Optional paths to source CV documents under cvs/.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^cvs/.+"
+                  },
+                  "uniqueItems": true
+                },
+                "roles": {
+                  "description": "Role and skill tags used to match this variant against assignments.",
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "uniqueItems": true
+                },
+                "emphasis": {
+                  "description": "Short note on what this variant leads with for assignment matching.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "active": {
                   "type": "boolean"
                 }
               }
-            },
-            "uniqueItems": true
+            }
           },
           "active": {
             "type": "boolean"

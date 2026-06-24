@@ -19,8 +19,7 @@ generate 12345 Joel Holmberg sv
 - Slack parent message and thread.
 - User's thread reply containing the `generate` command.
 - `consultants.yaml`.
-- Source CV files listed in the consultant's `sourceCvFiles`.
-- Curated CV summary referenced by `cvSummaryFile`.
+- Curated CV summaries and raw files for the consultant's active `cvs` variants.
 - Cinode CompanyUserProfile response.
 - Full online assignment ad page.
 - Fallback DOCX template at `templates/axesslab-cv-template.docx`.
@@ -40,26 +39,24 @@ generate 12345 Joel Holmberg sv
 8. If the name is ambiguous, ask for clarification in the Slack thread and stop.
 9. If no active consultant matches, explain that no matching active consultant
    was found and stop.
-10. Select the best source CV from `sourceCvFiles`:
-    - Prefer a DOCX source CV over PDF so the automation can preserve layout.
-    - Prefer the requested language when supplied.
-    - Prefer a source CV whose `role` best matches the assignment.
-    - Use the consultant's `default: true` CV when no role-specific match is
-      clear.
-    - If no source CV is available, explain that the consultant needs source CV
-      metadata before a DOCX can be generated and stop.
-11. Use the consultant's `cinodeCompanyUserId` and company id to fetch the Cinode
+10. Score the consultant's active CV variants and select the best match for this
+    assignment using the same rules as the `fit` automation (see
+    `automation-prompts/fit-analysis.md`, section "CV variant selection").
+11. From the selected variant's `rawFiles`, prefer a DOCX source CV over PDF.
+    Use the requested language when supplied. If no raw CV is available, explain
+    that the variant needs a source CV before a DOCX can be generated and stop.
+12. Use the consultant's `cinodeCompanyUserId` and company id to fetch the Cinode
     CompanyUserProfile:
     `GET https://api.cinode.com/v0.1/companies/{companyId}/users/{companyUserId}/profile`
-12. Load the consultant's curated CV summary from this repo.
-13. Fetch the assignment ad page.
-14. Generate a new assignment-specific DOCX CV. Do not overwrite the source CV.
-15. Save the generated file under:
+13. Load the selected variant's curated CV summary from this repo.
+14. Fetch the assignment ad page.
+15. Generate a new assignment-specific DOCX CV. Do not overwrite the source CV.
+16. Save the generated file under:
     `generated-cvs/<assignment-id>/<consultant-slug>-<language>.docx`
-16. Commit the generated DOCX directly to the repository's main branch according
+17. Commit the generated DOCX directly to the repository's main branch according
     to the automation runtime's GitHub permissions.
-17. Reply in the Slack thread with the GitHub file link and a short summary of
-    the selected source CV, template source, language, and assignment
+18. Reply in the Slack thread with the GitHub file link and a short summary of
+    the selected CV variant, source CV, template source, language, and assignment
     positioning.
 
 ## Layout and template rules
@@ -95,6 +92,7 @@ generate 12345 Joel Holmberg sv
 Reply in the Slack thread with:
 
 - `Generated CV`: GitHub link to the DOCX file.
+- `CV variant`: selected variant `label` and `id`.
 - `Language`: generated CV language.
 - `Source CV`: source CV path or filename used.
 - `Template`: source DOCX layout used, or
@@ -107,7 +105,7 @@ Reply in the Slack thread with:
 
 - If the requested language is unsupported, explain the supported values:
   `english`, `swedish`, `en`, `sv`.
-- If there are multiple equally good source CVs, ask which role/language variant
-  to use instead of guessing.
+- If there are multiple equally good CV variants, ask which variant to use
+  instead of guessing.
 - If GitHub write-back fails, reply that generation succeeded locally but the
   file could not be stored, without exposing tokens, stack traces, or secrets.

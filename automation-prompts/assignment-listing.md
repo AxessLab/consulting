@@ -37,10 +37,12 @@ canonical name when a first name could refer to more than one consultant.
 Good matches: Joel, Lena
 ```
 
-## Follow-up command
+## Follow-up commands
 
-Slack users can request detailed analysis by replying in the thread:
+Slack users can request detailed analysis or tailored application guidance by
+replying in the thread:
 
 ```text
 fit 12345 Joel
+generate 12345 Joel
 ```

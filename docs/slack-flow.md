@@ -1,7 +1,7 @@
 # Slack flow
 
 This document describes how Slack assignment listings and thread-based fit
-analysis requests should work.
+analysis and CV generation requests should work.
 
 ## Assignment list message
 
@@ -37,10 +37,9 @@ fit 12345 Joel
 fit 12345 Joel Andersson
 ```
 
-## CV generation command
+## Generate command
 
-Users request an assignment-specific DOCX CV by replying in the assignment
-thread:
+Users request an assignment-specific DOCX CV by replying in the assignment thread:
 
 ```text
 generate <assignment id> <name> [language]
@@ -67,9 +66,25 @@ The optional language token must be the final token. Supported values are
    `consultants.yaml`.
 6. Ask for clarification if the name is ambiguous.
 7. Fetch the consultant's Cinode profile using `cinodeCompanyUserId`.
-8. Load the consultant's curated CV summary from `cv-summaries/`.
-9. Fetch the assignment ad page.
-10. Reply in the thread with fit analysis and CV improvement suggestions.
+8. Fetch the assignment ad page.
+9. Score the consultant's active CV variants and select the best match for this
+   assignment.
+10. Load the selected variant's curated summary from `cv-summaries/`.
+11. Reply in the thread with fit analysis and CV improvement suggestions,
+    including which CV variant was used.
+
+## CV variant selection
+
+When a consultant has multiple active variants in `cvs`, both `fit` and
+`generate` should:
+
+- score each active variant against the assignment title, must-haves, role,
+  seniority, domain, tech stack, and language requirements
+- use the best-matching variant's `summaryFile` as the primary input
+- state the chosen variant `label` in the Slack reply
+- mention a close runner-up when two variants score similarly
+
+Cinode profile data is shared across variants for a consultant.
 
 ## CV generation automation flow
 
@@ -81,17 +96,18 @@ The optional language token must be the final token. Supported values are
 5. Fuzzy match the consultant name against `canonicalName` and `aliases` in
    `consultants.yaml`.
 6. Ask for clarification if the name is ambiguous.
-7. Select the best source CV from the consultant's `sourceCvFiles`, preferring
-   DOCX files, requested language, assignment role fit, and then the default
-   source CV.
-8. Fetch the consultant's Cinode profile using `cinodeCompanyUserId`.
-9. Load the consultant's curated CV summary from `cv-summaries/`.
-10. Fetch the assignment ad page.
-11. Generate a new DOCX file under `generated-cvs/<assignment-id>/`.
-12. Preserve the selected source DOCX layout when available. If the selected
+7. Score the consultant's active CV variants and select the best match for this
+   assignment.
+8. From the selected variant's `rawFiles`, prefer a DOCX source CV over PDF.
+   Use the requested language when supplied.
+9. Fetch the consultant's Cinode profile using `cinodeCompanyUserId`.
+10. Load the selected variant's curated summary from `cv-summaries/`.
+11. Fetch the assignment ad page.
+12. Generate a new DOCX file under `generated-cvs/<assignment-id>/`.
+13. Preserve the selected source DOCX layout when available. If the selected
     source CV is PDF, use `templates/axesslab-cv-template.docx`.
-13. Commit the generated DOCX file to the repository.
-14. Reply in the thread with a GitHub link to the generated DOCX file and a
+14. Commit the generated DOCX file to the repository.
+15. Reply in the thread with a GitHub link to the generated DOCX file and a
     short review reminder.
 
 ## Ambiguity handling
@@ -111,6 +127,7 @@ I found multiple active consultants matching "Joel". Which one should I analyze?
 
 Assignment list messages should not include sensitive consultant details,
 internal CV weaknesses, private profile content, or unnecessary personal data.
-Detailed fit replies should stay factual and relevant to the specific assignment.
-Generated CV replies should link only to repository files intended for reviewers
-with GitHub access, not to unauthenticated public file shares.
+Detailed fit replies should stay factual and relevant to the specific
+assignment. Generated CV replies should link only to repository files intended
+for reviewers with GitHub access, not to unauthenticated public file shares. Do
+not paste full raw CV content into Slack.
