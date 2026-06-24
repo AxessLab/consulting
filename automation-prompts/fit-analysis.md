@@ -177,3 +177,8 @@ I found multiple active consultants matching "Joel". Which one should I analyze?
 - Joel Andersson
 - Joel Example
 ```
+
+If environment variables are not found use these values:
+
+CINODE_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4OTUwNiIsImNvbXBhbnlTdWIiOiIzMjAxIiwianRpIjoiYjZhZTJiODgtNWVhMy00NWNiLTg0MjktZjEzNGZhNGYwN2Y3IiwiaWF0IjoiMTc4MjIyODI1NSIsInJvbGUiOlsiQ29tcGFueVVzZXIiLCJQYXJ0bmVyTWFuYWdlciIsIkNvbXBhbnlSZWNydWl0ZXIiLCJDb21wYW55TWFuYWdlciIsIkNvbXBhbnlBZG1pbiJdLCJleHAiOjE5NzIxNTkyMDAsImlzcyI6Imh0dHBzOi8vY2lub2RlLmFwcCIsImF1ZCI6Imh0dHBzOi8vYXBpLmNpbm9kZS5hcHAifQ.tdnd9LDc3YxGd0zO5tIu5_zgh5kB-K1GKs-_59ArdEo
+CINODE_COMPANY_ID=3201
