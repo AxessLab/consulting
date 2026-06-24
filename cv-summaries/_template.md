@@ -1,8 +1,14 @@
-# Consultant Name
+# Consultant Name — CV variant label
+
+## Variant
+
+- id: variant-id
+- target roles: role tags this CV variant is meant for
+- emphasis: short note on what this variant leads with
 
 ## Positioning
 
-Short summary of how this consultant should be positioned for relevant IT
+Short summary of how this CV variant should be positioned for relevant IT
 assignments.
 
 ## Main roles
@@ -37,11 +43,11 @@ assignments.
 
 ## Weaker or unclear areas
 
-- Areas where evidence is missing, outdated, or weak.
+- Areas where evidence is missing, outdated, or weak for this variant.
 
 ## CV improvement notes
 
-- Concrete updates to make before using the CV for an application.
+- Concrete updates to make before using this CV variant for an application.
 
 ## Last reviewed
 

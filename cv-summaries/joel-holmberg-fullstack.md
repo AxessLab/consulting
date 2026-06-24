@@ -1,4 +1,10 @@
-# Joel Holmberg
+# Joel Holmberg — Senior fullstack (Java, React, AI)
+
+## Variant
+
+- id: fullstack-java-react-ai
+- target roles: senior fullstack developer, software architect, lead developer
+- emphasis: Fullstack delivery across Java/Spring Boot backend and React/TypeScript frontend
 
 ## Positioning
 
@@ -98,8 +104,6 @@ accessibility, and AI-assisted development assignments.
 
 ## Weaker or unclear areas
 
-- Current Cinode company user id is not present in the CV and must be filled in
-  separately in `consultants.yaml` before live Cinode profile fetches work.
 - The CV has strong Java/React evidence; newer frontend framework evidence
   beyond React and Angular is not clear from the provided CV.
 - Cloud experience is present, but depth by platform is uneven in the CV. AWS,
@@ -124,4 +128,4 @@ accessibility, and AI-assisted development assignments.
 
 ## Last reviewed
 
-2026-06-23 from uploaded CV PDF.
+2026-06-24 from fullstack CV docx.
