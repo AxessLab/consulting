@@ -23,3 +23,19 @@ Practical implications for agents working here:
   reviewing the HTML/PDF output.
 - If scripts or dependencies change, update this file and automation prompt
   guidance in `automation-prompts/cv-generation.md`.
+
+## Cursor Automations
+
+Automations for this repo should use **thin UI stubs** that tell the agent which
+prompt files to read from the repo checkout (plain paths — the Automations `@`
+picker is for tools, not files). Copy stubs from `automation-prompts/ui-stubs/`
+into the Automations editor; see that folder's README for setup.
+
+| Automation | Full prompt |
+|------------|-------------|
+| Assignment listing | `automation-prompts/assignment-listing.md` |
+| Slack `fit …` | `automation-prompts/fit-analysis.md` |
+| Slack `generate …` | `automation-prompts/cv-generation.md` |
+
+Cloud-only routing lives in `.cursor/CLOUD.md`. Slack flow and command syntax
+are documented in `docs/slack-flow.md`.
