@@ -1,11 +1,131 @@
 companyId: 0
 consultants:
+  - canonicalName: Ahmed Abdi
+    aliases:
+      - Ahmed
+      - Ahmed Abdi
+      - A Abdi
+    cinodeCompanyUserId: 261383
+    mainRoles:
+      - frontend
+      - scrum-master
+      - accessibility
+    locations:
+      - stockholm
+    cvs:
+      - id: frontend-engineer
+        label: Frontend Engineer
+        summaryFile: cv-summaries/ahmed-abdi-frontend-engineer.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Ahmed_Abdi_Frontend_Engineer.docx
+        roles:
+          - frontend
+          - react
+          - typescript
+          - react-native
+          - accessibility
+          - scrum-master
+          - design-system
+          - wcag
+          - aws
+        emphasis: React/TypeScript frontend with accessibility, design systems, and Scrum Master experience
+        active: true
+    active: true
+
+  - canonicalName: Amin Amini
+    aliases:
+      - Amin
+      - Amin Amini
+      - A Amini
+    cinodeCompanyUserId: 168092
+    mainRoles:
+      - accessibility
+      - ux
+      - frontend
+    locations:
+      - stockholm
+    cvs:
+      - id: accessibility-specialist
+        label: Tillgänglighetsspecialist
+        summaryFile: cv-summaries/amin-amini-accessibility-specialist.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Amin_Amini_Tillgänglighetsspecialist_juni_2026.docx
+          - cvs/Axessibility_Lab_AB_Amin_Amini_Tillgänglighetsspecialist_juni_2026.pdf
+        roles:
+          - accessibility
+          - accessibility-specialist
+          - audits
+          - wcag
+          - en-301-549
+          - design-system
+          - training
+          - pdf
+          - ios
+          - android
+          - ux
+        emphasis: CPACC-certified accessibility specialist with audits, strategy, training, and remediation across web, mobile, TV, and PDF
+        active: true
+    active: true
+
+  - canonicalName: Anders Söderström
+    aliases:
+      - Anders
+      - Anders Söderström
+      - A Söderström
+    cinodeCompanyUserId: 90325
+    mainRoles:
+      - frontend
+      - fullstack
+      - accessibility
+      - scrum-master
+    locations:
+      - stockholm
+    cvs:
+      - id: senior-frontend-developer
+        label: Senior frontendutvecklare
+        summaryFile: cv-summaries/anders-soderstrom-senior-frontend.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Anders_Söderström_Senior_frontendutvecklare.docx
+          - cvs/Axessibility_Lab_AB_Anders_Söderström_Senior_frontendutvecklare.pdf
+        roles:
+          - frontend
+          - react
+          - typescript
+          - nextjs
+          - accessibility
+          - design-system
+          - wcag
+          - scrum-master
+          - cypress
+        emphasis: React/TypeScript/Next.js frontend with CPWA certification and design-system accessibility in complex codebases
+        active: true
+      - id: fullstack-accessibility-specialist
+        label: Fullstackutvecklare och CPWA-certifierad tillgänglighetsspecialist
+        summaryFile: cv-summaries/anders-soderstrom-fullstack-accessibility.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Anders_Söderström_Fullstackutvecklare_och_CPWAcertifierad_tillgänglighetsspecialist.docx
+        roles:
+          - fullstack
+          - frontend
+          - react
+          - typescript
+          - java
+          - accessibility
+          - accessibility-specialist
+          - wcag
+          - audits
+          - scrum-master
+          - drupal
+        emphasis: Fullstack React/TypeScript delivery combined with CPWA-certified accessibility audits, coaching, and inclusive product development
+        active: true
+    active: true
+
   - canonicalName: Daniel Göransson
     aliases:
       - Daniel
       - Daniel Göransson
       - D Göransson
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 90479
     mainRoles:
       - accessibility
       - frontend
@@ -34,7 +154,7 @@ consultants:
       - Emilia
       - Emilia Michanek
       - E Michanek
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 90477
     mainRoles:
       - frontend
       - accessibility
@@ -63,7 +183,7 @@ consultants:
       - Emma
       - Emma Dawson
       - E Dawson
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 193022
     mainRoles:
       - frontend
       - accessibility
@@ -94,7 +214,7 @@ consultants:
       - Eric
       - Eric Eggert
       - E Eggert
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 99406
     mainRoles:
       - accessibility
       - training
@@ -124,7 +244,7 @@ consultants:
       - Erik Gustafsson
       - Erik Gustafsson Spagnoli
       - E Gustafsson
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 90483
     mainRoles:
       - project-manager
       - accessibility
@@ -154,7 +274,7 @@ consultants:
       - Hampus
       - Hampus Sethfors
       - H Sethfors
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 90429
     mainRoles:
       - accessibility
       - training
@@ -185,7 +305,7 @@ consultants:
       - Henrik Andersson Qvarfordt
       - Henrik Qvarfordt
       - H Qvarfordt
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 124101
     mainRoles:
       - accessibility
       - documents
@@ -262,7 +382,7 @@ consultants:
       - Josefin
       - Josefin Wessman
       - J Wessman
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 90486
     mainRoles:
       - ux
       - accessibility
@@ -292,7 +412,7 @@ consultants:
       - Karin
       - Karin Skog
       - K Skog
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 90481
     mainRoles:
       - project-manager
       - agile-coach
@@ -321,7 +441,7 @@ consultants:
     aliases:
       - Karin Toft
       - K Toft
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 90533
     mainRoles:
       - frontend
       - accessibility
@@ -351,7 +471,7 @@ consultants:
       - Max
       - Max Rautenberg
       - M Rautenberg
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 193111
     mainRoles:
       - frontend
       - accessibility
@@ -380,7 +500,7 @@ consultants:
       - Nathalie
       - Nathalie Pentler
       - N Pentler
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 118858
     mainRoles:
       - accessibility
       - physical-accessibility
@@ -411,7 +531,7 @@ consultants:
       - Nicko
       - Nikolaos Syropoulos
       - N Syropoulos
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 100531
     mainRoles:
       - ux
       - ui
@@ -443,7 +563,7 @@ consultants:
       - Soma
       - Soma Azad
       - S Azad
-    cinodeCompanyUserId: 0
+    cinodeCompanyUserId: 261380
     mainRoles:
       - ux
       - accessibility
