@@ -1,0 +1,83 @@
+# Auto-merge pull requests opened by the Cursor CV generation automation.
+#
+# Cursor Automations always open PRs from cursor/* branches. This workflow
+# merges them into main when they only add or update files under generated-cvs/.
+#
+# If merge fails, check branch protection on main: allow GitHub Actions to
+# bypass required reviews for this workflow, or add a ruleset exception.
+
+name: Auto-merge generated CV PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: startsWith(github.event.pull_request.head.ref, 'cursor/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge generated CV pull requests
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull_number = context.payload.pull_request.number;
+
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner,
+              repo,
+              pull_number,
+              per_page: 100,
+            });
+
+            if (files.length === 0) {
+              core.info('No files changed; skipping auto-merge.');
+              return;
+            }
+
+            const generatedCvOnly = files.every((file) =>
+              file.filename.startsWith('generated-cvs/')
+            );
+
+            if (!generatedCvOnly) {
+              core.info(
+                'PR changes files outside generated-cvs/; skipping auto-merge.'
+              );
+              return;
+            }
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number,
+            });
+
+            if (pr.merged || pr.state === 'closed') {
+              core.info('PR already merged or closed; skipping.');
+              return;
+            }
+
+            if (pr.draft) {
+              core.info('Marking draft PR ready for review.');
+              await github.rest.pulls.update({
+                owner,
+                repo,
+                pull_number,
+                draft: false,
+              });
+            }
+
+            await github.rest.pulls.merge({
+              owner,
+              repo,
+              pull_number,
+              merge_method: 'squash',
+            });
+
+            core.info(`Auto-merged PR #${pull_number}.`);
