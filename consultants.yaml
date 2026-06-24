@@ -464,6 +464,21 @@ consultants:
           - e-commerce
         emphasis: TypeScript/React frontend engineering with CPWA-certified accessibility
         active: true
+      - id: wordpress-developer
+        label: WordPress developer
+        summaryFile: cv-summaries/karin-toft-wordpress-developer.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Karin_Toft_Wordpressutvecklare__Higab.pdf
+        roles:
+          - wordpress
+          - cms
+          - frontend
+          - accessibility
+          - wcag
+          - public-sector
+          - housing
+        emphasis: WordPress forvaltning and development with WCAG compliance for housing and public sector
+        active: true
     active: true
 
   - canonicalName: Max Rautenberg
