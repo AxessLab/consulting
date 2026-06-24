@@ -37,6 +37,26 @@ fit 12345 Joel
 fit 12345 Joel Andersson
 ```
 
+## CV generation command
+
+Users request an assignment-specific DOCX CV by replying in the assignment
+thread:
+
+```text
+generate <assignment id> <name> [language]
+```
+
+Examples:
+
+```text
+generate 12345 Joel
+generate 12345 Joel Holmberg english
+generate 12345 Joel Holmberg sv
+```
+
+The optional language token must be the final token. Supported values are
+`english`, `swedish`, `en`, and `sv`.
+
 ## Fit automation flow
 
 1. Read the Slack parent message and thread.
@@ -50,6 +70,26 @@ fit 12345 Joel Andersson
 8. Load the consultant's curated CV summary from `cv-summaries/`.
 9. Fetch the assignment ad page.
 10. Reply in the thread with fit analysis and CV improvement suggestions.
+
+## CV generation automation flow
+
+1. Read the Slack parent message and thread.
+2. Parse the assignment id, consultant name, and optional language from the
+   `generate` command.
+3. Find the matching assignment id in the parent message.
+4. Read the full assignment ad link from that Slack item.
+5. Fuzzy match the consultant name against `canonicalName` and `aliases` in
+   `consultants.yaml`.
+6. Ask for clarification if the name is ambiguous.
+7. Select the best source CV from the consultant's `sourceCvFiles`, preferring
+   requested language, assignment role fit, and then the default source CV.
+8. Fetch the consultant's Cinode profile using `cinodeCompanyUserId`.
+9. Load the consultant's curated CV summary from `cv-summaries/`.
+10. Fetch the assignment ad page.
+11. Generate a new DOCX file under `generated-cvs/<assignment-id>/`.
+12. Commit the generated DOCX file to the repository.
+13. Reply in the thread with a GitHub link to the generated DOCX file and a
+    short review reminder.
 
 ## Ambiguity handling
 
@@ -69,3 +109,5 @@ I found multiple active consultants matching "Joel". Which one should I analyze?
 Assignment list messages should not include sensitive consultant details,
 internal CV weaknesses, private profile content, or unnecessary personal data.
 Detailed fit replies should stay factual and relevant to the specific assignment.
+Generated CV replies should link only to repository files intended for reviewers
+with GitHub access, not to unauthenticated public file shares.

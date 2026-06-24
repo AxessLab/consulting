@@ -1,12 +1,14 @@
 # Consulting automation data
 
-This private repository is the source of truth for consultant metadata and
-manually curated CV/application summaries used by Cursor Automations that
-analyze consultant fit for IT assignments posted in Slack.
+This private repository is the source of truth for consultant metadata, source
+CV files, generated CV drafts, and manually curated CV/application summaries
+used by Cursor Automations that analyze consultant fit for IT assignments posted
+in Slack.
 
-The repository is intentionally simple and human-editable. It contains plain
-YAML and Markdown only, with no application code, build step, runtime services,
-or stored secrets.
+The repository is intentionally simple and human-editable. It contains
+consultant metadata, Markdown guidance, source CV files, and generated DOCX
+drafts, with no application code, build step, runtime services, or stored
+secrets.
 
 ## Consultant metadata
 
@@ -20,11 +22,27 @@ Each consultant entry includes:
 - `mainRoles`: short role tags used for assignment matching.
 - `locations`: location tags used for assignment matching.
 - `cvSummaryFile`: path to the curated Markdown summary in this repo.
+- `sourceCvFiles`: source PDF/DOCX CV variants available for generated CVs.
 - `active`: whether the consultant should be considered for new matches.
 
 The YAML structure is documented in `schemas/consultants.schema.json`.
 
-## CV summaries
+## Source CVs and CV summaries
+
+Source CV files live under `cvs/`.
+
+Each consultant's `sourceCvFiles` metadata lists the source CV variants available
+for assignment-specific DOCX generation. Use the source filename to infer the
+role and language. Ignore client names in filenames when choosing the `role`
+value.
+
+Generated assignment-specific DOCX files should be stored under:
+
+`generated-cvs/<assignment-id>/<consultant-slug>-<language>.docx`
+
+The generation automation may commit generated DOCX files directly to the main
+branch when configured with appropriate GitHub permissions. The Slack reply
+should link to the generated file in GitHub.
 
 Curated CV/application summaries live under `cv-summaries/`.
 
@@ -71,6 +89,33 @@ from this repo, fetch the assignment ad page, and post a Slack thread reply with
 fit analysis and CV improvement suggestions.
 
 Prompt guidance for this automation is in `automation-prompts/fit-analysis.md`.
+
+## Slack CV generation command
+
+A separate automation is triggered from Slack thread replies using:
+
+`generate <assignment id> <name> [language]`
+
+Examples:
+
+- `generate 12345 Joel`
+- `generate 12345 Joel Holmberg english`
+- `generate 12345 Joel Holmberg sv`
+
+The optional language token must be the final token. Supported language values
+are `english`, `swedish`, `en`, and `sv`.
+
+The automation should read the Slack parent message/thread, find the assignment
+id, resolve the assignment ad link from the parent message, fuzzy match the
+provided name against `consultants.yaml`, select the best source CV from the
+consultant's `sourceCvFiles`, fetch the consultant profile from Cinode using the
+consultant's `cinodeCompanyUserId`, load the curated CV summary from this repo,
+fetch the assignment ad page, generate an assignment-specific DOCX CV, store it
+under `generated-cvs/`, commit it to the repository, and post a Slack thread
+reply with a GitHub link to the generated file.
+
+Prompt guidance for this automation is in
+`automation-prompts/cv-generation.md`.
 
 ## Cinode IDs
 

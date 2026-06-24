@@ -16,4 +16,5 @@ consultants:
     locations:
       - stockholm
     cvSummaryFile: cv-summaries/joel-holmberg.md
+    sourceCvFiles: []
     active: true
