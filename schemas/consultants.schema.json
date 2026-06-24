@@ -28,6 +28,7 @@
           "mainRoles",
           "locations",
           "cvSummaryFile",
+          "sourceCvFiles",
           "active"
         ],
         "properties": {
@@ -69,6 +70,45 @@
           "cvSummaryFile": {
             "type": "string",
             "pattern": "^cv-summaries/.+\\.md$"
+          },
+          "sourceCvFiles": {
+            "description": "Existing source CV files available for assignment-specific DOCX generation.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "language",
+                "role",
+                "default"
+              ],
+              "properties": {
+                "path": {
+                  "description": "Path to the source CV in this repository.",
+                  "type": "string",
+                  "pattern": "^cvs/.+\\.(pdf|PDF|docx|DOCX)$"
+                },
+                "language": {
+                  "description": "Language of the source CV.",
+                  "type": "string",
+                  "enum": [
+                    "english",
+                    "swedish"
+                  ]
+                },
+                "role": {
+                  "description": "Role variant inferred from the source CV filename, ignoring client names.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "default": {
+                  "description": "Whether this is the default source CV when no better role or language match is found.",
+                  "type": "boolean"
+                }
+              }
+            },
+            "uniqueItems": true
           },
           "active": {
             "type": "boolean"

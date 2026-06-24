@@ -39,11 +39,39 @@ Avoid:
 - raw secrets or credentials
 - details that should not appear in Slack
 
+## Source, template, and generated CVs
+
+Source CV files may be stored under `cvs/` when they have an operational purpose
+for assignment-specific CV generation.
+
+Shared CV template files may be stored under `templates/`. Templates should avoid
+personal data and should exist only to preserve approved layout, styles, section
+order, and branding for generated DOCX files.
+
+Generated CV files may be stored under `generated-cvs/` when created for a
+specific assignment. They should:
+
+- be DOCX files generated from a selected source CV, Cinode profile data,
+  curated CV summary, assignment ad, and, when needed, a shared DOCX template
+- preserve the selected source DOCX layout when possible
+- contain only factual, reviewed, and assignment-relevant personal data
+- avoid internal notes, uncertainty, prompt reasoning, API responses, or secrets
+- be reviewed by a human before being sent to a client
+- be replaced by a newer generated file rather than edited manually in place when
+  the automation is rerun
+
+Generated CV Slack replies should link to repository files intended for
+authorized reviewers. Do not publish generated CVs through unauthenticated public
+file shares unless that has been explicitly approved for the consultant and
+assignment.
+
 ## Slack output rules
 
 Slack assignment lists should stay compact and avoid sensitive consultant
 details. Detailed fit replies should include only information needed to explain
-fit, gaps, CV updates, suggested application angle, and confidence.
+fit, gaps, CV updates, suggested application angle, and confidence. CV generation
+replies should include the generated file link, selected language, selected
+source CV, template source, short positioning summary, and a review reminder.
 
 ## Ambiguous data
 

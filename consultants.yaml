@@ -16,4 +16,9 @@ consultants:
     locations:
       - stockholm
     cvSummaryFile: cv-summaries/joel-holmberg.md
+    sourceCvFiles:
+      - path: cvs/Axessibility_Lab_AB_Joel_Holmberg_Javautvecklare_med_AI.pdf
+        language: swedish
+        role: Javautvecklare med AI
+        default: true
     active: true
