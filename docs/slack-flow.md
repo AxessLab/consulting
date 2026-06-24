@@ -39,18 +39,22 @@ fit 12345 Joel Andersson
 
 ## Generate command
 
-Users request tailored application guidance by replying in the assignment thread:
+Users request an assignment-specific DOCX CV by replying in the assignment thread:
 
 ```text
-generate <assignment id> <name>
+generate <assignment id> <name> [language]
 ```
 
 Examples:
 
 ```text
 generate 12345 Joel
-generate 12345 Joel Holmberg
+generate 12345 Joel Holmberg english
+generate 12345 Joel Holmberg sv
 ```
+
+The optional language token must be the final token. Supported values are
+`english`, `swedish`, `en`, and `sv`.
 
 ## Fit automation flow
 
@@ -69,14 +73,6 @@ generate 12345 Joel Holmberg
 11. Reply in the thread with fit analysis and CV improvement suggestions,
     including which CV variant was used.
 
-## Generate automation flow
-
-1. Follow the same steps as the fit automation through CV variant selection.
-2. Load the selected variant's curated summary and raw CV file from `cvs/` when
-   available.
-3. Reply in the thread with tailored application guidance, including which CV
-   variant was used and suggested edits before sending.
-
 ## CV variant selection
 
 When a consultant has multiple active variants in `cvs`, both `fit` and
@@ -89,6 +85,30 @@ When a consultant has multiple active variants in `cvs`, both `fit` and
 - mention a close runner-up when two variants score similarly
 
 Cinode profile data is shared across variants for a consultant.
+
+## CV generation automation flow
+
+1. Read the Slack parent message and thread.
+2. Parse the assignment id, consultant name, and optional language from the
+   `generate` command.
+3. Find the matching assignment id in the parent message.
+4. Read the full assignment ad link from that Slack item.
+5. Fuzzy match the consultant name against `canonicalName` and `aliases` in
+   `consultants.yaml`.
+6. Ask for clarification if the name is ambiguous.
+7. Score the consultant's active CV variants and select the best match for this
+   assignment.
+8. From the selected variant's `rawFiles`, prefer a DOCX source CV over PDF.
+   Use the requested language when supplied.
+9. Fetch the consultant's Cinode profile using `cinodeCompanyUserId`.
+10. Load the selected variant's curated summary from `cv-summaries/`.
+11. Fetch the assignment ad page.
+12. Generate a new DOCX file under `generated-cvs/<assignment-id>/`.
+13. Preserve the selected source DOCX layout when available. If the selected
+    source CV is PDF, use `templates/axesslab-cv-template.docx`.
+14. Commit the generated DOCX file to the repository.
+15. Reply in the thread with a GitHub link to the generated DOCX file and a
+    short review reminder.
 
 ## Ambiguity handling
 
@@ -107,5 +127,7 @@ I found multiple active consultants matching "Joel". Which one should I analyze?
 
 Assignment list messages should not include sensitive consultant details,
 internal CV weaknesses, private profile content, or unnecessary personal data.
-Detailed fit and generate replies should stay factual and relevant to the
-specific assignment. Do not paste full raw CV content into Slack.
+Detailed fit replies should stay factual and relevant to the specific
+assignment. Generated CV replies should link only to repository files intended
+for reviewers with GitHub access, not to unauthenticated public file shares. Do
+not paste full raw CV content into Slack.

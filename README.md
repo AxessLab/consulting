@@ -1,11 +1,13 @@
 # Consulting automation data
 
-This private repository is the source of truth for consultant metadata and
-manually curated CV/application summaries used by Cursor Automations that
-analyze consultant fit for IT assignments posted in Slack.
+This private repository is the source of truth for consultant metadata, source
+CV files, generated CV drafts, shared CV templates, and manually curated
+CV/application summaries used by Cursor Automations that analyze consultant fit
+for IT assignments posted in Slack.
 
-The repository is intentionally simple and human-editable. It contains plain
-YAML and Markdown only, with no application code, build step, runtime services,
+The repository is intentionally simple and human-editable. It contains
+consultant metadata, Markdown guidance, source CV files, generated DOCX drafts,
+and template DOCX files, with no application code, build step, runtime services,
 or stored secrets.
 
 ## Consultant metadata
@@ -41,6 +43,20 @@ Each variant should have its own curated summary file.
 
 The `fit` and `generate` automations score active variants against the
 assignment and use the best-matching one.
+
+Prefer DOCX source CVs in `rawFiles` because the generation automation can
+preserve the existing layout, styles, headers, footers, tables, section order,
+and branding. PDF source CVs are supported as content sources, but generated
+DOCX files should use the fallback template at
+`templates/axesslab-cv-template.docx`.
+
+Generated assignment-specific DOCX files should be stored under:
+
+`generated-cvs/<assignment-id>/<consultant-slug>-<language>.docx`
+
+The generation automation may commit generated DOCX files directly to the main
+branch when configured with appropriate GitHub permissions. The Slack reply
+should link to the generated file in GitHub.
 
 ## CV summaries
 
@@ -96,19 +112,29 @@ Prompt guidance for this automation is in `automation-prompts/fit-analysis.md`.
 
 A third automation is triggered from Slack thread replies using:
 
-`generate <assignment id> <name>`
+`generate <assignment id> <name> [language]`
 
 Examples:
 
 - `generate 12345 Joel`
-- `generate 12345 Joel Holmberg`
+- `generate 12345 Joel Holmberg english`
+- `generate 12345 Joel Holmberg sv`
 
-The automation follows the same consultant lookup, Cinode fetch, assignment ad
-fetch, and CV variant selection steps as `fit`. It then uses the selected
-variant's curated summary and raw CV file to produce tailored application
-guidance for the assignment.
+The optional language token must be the final token. Supported language values
+are `english`, `swedish`, `en`, and `sv`.
 
-Prompt guidance for this automation is in `automation-prompts/generate-cv.md`.
+The automation should read the Slack parent message/thread, find the assignment
+id, resolve the assignment ad link from the parent message, fuzzy match the
+provided name against `consultants.yaml`, select the best-matching active CV
+variant for the assignment, fetch the consultant profile from Cinode using the
+consultant's `cinodeCompanyUserId`, load the selected variant's curated summary
+and raw CV file from this repo, fetch the assignment ad page, generate an
+assignment-specific DOCX CV, store it under `generated-cvs/`, commit it to the
+repository, and post a Slack thread reply with a GitHub link to the generated
+file.
+
+Prompt guidance for this automation is in
+`automation-prompts/cv-generation.md`.
 
 ## Cinode IDs
 

@@ -1,7 +1,7 @@
 # Cinode integration
 
-The fit automation uses Cinode profile data together with curated CV summaries
-from this repo.
+The fit and CV generation automations use Cinode profile data together with
+curated CV summaries, source CV files, and shared CV templates from this repo.
 
 ## Endpoint
 
@@ -39,6 +39,16 @@ output.
 
 ## Data use
 
-Use Cinode profile data only for the requested fit analysis. Combine it with the
-curated CV summary to identify relevant evidence, missing evidence, and practical
-CV updates before applying.
+Use Cinode profile data only for the requested fit analysis or generated CV.
+Combine it with the curated CV summary and selected source CV to identify
+relevant evidence, missing evidence, and practical CV updates before applying.
+
+For generated CVs:
+
+- Use Cinode data to improve ordering, emphasis, and factual completeness.
+- Preserve the selected source DOCX layout when a source DOCX is available.
+- Use `templates/axesslab-cv-template.docx` when the selected source CV is PDF.
+- Do not invent details that are missing from Cinode, the curated summary, the
+  source CV, or the assignment ad.
+- Do not write API responses, tokens, or raw profile dumps into generated files,
+  logs, Slack replies, or committed documentation.
