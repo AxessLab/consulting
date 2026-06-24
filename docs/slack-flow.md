@@ -1,7 +1,7 @@
 # Slack flow
 
 This document describes how Slack assignment listings and thread-based fit
-analysis requests should work.
+analysis and CV generation requests should work.
 
 ## Assignment list message
 
@@ -37,6 +37,21 @@ fit 12345 Joel
 fit 12345 Joel Andersson
 ```
 
+## Generate command
+
+Users request tailored application guidance by replying in the assignment thread:
+
+```text
+generate <assignment id> <name>
+```
+
+Examples:
+
+```text
+generate 12345 Joel
+generate 12345 Joel Holmberg
+```
+
 ## Fit automation flow
 
 1. Read the Slack parent message and thread.
@@ -47,9 +62,33 @@ fit 12345 Joel Andersson
    `consultants.yaml`.
 6. Ask for clarification if the name is ambiguous.
 7. Fetch the consultant's Cinode profile using `cinodeCompanyUserId`.
-8. Load the consultant's curated CV summary from `cv-summaries/`.
-9. Fetch the assignment ad page.
-10. Reply in the thread with fit analysis and CV improvement suggestions.
+8. Fetch the assignment ad page.
+9. Score the consultant's active CV variants and select the best match for this
+   assignment.
+10. Load the selected variant's curated summary from `cv-summaries/`.
+11. Reply in the thread with fit analysis and CV improvement suggestions,
+    including which CV variant was used.
+
+## Generate automation flow
+
+1. Follow the same steps as the fit automation through CV variant selection.
+2. Load the selected variant's curated summary and raw CV file from `cvs/` when
+   available.
+3. Reply in the thread with tailored application guidance, including which CV
+   variant was used and suggested edits before sending.
+
+## CV variant selection
+
+When a consultant has multiple active variants in `cvs`, both `fit` and
+`generate` should:
+
+- score each active variant against the assignment title, must-haves, role,
+  seniority, domain, tech stack, and language requirements
+- use the best-matching variant's `summaryFile` as the primary input
+- state the chosen variant `label` in the Slack reply
+- mention a close runner-up when two variants score similarly
+
+Cinode profile data is shared across variants for a consultant.
 
 ## Ambiguity handling
 
@@ -68,4 +107,5 @@ I found multiple active consultants matching "Joel". Which one should I analyze?
 
 Assignment list messages should not include sensitive consultant details,
 internal CV weaknesses, private profile content, or unnecessary personal data.
-Detailed fit replies should stay factual and relevant to the specific assignment.
+Detailed fit and generate replies should stay factual and relevant to the
+specific assignment. Do not paste full raw CV content into Slack.

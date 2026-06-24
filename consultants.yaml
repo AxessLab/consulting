@@ -15,5 +15,36 @@ consultants:
       - ai-assisted-development
     locations:
       - stockholm
-    cvSummaryFile: cv-summaries/joel-holmberg.md
+    cvs:
+      - id: fullstack-java-react-ai
+        label: Senior fullstack (Java, React, AI)
+        summaryFile: cv-summaries/joel-holmberg-fullstack.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Joel_Holmberg_Senior_fullstackutvecklare_inom_Java_React_och_AI (1).docx
+        roles:
+          - fullstack
+          - backend
+          - frontend
+          - architect
+          - java
+          - react
+          - spring-boot
+          - accessibility
+          - ai-assisted-development
+        emphasis: Fullstack development with Java, Spring Boot, React, TypeScript, and AI-assisted workflows
+        active: true
+      - id: java-backend-ai
+        label: Java developer with AI
+        summaryFile: cv-summaries/joel-holmberg-java-ai.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Joel_Holmberg_Javautvecklare_med_AI.pdf
+        roles:
+          - backend
+          - java
+          - spring-boot
+          - microservices
+          - ai-assisted-development
+          - architect
+        emphasis: Backend Java development, microservices, integrations, and AI-assisted development
+        active: true
     active: true

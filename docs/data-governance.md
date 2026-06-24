@@ -17,6 +17,11 @@ data factual, minimal, reviewed, and appropriate for AI-assisted automation.
 
 ## Curated CV summaries
 
+Each consultant may have multiple CV variants. Each variant has its own curated
+summary file and optional raw CV files under `cvs/`. Create a new variant when a
+consultant needs a materially different positioning (for example fullstack versus
+backend-only), not for minor wording tweaks.
+
 Curated summaries should help the automation make better assignment-specific
 recommendations. They should contain concise evidence and notes that are safe to
 use in application planning.
@@ -42,8 +47,9 @@ Avoid:
 ## Slack output rules
 
 Slack assignment lists should stay compact and avoid sensitive consultant
-details. Detailed fit replies should include only information needed to explain
-fit, gaps, CV updates, suggested application angle, and confidence.
+details. Detailed fit and generate replies should include only information
+needed to explain which CV variant was used, fit, gaps, CV updates, suggested
+application angle, and confidence. Do not paste full raw CV content into Slack.
 
 ## Ambiguous data
 
