@@ -1,5 +1,213 @@
 companyId: 0
 consultants:
+  - canonicalName: Daniel Göransson
+    aliases:
+      - Daniel
+      - Daniel Göransson
+      - D Göransson
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - accessibility
+      - frontend
+    locations:
+      - stockholm
+    cvs:
+      - id: accessibility-engineer
+        label: Accessibility Engineer
+        summaryFile: cv-summaries/daniel-goransson-accessibility-engineer.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Daniel_Göransson_Accessibilty_Engineer.docx
+        roles:
+          - accessibility
+          - accessibility-engineer
+          - frontend
+          - react
+          - wcag
+          - audits
+          - coaching
+        emphasis: Accessibility engineering, audits, and developer coaching across web and mobile
+        active: true
+    active: true
+
+  - canonicalName: Emilia Michanek
+    aliases:
+      - Emilia
+      - Emilia Michanek
+      - E Michanek
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - frontend
+      - accessibility
+    locations:
+      - stockholm
+    cvs:
+      - id: frontend-developer
+        label: Frontend developer
+        summaryFile: cv-summaries/emilia-michanek-frontend.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Emilia_Michanek_Frontend_developer.docx
+        roles:
+          - frontend
+          - react
+          - nextjs
+          - typescript
+          - accessibility
+          - wcag
+          - audits
+        emphasis: React/Next.js frontend development with strong accessibility and audit experience
+        active: true
+    active: true
+
+  - canonicalName: Emma Dawson
+    aliases:
+      - Emma
+      - Emma Dawson
+      - E Dawson
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - frontend
+      - accessibility
+      - fullstack
+    locations:
+      - stockholm
+    cvs:
+      - id: frontend-developer
+        label: Frontendutvecklare
+        summaryFile: cv-summaries/emma-dawson-frontend.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Emma_Dawson_Frontend_CV.docx
+        roles:
+          - frontend
+          - react
+          - typescript
+          - nextjs
+          - accessibility
+          - design-system
+          - wcag
+          - storybook
+        emphasis: React/TypeScript frontend with CPWA-certified accessibility and design-system work
+        active: true
+    active: true
+
+  - canonicalName: Eric Eggert
+    aliases:
+      - Eric
+      - Eric Eggert
+      - E Eggert
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - accessibility
+      - training
+    locations:
+      - stockholm
+    cvs:
+      - id: accessibility-engineer
+        label: Accessibility Engineer
+        summaryFile: cv-summaries/eric-eggert-accessibility-engineer.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Eric_Eggert_Accessibility_Engineer.docx
+        roles:
+          - accessibility
+          - accessibility-engineer
+          - audits
+          - wcag
+          - vpat
+          - training
+          - eaa
+        emphasis: Senior accessibility audits, VPATs, training, and EAA readiness programs
+        active: true
+    active: true
+
+  - canonicalName: Erik Gustafsson Spagnoli
+    aliases:
+      - Erik
+      - Erik Gustafsson
+      - Erik Gustafsson Spagnoli
+      - E Gustafsson
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - project-manager
+      - accessibility
+      - scrum-master
+    locations:
+      - stockholm
+    cvs:
+      - id: project-manager-web-intranet
+        label: Projektledare (webb och intranät)
+        summaryFile: cv-summaries/erik-gustafsson-spagnoli-project-manager.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Erik_Gustafsson_Spagnoli_Post_och_Telestyrelsen_Projektledare__Ny_hemsida_och_nytt_intranät.docx
+        roles:
+          - project-manager
+          - team-lead
+          - accessibility
+          - scrum-master
+          - wcag
+          - public-sector
+          - intranet
+        emphasis: Digital project leadership for web, intranet, and accessibility programs
+        active: true
+    active: true
+
+  - canonicalName: Hampus Sethfors
+    aliases:
+      - Hampus
+      - Hampus Sethfors
+      - H Sethfors
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - accessibility
+      - training
+      - strategy
+    locations:
+      - stockholm
+    cvs:
+      - id: accessibility-expert-strategy
+        label: Senior tillgänglighetsexpert
+        summaryFile: cv-summaries/hampus-sethfors-accessibility-expert.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Hampus_Sethfors_Hampus_Sethfors_tillgänglighetsexpert__Naturvårdsverket.docx
+        roles:
+          - accessibility
+          - accessibility-strategy
+          - training
+          - audits
+          - wcag
+          - en-301-549
+          - public-sector
+        emphasis: Strategic and operational accessibility leadership, audits, and training
+        active: true
+    active: true
+
+  - canonicalName: Henrik Andersson Qvarfordt
+    aliases:
+      - Henrik
+      - Henrik Andersson Qvarfordt
+      - Henrik Qvarfordt
+      - H Qvarfordt
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - accessibility
+      - documents
+    locations:
+      - stockholm
+    cvs:
+      - id: accessibility-documents
+        label: Tillgänglighetsspecialist (dokument)
+        summaryFile: cv-summaries/henrik-andersson-qvarfordt-accessibility-documents.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Henrik_Andersson_Qvarfordt_Tillgänglighetsspecialist_Dokument_Henrik_Andersson_Qvarfordt.docx
+        roles:
+          - accessibility
+          - accessible-documents
+          - pdf
+          - wcag
+          - audits
+          - indesign
+        emphasis: Accessible PDF and document production, remediation, and form accessibility
+        active: true
+    active: true
+
   - canonicalName: Joel Holmberg
     aliases:
       - Joel
@@ -46,5 +254,215 @@ consultants:
           - ai-assisted-development
           - architect
         emphasis: Backend Java development, microservices, integrations, and AI-assisted development
+        active: true
+    active: true
+
+  - canonicalName: Josefin Wessman
+    aliases:
+      - Josefin
+      - Josefin Wessman
+      - J Wessman
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - ux
+      - accessibility
+      - user-research
+    locations:
+      - stockholm
+    cvs:
+      - id: accessibility-ux-designer
+        label: Tillgänglighetsspecialist och UX-designer
+        summaryFile: cv-summaries/josefin-wessman-accessibility-ux.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Josefin_Wessman_Region_Östergötland_Tillgänglighetsspecialist_och_UXdesigner.docx
+        roles:
+          - ux
+          - accessibility
+          - user-research
+          - usability-testing
+          - wcag
+          - public-sector
+          - ux-writing
+        emphasis: UX design and research combined with accessibility audits and organizational support
+        active: true
+    active: true
+
+  - canonicalName: Karin Skog
+    aliases:
+      - Karin
+      - Karin Skog
+      - K Skog
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - project-manager
+      - agile-coach
+      - accessibility
+    locations:
+      - stockholm
+    cvs:
+      - id: project-manager-accessibility
+        label: Projektledare
+        summaryFile: cv-summaries/karin-skog-project-manager.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Karin_Skog_Östgöta_Projektledare__till_anbudet.docx
+        roles:
+          - project-manager
+          - agile-coach
+          - scrum-master
+          - accessibility
+          - gap-analysis
+          - public-sector
+          - strategy
+        emphasis: Cross-functional project leadership with accessibility strategy and agile delivery
+        active: true
+    active: true
+
+  - canonicalName: Karin Toft
+    aliases:
+      - Karin Toft
+      - K Toft
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - frontend
+      - accessibility
+    locations:
+      - stockholm
+      - gothenburg
+    cvs:
+      - id: frontend-engineer
+        label: Frontend Engineer
+        summaryFile: cv-summaries/karin-toft-frontend-engineer.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Karin_Toft_Frontend_Engineer.docx
+        roles:
+          - frontend
+          - react
+          - typescript
+          - accessibility
+          - design-system
+          - wcag
+          - e-commerce
+        emphasis: TypeScript/React frontend engineering with CPWA-certified accessibility
+        active: true
+    active: true
+
+  - canonicalName: Max Rautenberg
+    aliases:
+      - Max
+      - Max Rautenberg
+      - M Rautenberg
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - frontend
+      - accessibility
+    locations:
+      - stockholm
+    cvs:
+      - id: frontend-developer
+        label: Frontendutvecklare
+        summaryFile: cv-summaries/max-rautenberg-frontend.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Max_Rautenberg_Frontend_Vinnova.docx
+        roles:
+          - frontend
+          - react
+          - typescript
+          - nextjs
+          - accessibility
+          - wcag
+          - tailwind
+        emphasis: React/TypeScript/Next.js frontend with accessibility and design-system experience
+        active: true
+    active: true
+
+  - canonicalName: Nathalie Pentler
+    aliases:
+      - Nathalie
+      - Nathalie Pentler
+      - N Pentler
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - accessibility
+      - physical-accessibility
+    locations:
+      - stockholm
+    cvs:
+      - id: accessibility-physical-digital
+        label: UI/UX with QA and Accessibility niche
+        summaryFile: cv-summaries/nathalie-pentler-accessibility-physical.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Nathalie_Pentler_UIUX_with_QA_and_Accessibility_niche.docx
+        roles:
+          - accessibility
+          - audits
+          - physical-accessibility
+          - wcag
+          - eaa
+          - ios
+          - android
+          - pdf
+        emphasis: Digital and physical accessibility audits with lived-experience perspective
+        active: true
+    active: true
+
+  - canonicalName: Nikolaos Syropoulos
+    aliases:
+      - Nikolaos
+      - Nicko
+      - Nikolaos Syropoulos
+      - N Syropoulos
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - ux
+      - ui
+      - product-design
+      - accessibility
+    locations:
+      - stockholm
+    cvs:
+      - id: senior-ux-ui-designer
+        label: Senior UX/UI Designer
+        summaryFile: cv-summaries/nikolaos-syropoulos-ux-ui-designer.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Nikolaos_Syropoulos_Senior_UXUI_Designer__Senterprise.docx
+        roles:
+          - ux
+          - ui
+          - product-design
+          - accessibility
+          - figma
+          - design-system
+          - user-research
+          - wcag
+        emphasis: End-to-end product design with accessibility and design-system expertise
+        active: true
+    active: true
+
+  - canonicalName: Soma Azad
+    aliases:
+      - Soma
+      - Soma Azad
+      - S Azad
+    cinodeCompanyUserId: 0
+    mainRoles:
+      - ux
+      - accessibility
+    locations:
+      - stockholm
+    cvs:
+      - id: senior-ux-designer
+        label: Senior UX Designer
+        summaryFile: cv-summaries/soma-azad-senior-ux-designer.md
+        rawFiles:
+          - cvs/Axessibility_Lab_AB_Soma_Azad_Soma_Azad__Senior_UX_Designer_Axessibility_Lab_SVT.docx
+        roles:
+          - ux
+          - user-research
+          - accessibility
+          - service-design
+          - wcag
+          - agile
+          - banking
+        emphasis: User-centered UX in complex regulated systems with integrated accessibility
         active: true
     active: true
