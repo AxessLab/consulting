@@ -1,9 +1,14 @@
 # CV generation automation prompt
 
-Use this guidance for the Slack thread automation triggered by:
+Use this guidance for the Slack thread automation triggered from replies in
+`#assignment-scanner` (or any channel where this automation is configured).
+
+The command supports two modes. The automation must detect which mode applies
+from the thread reply alone:
 
 ```text
-generate <assignment id> <name> [language]
+generate <assignment id> <name> [language]   # listed assignment (existing)
+generate <name> [language]                     # pasted ad text (new)
 ```
 
 Examples:
@@ -12,7 +17,53 @@ Examples:
 generate 12345 Joel
 generate 12345 Joel Holmberg english
 generate 12345 Joel Holmberg sv
+generate Karin Toft
+generate Karin Toft english
+generate Karin Toft sv
 ```
+
+## Command parsing
+
+1. Parse the thread reply as `generate …`.
+2. Treat the optional final token as a requested language only when it is one of
+   `en`, `english`, `sv`, or `swedish`. Remove it from the remaining tokens.
+3. If the first remaining token is a numeric assignment id, use **listed
+   assignment mode**. The assignment id is that token; the consultant name is
+   the rest of the tokens joined with spaces.
+4. Otherwise use **pasted ad mode**. The consultant name is all remaining
+   tokens joined with spaces. There is no assignment id in the command.
+
+Do not require an assignment id when the parent message is pasted ad text.
+
+## Two assignment sources
+
+### Listed assignment mode (existing)
+
+The Slack parent message comes from the assignment-listing automation. It
+contains:
+
+- `[assignment-id]` in square brackets
+- assignment title and summary
+- a link to the full online ad
+
+Resolve requirements from the parent message and fetch the online ad page.
+
+### Pasted ad mode (new)
+
+The Slack parent message is pasted assignment ad text from sales. It does
+**not** contain a listing id or ad link. Typical usage:
+
+1. Sales posts the full assignment ad text as a new message in
+   `#assignment-scanner`.
+2. Sales replies in that thread with `generate <name>` (optionally plus
+   language).
+
+Use the **parent message text** as the assignment ad. Do **not** look up an
+online ad page or require an assignment id in the parent message.
+
+Extract `assignmentTitle` from the pasted text (prefer the first clear role or
+headline line; fall back to a short summary of the role if needed). Set
+`assignmentId` to `manual`.
 
 ## Inputs
 
@@ -21,7 +72,9 @@ generate 12345 Joel Holmberg sv
 - `consultants.yaml`.
 - Curated CV summaries and raw files for the consultant's active `cvs` variants.
 - Cinode CompanyUserProfile response.
-- Full online assignment ad page.
+- Assignment requirements from either:
+  - the full online assignment ad page (listed assignment mode), or
+  - the pasted parent message text (pasted ad mode).
 - HTML template at `templates/cv.html.j2`.
 - Portrait images under `photos/` (see `photos/README.md`).
 - Shared logo at `templates/assets/axesslab-logo.png`.
@@ -39,14 +92,17 @@ PDF rendering requires a Chromium-based browser (`msedge`, `chrome`, or `chromiu
 
 ## Required flow
 
-1. Parse the command as `generate <assignment id> <name> [language]`.
-2. Treat the optional final token as a requested language only when it is one of
-   `en`, `english`, `sv`, or `swedish`. If omitted, infer language based on the title of the assignment.
+1. Parse the command using **Command parsing** above and determine listed
+   assignment mode vs pasted ad mode.
+2. If omitted, infer language from the assignment title or pasted ad text.
 3. Normalize `en` and `english` to `english`; normalize `sv` and `swedish` to
    `swedish`.
 4. Read the Slack parent message/thread.
-5. Find the requested assignment id in the Slack message.
-6. Resolve the assignment ad URL from the Slack message.
+5. **Listed assignment mode only:** find the requested assignment id in the
+   parent message, resolve the assignment ad URL, and fetch the online ad page.
+6. **Pasted ad mode only:** treat the parent message text as the assignment ad.
+   Set `assignmentId` to `manual` and extract `assignmentTitle` from the pasted
+   text. Do not fetch an online ad page.
 7. Fuzzy match the provided name against consultant `canonicalName` and
    `aliases` in `consultants.yaml`.
 8. If the name is ambiguous, ask for clarification in the Slack thread and stop.
@@ -63,28 +119,30 @@ PDF rendering requires a Chromium-based browser (`msedge`, `chrome`, or `chromiu
     CompanyUserProfile:
     `GET https://api.cinode.com/v0.1/companies/{companyId}/users/{companyUserId}/profile`
 13. Load the selected variant's curated CV summary from this repo.
-14. Fetch the assignment ad page.
-15. Build assignment-specific CV content as JSON that validates against
+14. Build assignment-specific CV content as JSON that validates against
     `schemas/cv-content.schema.json`. Do not write HTML, PDF, or DOCX directly.
-16. Save the JSON under:
+15. Save the JSON under:
     `generated-cvs/<assignment-id> - <assignment title>/<consultant-slug>-<language>.json`
-    Build the folder name as `{assignmentId} - {assignmentTitle}`. Replace characters
-    that are invalid in file paths (`:`, `/`, `\`, `|`, `?`, `*`, `<`, `>`) before
-    writing. A colon in the title becomes ` - ` (for example
+    Build the folder name as `{assignmentId} - {assignmentTitle}`. For pasted ad
+    mode, `assignmentId` is `manual`. Replace characters that are invalid in
+    file paths (`:`, `/`, `\`, `|`, `?`, `*`, `<`, `>`) before writing. A colon
+    in the title becomes ` - ` (for example
     `4 - Team Webbkonsulter - Roll 2 - Frontend Developer, Level 3 (Vinnova)`).
-17. Run the render script:
+    If a folder for the same assignment and consultant already exists, overwrite
+    the generated files for that run.
+16. Run the render script:
     `python scripts/render-cv.py "generated-cvs/<assignment-folder>/<consultant-slug>-<language>.json" --skip-json`
     This produces matching `.html` and `.pdf` files in the same directory.
-18. Commit the generated JSON, HTML, and PDF to the repository's main branch
+17. Commit the generated JSON, HTML, and PDF to the repository's main branch
     according to the automation runtime's GitHub permissions.
-19. Reply in the Slack thread with the GitHub link to the **PDF** and a short
-    summary of the selected CV variant, source CV, language, and assignment
-    positioning.
+18. Reply in the Slack thread with the GitHub link to the **PDF** and a short
+    summary of the selected CV variant, source CV, language, assignment source
+    (listed id vs pasted ad), and assignment positioning.
 
 ## Content rules
 
 - Keep facts grounded in the source CV, Cinode profile, curated CV summary, and
-  assignment ad.
+  assignment requirements (from the online ad page or pasted parent message).
 - Do not invent clients, dates, titles, certifications, outcomes, language
   ability, availability, or security clearance.
 - Tailor emphasis, ordering, summary text, project selection, and skills
@@ -149,6 +207,8 @@ Reply in the Slack thread with:
 - `Generated CV`: GitHub link to the **PDF** file.
 - `Preview`: GitHub link to the HTML file (optional but helpful).
 - `Assignment`: `assignmentTitle` from the JSON (internal context for sales).
+- `Assignment source`: listed assignment id, or `pasted ad` when `assignmentId`
+  is `manual`.
 - `CV variant`: selected variant `label` and `id`.
 - `Language`: generated CV language.
 - `Source CV`: source CV path or filename used.
@@ -159,6 +219,13 @@ Reply in the Slack thread with:
 
 ## Failure handling
 
+- If listed assignment mode is detected but the parent message has no matching
+  assignment id or ad link, explain that the thread must be under a listed
+  assignment message, or use pasted ad mode by posting the ad text and running
+  `generate <name>` without an id.
+- If pasted ad mode is detected but the parent message is empty or too short to
+  describe an assignment, ask sales to paste the full ad text in the parent
+  message and retry.
 - If the requested language is unsupported, explain the supported values:
   `english`, `swedish`, `en`, `sv`.
 - If there are multiple equally good CV variants, ask which variant to use

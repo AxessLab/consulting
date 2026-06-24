@@ -95,20 +95,30 @@ Prompt guidance for this automation is in
 
 A second automation is triggered from Slack thread replies using:
 
-`fit <assignment id> <name>`
+```text
+fit <assignment id> <name>   # listed assignment
+fit <name>                     # pasted ad text
+```
 
 Examples:
 
 - `fit 12345 Joel`
 - `fit 12345 Joel Andersson`
+- `fit Karin Toft`
 
-The automation should read the Slack parent message/thread, find the assignment
-id, resolve the assignment ad link from the parent message, fuzzy match the
-provided name against `consultants.yaml`, fetch the consultant profile from
-Cinode using the consultant's `cinodeCompanyUserId`, select the best-matching
-active CV variant for the assignment, load that variant's curated summary from
-this repo, fetch the assignment ad page, and post a Slack thread reply with fit
-analysis and CV improvement suggestions.
+When the first token after `fit` is a numeric assignment id, the automation
+reads the Slack parent message, finds the assignment id, resolves the assignment
+ad link, and fetches the online ad page.
+
+When there is no numeric id, sales has pasted the assignment ad in the parent
+message. The automation uses that text as the assignment source instead of
+fetching an online ad.
+
+In both cases the automation fuzzy matches the provided name against
+`consultants.yaml`, fetches the consultant profile from Cinode using the
+consultant's `cinodeCompanyUserId`, selects the best-matching active CV variant
+for the assignment, loads that variant's curated summary from this repo, and
+posts a Slack thread reply with fit analysis and CV improvement suggestions.
 
 Prompt guidance for this automation is in `automation-prompts/fit-analysis.md`.
 
@@ -116,27 +126,38 @@ Prompt guidance for this automation is in `automation-prompts/fit-analysis.md`.
 
 A third automation is triggered from Slack thread replies using:
 
-`generate <assignment id> <name> [language]`
+```text
+generate <assignment id> <name> [language]   # listed assignment
+generate <name> [language]                     # pasted ad text
+```
 
 Examples:
 
 - `generate 12345 Joel`
 - `generate 12345 Joel Holmberg english`
 - `generate 12345 Joel Holmberg sv`
+- `generate Karin Toft`
+- `generate Karin Toft english`
 
 The optional language token must be the final token. Supported language values
 are `english`, `swedish`, `en`, and `sv`.
 
-The automation should read the Slack parent message/thread, find the assignment
-id, resolve the assignment ad link from the parent message, fuzzy match the
-provided name against `consultants.yaml`, select the best-matching active CV
-variant for the assignment, fetch the consultant profile from Cinode using the
-consultant's `cinodeCompanyUserId`, load the selected variant's curated summary
-and raw CV file from this repo, fetch the assignment ad page, produce
-assignment-specific JSON content, render HTML and PDF with
-`scripts/render-cv.py`, store outputs under `generated-cvs/`, commit them to the
-repository, and post a Slack thread reply with a GitHub link to the generated
-PDF.
+When the first token after `generate` is a numeric assignment id, the
+automation reads the Slack parent message, finds the assignment id, resolves the
+assignment ad link, and fetches the online ad page.
+
+When there is no numeric id, sales has pasted the assignment ad in the parent
+message. The automation uses that text as the assignment source instead of
+fetching an online ad.
+
+In both cases the automation fuzzy matches the provided name against
+`consultants.yaml`, selects the best-matching active CV variant for the
+assignment, fetches the consultant profile from Cinode using the consultant's
+`cinodeCompanyUserId`, loads the selected variant's curated summary and raw CV
+file from this repo, produces assignment-specific JSON content, renders HTML and
+PDF with `scripts/render-cv.py`, stores outputs under `generated-cvs/`, commits
+them to the repository, and posts a Slack thread reply with a GitHub link to the
+generated PDF.
 
 Prompt guidance for this automation is in
 `automation-prompts/cv-generation.md`.

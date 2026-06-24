@@ -27,7 +27,8 @@ Good matches: Joel, Lena
 Users request detailed analysis by replying in the assignment thread:
 
 ```text
-fit <assignment id> <name>
+fit <assignment id> <name>   # from assignment list
+fit <name>                     # from pasted ad text
 ```
 
 Examples:
@@ -35,14 +36,22 @@ Examples:
 ```text
 fit 12345 Joel
 fit 12345 Joel Andersson
+fit Karin Toft
 ```
+
+When the first token after `fit` is a numeric assignment id, the automation
+uses **listed assignment mode** and reads the id and ad link from the parent
+message. When it is not numeric, the automation uses **pasted ad mode** and
+reads the assignment requirements from the parent message text instead of
+fetching an online ad.
 
 ## Generate command
 
 Users request an assignment-specific CV by replying in the assignment thread:
 
 ```text
-generate <assignment id> <name> [language]
+generate <assignment id> <name> [language]   # from assignment list
+generate <name> [language]                     # from pasted ad text
 ```
 
 Examples:
@@ -51,26 +60,48 @@ Examples:
 generate 12345 Joel
 generate 12345 Joel Holmberg english
 generate 12345 Joel Holmberg sv
+generate Karin Toft
+generate Karin Toft english
+generate Karin Toft sv
 ```
 
 The optional language token must be the final token. Supported values are
 `english`, `swedish`, `en`, and `sv`.
 
+When the first token after `generate` is a numeric assignment id, the
+automation uses **listed assignment mode** and reads the id and ad link from the
+parent message. When it is not numeric, the automation uses **pasted ad mode**
+and reads the assignment requirements from the parent message text instead of
+fetching an online ad.
+
+## Pasted ad flow
+
+Sales can post assignment ad text directly in `#assignment-scanner` without
+going through the assignment list:
+
+1. Post the full assignment ad as a new channel message.
+2. Reply in that thread with `fit <name>` or `generate <name>` (optionally plus
+   language for `generate`).
+
+The parent message is the assignment source. No assignment id or ad URL is
+required.
+
 ## Fit automation flow
 
 1. Read the Slack parent message and thread.
-2. Parse the assignment id and consultant name from the `fit` command.
-3. Find the matching assignment id in the parent message.
-4. Read the full assignment ad link from that Slack item.
+2. Parse the `fit` command and detect listed assignment mode vs pasted ad mode
+   (numeric first token vs consultant name).
+3. **Listed assignment mode:** find the assignment id in the parent message,
+   read the ad link, and fetch the online ad page.
+4. **Pasted ad mode:** use the parent message text as the assignment ad.
 5. Fuzzy match the consultant name against `canonicalName` and `aliases` in
    `consultants.yaml`.
 6. Ask for clarification if the name is ambiguous.
 7. Fetch the consultant's Cinode profile using `cinodeCompanyUserId`.
-8. Fetch the assignment ad page.
-9. Score the consultant's active CV variants and select the best match for this
+8. Score the consultant's active CV variants and select the best match for this
    assignment.
-10. Load the selected variant's curated summary from `cv-summaries/`.
-11. Reply in the thread with fit analysis and CV improvement suggestions,
+9. Load the selected variant's curated summary from `cv-summaries/`.
+10. Reply in the thread with fit analysis and CV improvement suggestions,
     including which CV variant was used.
 
 ## CV variant selection
@@ -89,10 +120,12 @@ Cinode profile data is shared across variants for a consultant.
 ## CV generation automation flow
 
 1. Read the Slack parent message and thread.
-2. Parse the assignment id, consultant name, and optional language from the
-   `generate` command.
-3. Find the matching assignment id in the parent message.
-4. Read the full assignment ad link from that Slack item.
+2. Parse the `generate` command and detect listed assignment mode vs pasted ad
+   mode (numeric first token vs consultant name).
+3. **Listed assignment mode:** find the assignment id in the parent message and
+   read the ad link; fetch the online ad page.
+4. **Pasted ad mode:** use the parent message text as the assignment ad; set
+   `assignmentId` to `manual`.
 5. Fuzzy match the consultant name against `canonicalName` and `aliases` in
    `consultants.yaml`.
 6. Ask for clarification if the name is ambiguous.
@@ -102,13 +135,12 @@ Cinode profile data is shared across variants for a consultant.
    Use the requested language when supplied.
 9. Fetch the consultant's Cinode profile using `cinodeCompanyUserId`.
 10. Load the selected variant's curated summary from `cv-summaries/`.
-11. Fetch the assignment ad page.
-12. Write assignment-specific CV content as JSON under
+11. Write assignment-specific CV content as JSON under
     `generated-cvs/<assignment-id> - <assignment title>/`.
-13. Run `python scripts/render-cv.py` to produce HTML and PDF from
+12. Run `python scripts/render-cv.py` to produce HTML and PDF from
     `templates/cv.html.j2`.
-14. Commit the generated JSON, HTML, and PDF files to the repository.
-15. Reply in the thread with a GitHub link to the generated PDF and a short
+13. Commit the generated JSON, HTML, and PDF files to the repository.
+14. Reply in the thread with a GitHub link to the generated PDF and a short
     review reminder.
 
 ## Ambiguity handling

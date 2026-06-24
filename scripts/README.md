@@ -34,7 +34,8 @@ CV content must validate against `schemas/cv-content.schema.json`.
 
 The Slack `generate` automation should:
 
-1. Tailor assignment-specific content and write JSON.
+1. Tailor assignment-specific content and write JSON (from a listed assignment ad
+   URL or pasted parent message text).
 2. Run `python scripts/render-cv.py "generated-cvs/<assignment-folder>/<consultant-slug>-<language>.json" --skip-json`.
 3. Commit JSON, HTML, and PDF under `generated-cvs/`.
 

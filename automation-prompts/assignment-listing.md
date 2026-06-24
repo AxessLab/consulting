@@ -46,3 +46,6 @@ replying in the thread:
 fit 12345 Joel
 generate 12345 Joel
 ```
+
+For assignments not in the listing, post the full ad text in the channel and
+reply with `fit <name>` or `generate <name>` (no id).

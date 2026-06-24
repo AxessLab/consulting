@@ -34,7 +34,8 @@
     },
     "assignmentId": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "description": "Platform assignment id from the listing, or manual for pasted ad text in Slack."
     },
     "assignmentTitle": {
       "type": "string",

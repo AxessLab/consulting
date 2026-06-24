@@ -15,7 +15,10 @@ Example:
 
 ```text
 generated-cvs/4 - Team Webbkonsulter - Roll 2 - Frontend Developer, Level 3 (Vinnova)/karin-toft-english.pdf
+generated-cvs/manual - Senior Frontend Developer, Stockholm/karin-toft-swedish.pdf
 ```
+
+Pasted ad requests use `manual` as the assignment id in the folder name.
 
 Folder names sanitize invalid path characters. A colon in the assignment title
 becomes ` - ` for cross-platform compatibility.
