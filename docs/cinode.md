@@ -46,8 +46,9 @@ relevant evidence, missing evidence, and practical CV updates before applying.
 For generated CVs:
 
 - Use Cinode data to improve ordering, emphasis, and factual completeness.
-- Preserve the selected source DOCX layout when a source DOCX is available.
-- Use `templates/axesslab-cv-template.docx` when the selected source CV is PDF.
+- Use source DOCX/PDF files and curated summaries as factual content sources.
+- Produce JSON content and render HTML/PDF with `scripts/render-cv.py`; do not
+  edit or generate DOCX output.
 - Do not invent details that are missing from Cinode, the curated summary, the
   source CV, or the assignment ad.
 - Do not write API responses, tokens, or raw profile dumps into generated files,

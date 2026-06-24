@@ -87,6 +87,10 @@ Do not invent facts. Clearly separate evidence from assumptions. Use the
 selected CV variant's curated summary for application advice and Cinode data
 for profile evidence.
 
+When writing English text from Swedish source material, follow
+`automation-prompts/translation-sv-en.md`. Do not translate **tillgänglighet**
+as **availability** except for schedule or start-date context.
+
 ## Slack reply format
 
 Reply in the Slack thread with:

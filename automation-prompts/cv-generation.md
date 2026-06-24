@@ -22,13 +22,26 @@ generate 12345 Joel Holmberg sv
 - Curated CV summaries and raw files for the consultant's active `cvs` variants.
 - Cinode CompanyUserProfile response.
 - Full online assignment ad page.
-- Fallback DOCX template at `templates/axesslab-cv-template.docx`.
+- HTML template at `templates/cv.html.j2`.
+- Portrait images under `photos/` (see `photos/README.md`).
+- Shared logo at `templates/assets/axesslab-logo.png`.
+- CV content schema at `schemas/cv-content.schema.json`.
+
+## Environment setup
+
+Before rendering CVs, install Python dependencies once in the automation runtime:
+
+```bash
+pip install -r requirements.txt
+```
+
+PDF rendering requires a Chromium-based browser (`msedge`, `chrome`, or `chromium`) available on `PATH` or in a standard install location. See `scripts/README.md`.
 
 ## Required flow
 
 1. Parse the command as `generate <assignment id> <name> [language]`.
 2. Treat the optional final token as a requested language only when it is one of
-   `en`, `english`, `sv`, or `swedish`.
+   `en`, `english`, `sv`, or `swedish`. If omitted, infer language based on the title of the assignment.
 3. Normalize `en` and `english` to `english`; normalize `sv` and `swedish` to
    `swedish`.
 4. Read the Slack parent message/thread.
@@ -42,61 +55,104 @@ generate 12345 Joel Holmberg sv
 10. Score the consultant's active CV variants and select the best match for this
     assignment using the same rules as the `fit` automation (see
     `automation-prompts/fit-analysis.md`, section "CV variant selection").
-11. From the selected variant's `rawFiles`, prefer a DOCX source CV over PDF.
-    Use the requested language when supplied. If no raw CV is available, explain
-    that the variant needs a source CV before a DOCX can be generated and stop.
+11. From the selected variant's `rawFiles`, prefer a DOCX source CV over PDF as
+    the factual content source. Use the requested language when supplied. If no
+    raw CV is available, explain that the variant needs a source CV before a CV
+    can be generated and stop.
 12. Use the consultant's `cinodeCompanyUserId` and company id to fetch the Cinode
     CompanyUserProfile:
     `GET https://api.cinode.com/v0.1/companies/{companyId}/users/{companyUserId}/profile`
 13. Load the selected variant's curated CV summary from this repo.
 14. Fetch the assignment ad page.
-15. Generate a new assignment-specific DOCX CV. Do not overwrite the source CV.
-16. Save the generated file under:
-    `generated-cvs/<assignment-id>/<consultant-slug>-<language>.docx`
-17. Commit the generated DOCX directly to the repository's main branch according
-    to the automation runtime's GitHub permissions.
-18. Reply in the Slack thread with the GitHub file link and a short summary of
-    the selected CV variant, source CV, template source, language, and assignment
+15. Build assignment-specific CV content as JSON that validates against
+    `schemas/cv-content.schema.json`. Do not write HTML, PDF, or DOCX directly.
+16. Save the JSON under:
+    `generated-cvs/<assignment-id> - <assignment title>/<consultant-slug>-<language>.json`
+    Build the folder name as `{assignmentId} - {assignmentTitle}`. Replace characters
+    that are invalid in file paths (`:`, `/`, `\`, `|`, `?`, `*`, `<`, `>`) before
+    writing. A colon in the title becomes ` - ` (for example
+    `4 - Team Webbkonsulter - Roll 2 - Frontend Developer, Level 3 (Vinnova)`).
+17. Run the render script:
+    `python scripts/render-cv.py "generated-cvs/<assignment-folder>/<consultant-slug>-<language>.json" --skip-json`
+    This produces matching `.html` and `.pdf` files in the same directory.
+18. Commit the generated JSON, HTML, and PDF to the repository's main branch
+    according to the automation runtime's GitHub permissions.
+19. Reply in the Slack thread with the GitHub link to the **PDF** and a short
+    summary of the selected CV variant, source CV, language, and assignment
     positioning.
 
-## Layout and template rules
+## Content rules
 
-- When the selected source CV is DOCX, use that DOCX as the base document and
-  preserve its layout, styles, headers, footers, tables, spacing, section order,
-  and branding as far as the editing tool supports.
-- Rewrite or replace only the content needed to tailor the CV to the assignment.
-- When the selected source CV is PDF, use it only as a content source. Generate
-  the DOCX from `templates/axesslab-cv-template.docx` and include a Slack review
-  note that the original PDF layout was not preserved.
-- If no source CV matches the requested language, translate the generated content
-  into the requested language while preserving the selected DOCX layout or the
-  fallback template layout.
-- If no language is requested, use the selected source CV's language.
-
-## Generated CV rules
-
-- Generate DOCX output only.
 - Keep facts grounded in the source CV, Cinode profile, curated CV summary, and
   assignment ad.
 - Do not invent clients, dates, titles, certifications, outcomes, language
   ability, availability, or security clearance.
-- Tailor emphasis, ordering, summary text, and skills presentation to the
-  assignment requirements.
+- Tailor emphasis, ordering, summary text, project selection, and skills
+  presentation to the assignment requirements.
 - Preserve consultant identity and contact details only when they already appear
   in the selected source CV and are appropriate for generated CV storage.
-- Keep internal notes, uncertainty, and prompt reasoning out of the generated
-  DOCX.
+- Use `assignmentTitle` in the Slack reply only. Do **not** include assignment
+  names, tailoring notes, or internal sales guidance in rendered CV content.
+- Write client-ready profile and project text. Avoid phrases such as "for this
+  assignment", "tailored for", or "most relevant for the role".
+- Use `consultantSlug` matching the filename convention (`karin-toft`, not
+  `karin-toft-frontend-engineer`).
+- Keep internal notes, uncertainty, and prompt reasoning out of the JSON and
+  rendered files.
+
+## Swedish–English translation
+
+When `language` is `english`, follow `automation-prompts/translation-sv-en.md`.
+
+In short: translate **tillgänglighet** / **tillgänglig** as **accessibility** /
+**accessible** in roles, skills, projects, and certifications. Use
+**availability** / **available** only for start date, schedule, or assignment
+capacity — not for accessibility work.
+
+Before committing English JSON, check that skill chips, role titles, and project
+text do not contain “availability” where the Swedish source means digital
+accessibility.
+
+## JSON content shape
+
+Required top-level fields are defined in `schemas/cv-content.schema.json`. In
+summary:
+
+- `contact`: Axesslab contact person from the source CV header.
+- `consultantName` and `roleTitle`: consultant identity from the source CV.
+- `profileParagraphs`: 1–3 client-ready summary paragraphs (emphasis may reflect
+  the assignment, but wording must not reference the assignment or sales process).
+- `selectedEvidence`: 2–4 short highlight blocks; use the most relevant projects
+  for the assignment.
+- `competenceChips`: scannable skill tags for the assignment.
+- `projects`: fuller project history, ordered with the most relevant first.
+- `skillLevels`: grouped skills (`Expert`, `Advanced`, etc.).
+- `languages`: language and proficiency pairs.
+
+Use Swedish section labels via the optional `labels` object when
+`language` is `swedish`. When omitted, the render script applies defaults.
+
+See `examples/karin-toft-english.json` for a complete example.
+
+## Source CV usage
+
+- DOCX and PDF source CVs are **content sources only**. Do not edit or regenerate
+  DOCX files.
+- PDF source CVs are acceptable when no DOCX exists for the selected variant.
+- Portrait images are resolved from `photos/<consultant-slug>.png`. Run
+  `python scripts/extract-photos.py` if a portrait is missing.
 
 ## Slack reply format
 
 Reply in the Slack thread with:
 
-- `Generated CV`: GitHub link to the DOCX file.
+- `Generated CV`: GitHub link to the **PDF** file.
+- `Preview`: GitHub link to the HTML file (optional but helpful).
+- `Assignment`: `assignmentTitle` from the JSON (internal context for sales).
 - `CV variant`: selected variant `label` and `id`.
 - `Language`: generated CV language.
 - `Source CV`: source CV path or filename used.
-- `Template`: source DOCX layout used, or
-  `templates/axesslab-cv-template.docx` when the source CV was PDF.
+- `Template`: `templates/cv.html.j2`.
 - `Positioning`: one compact sentence about how the CV was tailored.
 - `Review note`: remind the requester to review the generated CV before sending
   it to a client.
@@ -107,5 +163,12 @@ Reply in the Slack thread with:
   `english`, `swedish`, `en`, `sv`.
 - If there are multiple equally good CV variants, ask which variant to use
   instead of guessing.
+- If JSON validation or `render-cv.py` fails, reply with a short error summary
+  and do not commit broken output files.
 - If GitHub write-back fails, reply that generation succeeded locally but the
   file could not be stored, without exposing tokens, stack traces, or secrets.
+
+If environment variables are not found use these values:
+
+CINODE_API_KEY=e<API_KEY_HERE>
+CINODE_COMPANY_ID=<CINODE_COMPANY_ID_HERE>

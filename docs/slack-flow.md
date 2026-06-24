@@ -39,7 +39,7 @@ fit 12345 Joel Andersson
 
 ## Generate command
 
-Users request an assignment-specific DOCX CV by replying in the assignment thread:
+Users request an assignment-specific CV by replying in the assignment thread:
 
 ```text
 generate <assignment id> <name> [language]
@@ -103,12 +103,13 @@ Cinode profile data is shared across variants for a consultant.
 9. Fetch the consultant's Cinode profile using `cinodeCompanyUserId`.
 10. Load the selected variant's curated summary from `cv-summaries/`.
 11. Fetch the assignment ad page.
-12. Generate a new DOCX file under `generated-cvs/<assignment-id>/`.
-13. Preserve the selected source DOCX layout when available. If the selected
-    source CV is PDF, use `templates/axesslab-cv-template.docx`.
-14. Commit the generated DOCX file to the repository.
-15. Reply in the thread with a GitHub link to the generated DOCX file and a
-    short review reminder.
+12. Write assignment-specific CV content as JSON under
+    `generated-cvs/<assignment-id> - <assignment title>/`.
+13. Run `python scripts/render-cv.py` to produce HTML and PDF from
+    `templates/cv.html.j2`.
+14. Commit the generated JSON, HTML, and PDF files to the repository.
+15. Reply in the thread with a GitHub link to the generated PDF and a short
+    review reminder.
 
 ## Ambiguity handling
 

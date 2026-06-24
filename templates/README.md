@@ -1,12 +1,20 @@
 # CV templates
 
-`axesslab-cv-template.docx` is a sanitized fallback DOCX template derived from
-the current Cinode Word exports in `cvs/`.
+## HTML/PDF template (primary)
 
-Use this template only when the selected source CV is PDF or when no matching
-source DOCX layout is available. When a matching source DOCX exists, the
-`generate` automation should use that source DOCX directly so the consultant's
-existing CV layout is preserved.
+`cv.html.j2` is the Jinja2 template used by `scripts/render-cv.py` to produce
+assignment-specific HTML and PDF CVs.
 
-The fallback template keeps the exported Word package, styles, and layout
-structure, but replaces consultant-specific text with placeholders.
+- Layout, styles, logo, and portrait placement are defined in the template.
+- Assignment-specific text comes from JSON that validates against
+  `schemas/cv-content.schema.json`.
+- Shared banner logo: `assets/axesslab-logo.png`
+- Consultant portraits: `photos/<consultant-slug>.png`
+
+See `scripts/README.md` and `automation-prompts/cv-generation.md`.
+
+## Legacy DOCX template
+
+`axesslab-cv-template.docx` is a legacy fallback DOCX derived from Cinode Word
+exports. It is **not** used by the current `generate` automation. Source DOCX
+files under `cvs/` remain valuable as factual content sources.

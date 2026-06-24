@@ -10,3 +10,5 @@ secrets/
 *.pem
 *.p12
 *.log
+__pycache__/
+*.pyc

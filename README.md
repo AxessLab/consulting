@@ -1,14 +1,14 @@
 # Consulting automation data
 
 This private repository is the source of truth for consultant metadata, source
-CV files, generated CV drafts, shared CV templates, and manually curated
-CV/application summaries used by Cursor Automations that analyze consultant fit
-for IT assignments posted in Slack.
+CV files, generated CV drafts, HTML/PDF templates, portrait images, and manually
+curated CV/application summaries used by Cursor Automations that analyze
+consultant fit for IT assignments posted in Slack.
 
 The repository is intentionally simple and human-editable. It contains
-consultant metadata, Markdown guidance, source CV files, generated DOCX drafts,
-and template DOCX files, with no application code, build step, runtime services,
-or stored secrets.
+consultant metadata, Markdown guidance, source CV files, generated JSON/HTML/PDF
+drafts, rendering scripts, and template files. Configure API tokens and Slack
+credentials in Cursor Automation secrets, not in this repo.
 
 ## Consultant metadata
 
@@ -44,19 +44,23 @@ Each variant should have its own curated summary file.
 The `fit` and `generate` automations score active variants against the
 assignment and use the best-matching one.
 
-Prefer DOCX source CVs in `rawFiles` because the generation automation can
-preserve the existing layout, styles, headers, footers, tables, section order,
-and branding. PDF source CVs are supported as content sources, but generated
-DOCX files should use the fallback template at
-`templates/axesslab-cv-template.docx`.
+Source DOCX and PDF files under `cvs/` are **content sources** for facts and
+wording. Assignment-specific CVs are rendered as HTML and PDF via
+`scripts/render-cv.py` and `templates/cv.html.j2`.
 
-Generated assignment-specific DOCX files should be stored under:
+Generated assignment-specific files should be stored under:
 
-`generated-cvs/<assignment-id>/<consultant-slug>-<language>.docx`
+```text
+generated-cvs/<assignment-id> - <assignment title>/<consultant-slug>-<language>.json
+generated-cvs/<assignment-id> - <assignment title>/<consultant-slug>-<language>.html
+generated-cvs/<assignment-id> - <assignment title>/<consultant-slug>-<language>.pdf
+```
 
-The generation automation may commit generated DOCX files directly to the main
-branch when configured with appropriate GitHub permissions. The Slack reply
-should link to the generated file in GitHub.
+The generation automation commits JSON, HTML, and PDF to the repository. The
+Slack reply should link to the PDF in GitHub.
+
+Portrait images for generated CVs live under `photos/`. Refresh them with
+`python scripts/extract-photos.py`. See `scripts/README.md` for setup.
 
 ## CV summaries
 
@@ -128,10 +132,11 @@ id, resolve the assignment ad link from the parent message, fuzzy match the
 provided name against `consultants.yaml`, select the best-matching active CV
 variant for the assignment, fetch the consultant profile from Cinode using the
 consultant's `cinodeCompanyUserId`, load the selected variant's curated summary
-and raw CV file from this repo, fetch the assignment ad page, generate an
-assignment-specific DOCX CV, store it under `generated-cvs/`, commit it to the
+and raw CV file from this repo, fetch the assignment ad page, produce
+assignment-specific JSON content, render HTML and PDF with
+`scripts/render-cv.py`, store outputs under `generated-cvs/`, commit them to the
 repository, and post a Slack thread reply with a GitHub link to the generated
-file.
+PDF.
 
 Prompt guidance for this automation is in
 `automation-prompts/cv-generation.md`.

@@ -2,24 +2,24 @@
 
 ## Cursor Cloud specific instructions
 
-This repository is **data/content-only**. It holds consultant metadata, curated
-text summaries, source CV files, generated CV drafts, and shared CV templates
-intended for AI consumption, not a software application.
+This repository holds consultant metadata, curated text summaries, source CV
+files, generated CV drafts, HTML/PDF templates, and small Python scripts used by
+Cursor Automations.
 
 Practical implications for agents working here:
 
-- There is **no application to run**, **no build step**, **no test suite**, and
-  **no lint configuration**. There are no services, ports, databases, or
-  external integrations in this repo.
-- There are **no dependencies to install**. The environment update script is a
-  no-op; do not add package-install commands unless real code/dependencies are
-  introduced.
-- Most content is plain text/Markdown. Source CVs may be PDF or DOCX files under
-  `cvs/`, generated assignment-specific CVs may be DOCX files under
-  `generated-cvs/`, and shared CV templates may be DOCX files under
-  `templates/`. For documentation and metadata changes, "testing" means
-  reviewing the content for correctness. For DOCX template changes, also verify
-  that the file is a valid DOCX package.
-- If application code is later added, update this file and the environment update
-  script accordingly (e.g. add the relevant package manager install command and
-  document how to run/lint/test the new services).
+- **CV generation** uses a two-step pipeline: automations produce structured JSON;
+  `scripts/render-cv.py` renders HTML and PDF from `templates/cv.html.j2`.
+- Install dependencies before rendering:
+  `pip install -r requirements.txt`
+- PDF rendering needs a Chromium-based browser (Edge, Chrome, or Chromium).
+- Do **not** generate or edit DOCX files for assignment-specific CVs. Source
+  DOCX files under `cvs/` are factual content sources only.
+- Portrait images live under `photos/`. Refresh with `python scripts/extract-photos.py`.
+- Generated assignment CVs are stored under
+  `generated-cvs/<assignment-id> - <assignment title>/` as JSON, HTML, and PDF.
+- There is no application server, build step, or test suite. Validate changes by
+  running `python scripts/render-cv.py` on example or generated JSON and
+  reviewing the HTML/PDF output.
+- If scripts or dependencies change, update this file and automation prompt
+  guidance in `automation-prompts/cv-generation.md`.

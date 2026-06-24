@@ -49,26 +49,26 @@ Avoid:
 Source CV files may be stored under `cvs/` when they have an operational purpose
 for assignment-specific CV generation.
 
-Shared CV template files may be stored under `templates/`. Templates should avoid
-personal data and should exist only to preserve approved layout, styles, section
-order, and branding for generated DOCX files.
+Shared CV template files may be stored under `templates/`. The primary template
+is `cv.html.j2` for HTML/PDF rendering. Templates should avoid unnecessary
+personal data beyond what generated CVs require.
 
 Generated CV files may be stored under `generated-cvs/` when created for a
 specific assignment. They should:
 
-- be DOCX files generated from a selected source CV, Cinode profile data,
-  curated CV summary, assignment ad, and, when needed, a shared DOCX template
-- preserve the selected source DOCX layout when possible
+- be JSON, HTML, and PDF files produced from curated content, Cinode profile
+  data, source CV facts, and the assignment ad via `scripts/render-cv.py`
+- use portrait images from `photos/` where appropriate
 - contain only factual, reviewed, and assignment-relevant personal data
 - avoid internal notes, uncertainty, prompt reasoning, API responses, or secrets
 - be reviewed by a human before being sent to a client
 - be replaced by a newer generated file rather than edited manually in place when
   the automation is rerun
 
-Generated CV Slack replies should link to repository files intended for
-authorized reviewers. Do not publish generated CVs through unauthenticated public
-file shares unless that has been explicitly approved for the consultant and
-assignment.
+Generated CV Slack replies should link to the PDF (and optionally HTML) in the
+repository for authorized reviewers. Do not publish generated CVs through
+unauthenticated public file shares unless that has been explicitly approved for
+the consultant and assignment.
 
 ## Slack output rules
 
@@ -77,8 +77,8 @@ details. Detailed fit replies should include only information needed to explain
 which CV variant was used, fit, gaps, CV updates, suggested application angle,
 and confidence. CV generation replies should include the generated file link,
 selected language, selected CV variant, source CV, template source, short
-positioning summary, and a review reminder. Do not paste full raw CV content
-into Slack.
+positioning summary, and a review reminder. Link to the generated PDF in Slack.
+Do not paste full raw CV content into Slack.
 
 ## Ambiguous data
 

@@ -1,0 +1,89 @@
+{
+  "consultantSlug": "karin-toft",
+  "language": "english",
+  "assignmentId": "4",
+  "assignmentTitle": "Team Webbkonsulter: Roll 2 - Frontend Developer, Level 3 (Vinnova)",
+  "variantId": "frontend-engineer",
+  "variantLabel": "Frontend Engineer",
+  "sourceCv": "cvs/Axessibility_Lab_AB_Karin_Toft_Frontend_Engineer.docx",
+  "contact": {
+    "name": "Marisa Törnros",
+    "email": "marisa@axesslab.com",
+    "phone": "+46 76 571 3150"
+  },
+  "consultantName": "Karin Toft",
+  "roleTitle": "Frontend Engineer & Accessibility Specialist (CPWA)",
+  "profileParagraphs": [
+    "Karin is a senior frontend developer with more than ten years of experience building websites, web applications and reusable frontend components. She has deep expertise in TypeScript, React, accessible component implementation, responsive interfaces, CMS-based delivery and close collaboration with designers, backend developers and stakeholders in complex organisations.",
+    "She combines hands-on frontend development with deep accessibility expertise. Her experience includes large product codebases at Zalando, public-sector e-services at CSN, and high-accessibility React delivery for ViewMe."
+  ],
+  "selectedEvidence": [
+    {
+      "title": "Frontend developer and accessibility specialist · Zalando",
+      "subtitle": "2024 – 2025 · Berlin",
+      "summary": "Worked in Zalando's accessibility-focused team across the e-commerce purchase journey, including product pages, cart and checkout. Improved screen reader behaviour, form accessibility and interaction order in a complex product organisation."
+    },
+    {
+      "title": "Frontend developer and accessibility specialist · CSN",
+      "subtitle": "2022 – 2023",
+      "summary": "Reviewed accessibility in a Swedish authority's e-services, website and intranet, then developed e-services and design systems with accessibility champion programs and training."
+    }
+  ],
+  "competenceChips": [
+    "TypeScript",
+    "React.js",
+    "Angular",
+    "WCAG 2.1/2.2 AA",
+    "Design systems",
+    "Storybook",
+    "WordPress",
+    "REST APIs",
+    "CI/CD",
+    "Scrum"
+  ],
+  "projects": [
+    {
+      "title": "Frontend developer and accessibility specialist · Zalando",
+      "subtitle": "Jan 2024 – Dec 2025 · Berlin",
+      "summary": "Karin was part of a team focused on accessibility at Zalando. The assignment required understanding the complete purchase journey, improving checkout flow, forms and interactions across product teams.",
+      "skills": ["TypeScript", "React.js", "WCAG", "Design systems"]
+    },
+    {
+      "title": "React.js developer and accessibility specialist · ViewMe",
+      "subtitle": "Jul 2023 – Jul 2024",
+      "summary": "High-accessibility personal-assistance app used 24/7 in Sweden. Delivered accessible React components with UX designers in Scrum.",
+      "skills": ["TypeScript", "React.js", "WCAG", "Scrum"]
+    },
+    {
+      "title": "Frontend developer WordPress · FAST2 (SWG)",
+      "subtitle": "May 2014 – Oct 2021 · Gothenburg",
+      "summary": "WordPress and Scala-widget based website solutions for major Swedish housing companies with accessibility focus.",
+      "skills": ["WordPress", "WCAG", "React.js", "PHP", "Scala"]
+    }
+  ],
+  "skillLevels": [
+    {
+      "level": "Expert",
+      "skills": "Frontend Developer, Accessibility Specialist, accessibility review of e-services and accessible forms."
+    },
+    {
+      "level": "Advanced",
+      "skills": "TypeScript, React.js, WCAG, accessible code, HTML/CSS, responsive web, Git, documentation, EN 301 549."
+    },
+    {
+      "level": "High competence",
+      "skills": "Angular, design systems, REST, CI/CD, Jenkins, CircleCI, GitLab, Bitbucket, Jira, Scrum, Storybook, WordPress."
+    }
+  ],
+  "certifications": "CPACC - Certified Professional in Accessibility Core Competencies, 2023. WAS - IAAP Web Accessibility Specialist, 2024. CPWA - Certified Professional in Web Accessibility.",
+  "languages": [
+    {
+      "language": "Swedish",
+      "proficiency": "native or bilingual proficiency"
+    },
+    {
+      "language": "English",
+      "proficiency": "full professional proficiency"
+    }
+  ]
+}
