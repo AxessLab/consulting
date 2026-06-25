@@ -71,6 +71,10 @@ jobs:
                 pull_number,
                 draft: false,
               });
+              core.info(
+                'Draft cleared; merge will run when ready_for_review fires.'
+              );
+              return;
             }
 
             await github.rest.pulls.merge({
