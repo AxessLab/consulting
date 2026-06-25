@@ -132,6 +132,9 @@ consultants:
       - wordpress
     locations:
       - stockholm
+      - Borås
+      - Varberg
+      - Kungsbacka
     cvs:
       - id: accessibility-engineer
         label: Accessibility Engineer
@@ -221,6 +224,7 @@ consultants:
       - training
     locations:
       - stockholm
+      - germany
     cvs:
       - id: accessibility-engineer
         label: Accessibility Engineer
@@ -390,6 +394,7 @@ consultants:
       - user-research
     locations:
       - stockholm
+      - gotland
     cvs:
       - id: accessibility-ux-designer
         label: Tillgänglighetsspecialist och UX-designer
@@ -447,8 +452,9 @@ consultants:
       - frontend
       - accessibility
     locations:
-      - stockholm
       - gothenburg
+      - Varberg
+      - Kungsbacka
     cvs:
       - id: frontend-engineer
         label: Frontend Engineer
