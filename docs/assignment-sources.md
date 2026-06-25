@@ -1,15 +1,17 @@
 # Assignment sources
 
-## Listing (Slack)
+## Listing (Slack) — hybrid workflow
 
 ```bash
-python scripts/list-assignments.py -o listing-output.json
+python scripts/fetch-assignments.py -o listing-candidates.json
+# agent curates → curated-listing.json
+python scripts/finalize-listing.py listing-candidates.json curated-listing.json -o listing-output.json
 # post slack_main + slack_debug
-python scripts/list-assignments.py --commit-memory listing-output.json
+python scripts/finalize-listing.py --commit-memory listing-output.json
 ```
 
-Scans all registered platforms, applies three-tier filtering/matching, and
-outputs Slack-ready text. Dedupe memory: `assignment-listing-seen.json`.
+Python fetches and dedupes; the automation agent applies filtering rules and
+writes `curated-listing.json`. Dedupe memory: `assignment-listing-seen.json`.
 
 ## Registered platforms
 
@@ -20,21 +22,21 @@ Defined in `scripts/assignment_platforms.py` → `PLATFORM_SCANNERS`:
 | `allakonsultuppdrag.se` | None | JSON API only |
 | `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
 
-Add new platforms by implementing `scan_<name>() -> (list[AssignmentRecord], PlatformScanResult)`
-and registering it in `PLATFORM_SCANNERS`.
+Add new platforms by implementing `scan_<name>()` and registering it in
+`PLATFORM_SCANNERS`.
 
 ## Matching
 
-`scripts/assignment_matching.py` loads active consultants from `consultants.yaml`
-(`mainRoles`, `locations`, active `cvs[].roles`) and applies role/location rules.
+`consultants.yaml` is the consultant source of truth. `assignment_matching.py`
+provides heuristic suggestions only; the automation prompt defines final
+filtering and matching rules.
 
-## Raw fetch (debug)
+## Raw / debug
 
 ```bash
 python scripts/scan-assignments.py --debug-summary
+python scripts/list-assignments.py --deterministic -o listing-output.json
 ```
-
-Unfiltered fetch only — not for Slack posting.
 
 ## Secrets
 

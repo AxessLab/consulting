@@ -5,62 +5,223 @@ Use this guidance when producing Slack assignment lists for consultant matching.
 ## Goal
 
 Post new IT consulting assignments from **all configured platforms** in three
-sections, with a debug thread reply. Filtering and matching are deterministic —
-do not re-implement them in the automation.
+sections, with a debug thread reply.
 
-## Run the listing script
+**Python handles mechanical work** (platform fetch, dedupe, memory, Slack line
+formatting). **You handle judgment** (role/location matching, false-positive
+removal, missed matches, validation). Iterate until the curated list is good
+before posting.
 
-1. From the repo root, run:
+## Run flow
 
-```bash
-python scripts/list-assignments.py -o listing-output.json
-```
-
-By default this scans every platform registered in
-`scripts/assignment_platforms.py` (currently `allakonsultuppdrag.se` and
-`verama.com`). Override with `--platform` if needed.
-
-2. Read `listing-output.json`. It contains:
-   - `slack_main` — post as the channel message
-   - `slack_debug` — post as a thread reply on that message (includes scanned
-     platforms summary)
-   - `memory_update` — do not edit manually
-
-3. After both Slack messages are sent, persist dedupe memory:
+### 1. Fetch candidates
 
 ```bash
-python scripts/list-assignments.py --commit-memory listing-output.json
+python scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-4. Persistent dedupe state lives in `assignment-listing-seen.json` (per-platform
-   `seen_ids` plus unified `seen_keys`). Do not commit this file.
+This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+`assignment-listing-seen.json`, and writes:
 
-Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama. See
-`docs/assignment-sources.md`.
+- `assignments` — all currently visible unique records (for lookup)
+- `new_dedupe_keys` — ids not posted before
+- `consultants` — active profiles from `consultants.yaml`
+- `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
+  wrong, do not post verbatim
+- `memory_update` — draft memory (do not commit until after Slack post)
+- `platform_summary` — for the debug thread
 
-## Slack posting rules
+Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
 
-- Post **exactly once** per run: one main message, then one debug thread reply.
-- Use `slack_main` and `slack_debug` verbatim unless a field is clearly broken.
-- Do not add consultant CV weaknesses, availability, or internal notes.
+### 2. Curate matches (your main job)
+
+Read `listing-candidates.json`. For each **new** assignment (`new_dedupe_keys`):
+
+1. Apply the filtering and matching rules below.
+2. Use `suggestions` as a starting point — accept, adjust, or reject each one.
+3. Add matches the script missed.
+4. Run a final sanity check (see Pre-Slack validation).
+
+If patterns are systematically wrong, you may edit `scripts/assignment_matching.py`
+and re-fetch with suggestions, or fix the curated list directly. Prefer fixing
+the curated list for one-off errors; edit the script when the same mistake repeats.
+
+Write `curated-listing.json`:
+
+```json
+{
+  "reported": [
+    {
+      "dedupe_key": "allakonsultuppdrag.se:6236",
+      "section": "other",
+      "consultants": ["Joel Holmberg"]
+    },
+    {
+      "dedupe_key": "verama.com:81387",
+      "section": "other_a11y_mentions",
+      "consultants": ["Soma Azad"]
+    }
+  ],
+  "debug_rejects": [
+    {
+      "listing_id": "6830",
+      "platform": "allakonsultuppdrag.se",
+      "title": "GIS Consultant - Project Manager",
+      "reason": "location",
+      "would_match": ["Erik Gustafsson Spagnoli", "Karin Skog"]
+    }
+  ],
+  "review_notes": "Optional short notes for the debug thread."
+}
+```
+
+`section` must be one of:
+
+- `accessibility_specialist`
+- `other_a11y_mentions`
+- `other`
+
+Use canonical consultant names from `consultants.yaml` (`canonicalName`).
+
+### 3. Finalize Slack output
+
+```bash
+python scripts/finalize-listing.py listing-candidates.json curated-listing.json -o listing-output.json
+```
+
+Review `slack_main` in `listing-output.json`. If it looks wrong, fix
+`curated-listing.json` and re-run finalize — do not post until satisfied.
+
+### 4. Post Slack
+
+- Post `slack_main` as the channel message.
+- Reply in that thread with `slack_debug`.
+- Do not add CV weaknesses, availability, or internal notes.
+
+### 5. Commit memory (after Slack)
+
+```bash
+python scripts/finalize-listing.py --commit-memory listing-output.json
+```
+
+Persistent dedupe: `assignment-listing-seen.json` (per-platform `seen_ids` plus
+unified `seen_keys`). Do not commit this file.
+
+## Filtering rules
+
+Apply to **new** assignments only.
+
+1. Exclude assignments whose `lastApplicationDate` is before the scan date
+   (already flagged in `expired` from fetch).
+2. Match role against consultants in `consultants.yaml` (`mainRoles`, active
+   `cvs[].roles`, `locations`). Use `consultants` in the fetch output as a
+   shortcut.
+3. Location must be remote or Stockholm/Solna/near-Stockholm, except
+   accessibility specialist roles (location ignored) and front-end roles (also
+   accept Gothenburg).
+4. Treat `remote` / `distans` / `fjärrarbete` as remote only when present in
+   API `workMode` or `location`. Do not let incidental description text make a
+   hybrid non-Stockholm role pass.
+5. `hybrid` alone is not remote. Hybrid is acceptable only if `location` is
+   Stockholm/Solna/near-Stockholm.
+6. Near-Stockholm includes: Stockholm, Solna, Sundbyberg, Kista, Bromma,
+   Sollentuna, Danderyd, Täby, Järfälla, Nacka, Huddinge, Lidingö, Älvsjö,
+   Årsta, Stockholms län, Botkyrka, Upplands Väsby, Södertälje, Haninge,
+   Tyresö, Vällingby, Farsta.
+7. Do not do deep skill scoring. Use basic role/framework matching only.
+8. Roles should be IT related. Do not match project management roles for
+   non-IT projects.
+
+## Role matching
+
+### Accessibility specialist (section 1)
+
+- Match when title or explicit skills indicate accessibility specialist/reviewer
+  work.
+- Strong terms: `tillgänglighetsgranskare`, `tillgänglighetsspecialist`,
+  `accessibility specialist`, `accessibility consultant`, `WCAG specialist`,
+  `document accessibility`, `dokumenttillgänglighet`,
+  `webbtillgänglighetsspecialist`.
+- Do **not** classify as accessibility specialist just because a generic
+  application paragraph says “information kring tillgänglighet” or because WCAG
+  is one requirement inside a non-accessibility role.
+- Do not classify security reviewers, frontend/backend developers, DevOps, or
+  generic web consultant roles as accessibility specialists just because WCAG
+  appears as one skill.
+- Team/multi-person a11y ads: add **Inhouse accessibility team** when the ad
+  clearly needs more than one accessibility person.
+
+### Other roles (sections 2 and 3)
+
+- **React/Next/frontend** — React, Next.js, frontend where React/Next is primary.
+- **Angular / WordPress** — primary framework roles.
+- **Java backend** — Java, Spring, backend/systemutvecklare where Java is primary.
+- **Full stack** — fullstack with Java and React/Angular. Avoid .NET.
+- **UX/UI/product design** — UX, UI, product designer, user experience,
+  interaction design, interaktionsdesign, tjänstedesign.
+- **IT PM/Scrum/coordinator** — project manager, projektledare, scrum master,
+  projektkoordinator, agile coach, leveransansvarig — only when clearly
+  IT/digital/software/system/web/app/platform related.
+
+### False positives to avoid
+
+- Do not match Python/.NET/cloud/mobile/embedded/generic engineering to Java or
+  React consultants because React/Java appear secondarily.
+- Do not match UI artist/game art as UX unless title/summary clearly indicates
+  UX/UI/product design.
+- Do not match employment ads — consulting assignments only.
+- Do not match scrum-master consultants to generic PM/architect roles unless the
+  title explicitly asks for scrum master.
+- Remote anywhere does **not** override role mismatch (e.g. Barcelona data
+  architect is not a match for Stockholm PM consultants).
+
+### Section 2 vs 3
+
+- Section 2: independently matches a target consultant role **and** mentions
+  accessibility terms in title/description/skills.
+- Section 3: matches a target role with no accessibility mention.
+
+## Project management guardrails
+
+- PM/Scrum roles need a PM-like title plus IT/digital/software/platform/web/app
+  context.
+- Exclude PM for social services, rail/transport, automotive, marketing/sales,
+  organizational change, field support unless explicitly IT/software/digital.
+- Do not match “Technical Project Manager” unless clearly IT/software/digital.
+
+## Pre-Slack validation
+
+Before finalize/post:
+
+- No section-1 item is security/dev/DevOps unless the title is accessibility
+  specialist/reviewer.
+- No PM item is non-IT social services, rail, automotive, marketing, or generic
+  technical/product work.
+- No developer item is FPGA/embedded/.NET/Python/PHP/Vue/cloud/mobile/data unless
+  the primary stack is still clearly Java/React/Angular/WordPress.
+- Debug thread should prioritize close non-matches, especially role matches
+  rejected by location.
+
+If the first pass looks suspicious, refine `curated-listing.json` and re-finalize.
+Post exactly once: one main message and one debug reply.
 
 ## Main message format
 
-Three sections (already formatted in `slack_main`):
+Three sections (built by `finalize-listing.py`):
 
 1. Accessibility specialist related roles
 2. Other roles mentioning accessibility related terms
 3. Other roles where accessibility is not mentioned
 
-Each assignment line is pipe-separated. Non-allakonsult assignments use a
-`v`-prefixed id for Verama and may include `[platform]` after the id.
+Pipe-separated lines. Verama ids use `v` prefix; other platforms may show
+`[platform]` after the id.
 
 ```text
 6236 | Software Developer Java | Stockholm | not stated (probably full time) | Client: not stated | Broker: A Society | Link: https://... | Posted: 2026-06-01 | Match: Joel Holmberg
 v81387 [verama.com] | Experience UX & UI Designer | Stockholm (SE) | ... | Match: Soma Azad
 ```
 
-If a section has no matches, the script outputs `No new matches.`
+If a section has no matches, it shows `No new matches.`
 
 ## Follow-up commands
 
@@ -70,23 +231,25 @@ fit v81387 Soma
 generate v81387 Soma english
 ```
 
-Listed ids are all digits (allakonsultuppdrag) or `v` + digits (Verama). See
-`docs/slack-flow.md`.
-
 ## Source of truth
 
 | Concern | Location |
 |---------|----------|
 | Platform scanners | `scripts/assignment_platforms.py` |
-| Role/location filters + matching | `scripts/assignment_matching.py` |
+| Fetch + dedupe | `scripts/fetch-assignments.py` |
+| Heuristic hints (not final) | `scripts/assignment_matching.py` |
+| Slack formatting + memory | `scripts/finalize-listing.py` |
 | Consultant names, roles, locations | `consultants.yaml` |
-| Listing orchestration | `scripts/list-assignments.py` |
 
 When adding a new platform, register a scanner in `assignment_platforms.py`.
-Matching rules apply automatically once assignments use the normalized
-`AssignmentRecord` shape.
 
-## Raw fetch only
+## Debug / script-only mode
 
-`scripts/scan-assignments.py` fetches unfiltered assignments from configured
-platforms. Use it for debugging ingestion, not for Slack posting.
+```bash
+python scripts/list-assignments.py --deterministic -o listing-output.json
+```
+
+Heuristic matches only — useful for tuning `assignment_matching.py`, not for
+production Slack posting.
+
+`scripts/scan-assignments.py` — raw unfiltered fetch for ingestion debugging.

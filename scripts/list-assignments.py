@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Scan all configured platforms, filter, and format the three-tier Slack listing."""
+"""Deterministic listing (debug only). Prefer fetch-assignments.py + AI curation."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import sys
-from datetime import UTC, date, datetime
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -21,71 +21,8 @@ from assignment_matching import (
     load_consultant_profiles,
     process_assignments,
 )
-from assignment_platforms import (
-    DEFAULT_PLATFORMS,
-    AssignmentRecord,
-    PlatformScanResult,
-    scan_platforms,
-)
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_MEMORY_PATH = REPO_ROOT / "assignment-listing-seen.json"
-
-
-def load_memory(path: Path) -> tuple[set[str], dict[str, Any]]:
-    if not path.is_file() or path.stat().st_size == 0:
-        return set(), {}
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return set(), {}
-
-    seen_keys: set[str] = set()
-    if isinstance(data.get("seen_keys"), list):
-        seen_keys.update(str(item) for item in data["seen_keys"])
-
-    platforms = data.get("platforms")
-    if isinstance(platforms, dict):
-        for platform_id, state in platforms.items():
-            if isinstance(state, dict) and isinstance(state.get("seen_ids"), list):
-                for source_id in state["seen_ids"]:
-                    seen_keys.add(f"{platform_id}:{source_id}")
-
-    legacy_seen = data.get("seen_ids")
-    if isinstance(legacy_seen, list):
-        for source_id in legacy_seen:
-            seen_keys.add(f"allakonsultuppdrag.se:{source_id}")
-
-    return seen_keys, data
-
-
-def build_memory_payload(
-    *,
-    assignments: list[AssignmentRecord],
-    platform_results: list[PlatformScanResult],
-    scan_date: date,
-) -> dict[str, Any]:
-    now = datetime.now(UTC).isoformat()
-    platforms: dict[str, Any] = {}
-    for result in platform_results:
-        platform_assignments = [a for a in assignments if a.platform == result.platform]
-        platforms[result.platform] = {
-            "status": result.status,
-            "total_visible": result.count,
-            "seen_ids": sorted({a.source_id for a in platform_assignments}),
-        }
-        if result.message:
-            platforms[result.platform]["message"] = result.message
-
-    return {
-        "source": "multi-platform assignment listing",
-        "last_scan_at": now,
-        "scan_date": scan_date.isoformat(),
-        "platforms": platforms,
-        "seen_keys": sorted({assignment.dedupe_key for assignment in assignments}),
-        "total_visible": len(assignments),
-        "total_unique_visible": len({assignment.dedupe_key for assignment in assignments}),
-    }
+from assignment_platforms import DEFAULT_PLATFORMS, AssignmentRecord, PlatformScanResult, scan_platforms
+from listing_memory import DEFAULT_MEMORY_PATH, build_memory_payload, commit_memory, load_memory
 
 
 def section_lines(matches: list[MatchedAssignment], section: str, scan_date: date) -> list[str]:
@@ -137,6 +74,7 @@ def build_slack_debug(
         f"Visible assignments: {total_visible} (unique after cross-platform dedupe: {total_unique_visible})",
         f"New ids: {new_count}",
         f"Reported matches: {reported_count}",
+        "(deterministic mode — prefer fetch + AI curation for production)",
         "",
         "Close non-matches (sample):",
     ]
@@ -195,7 +133,7 @@ def prepare_listing(
     )
 
     return {
-        "source": "multi-platform",
+        "source": "deterministic-listing",
         "scan_date": scan_date.isoformat(),
         "memory_path": str(memory_path),
         "platforms": [result.platform for result in platform_results],
@@ -242,19 +180,14 @@ def prepare_listing(
     }
 
 
-def commit_memory(payload_path: Path, memory_path: Path) -> None:
-    data = json.loads(payload_path.read_text(encoding="utf-8"))
-    memory_update = data.get("memory_update")
-    if not isinstance(memory_update, dict):
-        raise ValueError("listing output is missing memory_update")
-    memory_path.write_text(
-        json.dumps(memory_update, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-
-
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        epilog=(
+            "Production listing uses fetch-assignments.py + AI curation + finalize-listing.py. "
+            "Pass --deterministic only for quick heuristic testing."
+        ),
+    )
     parser.add_argument(
         "-o",
         "--output",
@@ -291,6 +224,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Run Verama browser login with a visible window",
     )
     parser.add_argument(
+        "--deterministic",
+        action="store_true",
+        help="Run full heuristic filter/match in Python (not for production Slack posting)",
+    )
+    parser.add_argument(
         "--commit-memory",
         type=Path,
         metavar="LISTING_JSON",
@@ -312,6 +250,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.commit_memory:
         commit_memory(args.commit_memory, args.memory_path)
         return 0
+
+    if not args.deterministic:
+        print(
+            "list-assignments.py no longer posts heuristic matches by default.\n"
+            "Use:\n"
+            "  python scripts/fetch-assignments.py -o listing-candidates.json\n"
+            "  (curate matches — see automation-prompts/assignment-listing.md)\n"
+            "  python scripts/finalize-listing.py listing-candidates.json curated-listing.json -o listing-output.json\n"
+            "Or pass --deterministic for quick script-only testing.",
+            file=sys.stderr,
+        )
+        return 2
 
     scan_date = date.fromisoformat(args.scan_date) if args.scan_date else date.today()
     platform_ids = args.platforms or DEFAULT_PLATFORMS

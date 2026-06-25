@@ -12,6 +12,8 @@ secrets/
 *.log
 allakonsultuppdrag-seen.json
 assignment-listing-seen.json
+listing-candidates.json
+curated-listing.json
 listing-output.json
 __pycache__/
 *.pyc

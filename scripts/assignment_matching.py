@@ -533,6 +533,124 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
     return list(by_fingerprint.values())
 
 
+def export_consultant_summaries(
+    profiles: list[ConsultantProfile] | None = None,
+) -> list[dict[str, Any]]:
+    profiles = profiles or load_consultant_profiles()
+    return [
+        {
+            "name": profile.name,
+            "mainRoles": sorted(profile.main_roles),
+            "roleTags": sorted(profile.role_tags),
+            "locations": sorted(profile.locations),
+        }
+        for profile in profiles
+    ]
+
+
+@dataclass
+class AssignmentSuggestion:
+    assignment: AssignmentRecord
+    suggested_section: str | None
+    suggested_consultants: list[str]
+    reject_reason: str | None
+    role_categories: list[str]
+    mentions_accessibility: bool
+
+
+def suggest_for_assignment(
+    assignment: AssignmentRecord,
+    profiles: list[ConsultantProfile],
+) -> AssignmentSuggestion:
+    section, consultants = match_consultants_for_assignment(assignment, profiles)
+    categories = sorted(detect_role_categories(assignment))
+    mentions_a11y = mentions_accessibility(assignment)
+
+    if section.startswith("reject"):
+        reason = "location" if section == "reject_location" else "role"
+        return AssignmentSuggestion(
+            assignment=assignment,
+            suggested_section=None,
+            suggested_consultants=consultants,
+            reject_reason=reason,
+            role_categories=categories,
+            mentions_accessibility=mentions_a11y,
+        )
+
+    match = MatchedAssignment(
+        assignment=assignment,
+        section=section,
+        consultants=consultants,
+        hours_label=parse_hours_label(assignment),
+        client_label=parse_client_label(assignment),
+    )
+    issue = validate_match(match)
+    if issue:
+        return AssignmentSuggestion(
+            assignment=assignment,
+            suggested_section=None,
+            suggested_consultants=consultants,
+            reject_reason=issue,
+            role_categories=categories,
+            mentions_accessibility=mentions_a11y,
+        )
+
+    return AssignmentSuggestion(
+        assignment=assignment,
+        suggested_section=section,
+        suggested_consultants=consultants,
+        reject_reason=None,
+        role_categories=categories,
+        mentions_accessibility=mentions_a11y,
+    )
+
+
+def suggestion_to_dict(suggestion: AssignmentSuggestion) -> dict[str, Any]:
+    assignment = suggestion.assignment
+    return {
+        "dedupe_key": assignment.dedupe_key,
+        "listing_id": assignment.listing_id,
+        "platform": assignment.platform,
+        "title": assignment.title,
+        "location": assignment.location,
+        "work_mode": assignment.work_mode,
+        "suggested_section": suggestion.suggested_section,
+        "suggested_consultants": suggestion.suggested_consultants,
+        "reject_reason": suggestion.reject_reason,
+        "role_categories": suggestion.role_categories,
+        "mentions_accessibility": suggestion.mentions_accessibility,
+    }
+
+
+def suggest_assignments(
+    assignments: list[AssignmentRecord],
+    *,
+    scan_date: date,
+    profiles: list[ConsultantProfile] | None = None,
+) -> tuple[list[AssignmentSuggestion], list[AssignmentSuggestion]]:
+    """Return (active_new, expired) suggestions for assignments already filtered as new."""
+    profiles = profiles or load_consultant_profiles()
+    active: list[AssignmentSuggestion] = []
+    expired: list[AssignmentSuggestion] = []
+
+    for assignment in assignments:
+        if not is_active_assignment(assignment, scan_date):
+            expired.append(
+                AssignmentSuggestion(
+                    assignment=assignment,
+                    suggested_section=None,
+                    suggested_consultants=[],
+                    reject_reason="expired application date",
+                    role_categories=[],
+                    mentions_accessibility=False,
+                )
+            )
+            continue
+        active.append(suggest_for_assignment(assignment, profiles))
+
+    return active, expired
+
+
 def process_assignments(
     assignments: list[AssignmentRecord],
     *,

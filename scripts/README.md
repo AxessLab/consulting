@@ -15,12 +15,19 @@ Verama raw scanning also uses Playwright when enabled.
 ## List assignments (Slack listing)
 
 ```bash
-python scripts/list-assignments.py -o listing-output.json
-python scripts/list-assignments.py --commit-memory listing-output.json
+python scripts/fetch-assignments.py -o listing-candidates.json
+python scripts/finalize-listing.py listing-candidates.json curated-listing.json -o listing-output.json
+python scripts/finalize-listing.py --commit-memory listing-output.json
 ```
 
-Scans all registered platforms, filters, matches against `consultants.yaml`, and
-outputs three-tier Slack text. See `automation-prompts/assignment-listing.md`.
+Fetches from all registered platforms; the automation agent curates matches before
+finalize formats three-tier Slack text. See `automation-prompts/assignment-listing.md`.
+
+Heuristic-only testing:
+
+```bash
+python scripts/list-assignments.py --deterministic -o listing-output.json
+```
 
 ## Raw multi-platform fetch (optional)
 
