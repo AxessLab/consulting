@@ -450,13 +450,15 @@ def match_consultants_for_assignment(
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
     text = f"{assignment.description} {assignment.duration}"
-    scope_match = re.search(
+    scope_matches = re.finditer(
         r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
         text,
         re.I,
     )
-    if scope_match:
-        return f"{scope_match.group(2)}%"
+    for scope_match in scope_matches:
+        percentage = int(scope_match.group(2))
+        if 0 < percentage <= 100:
+            return f"{percentage}%"
 
     return "not stated (probably full time)"
 
