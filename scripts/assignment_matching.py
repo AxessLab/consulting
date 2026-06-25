@@ -210,6 +210,9 @@ def is_active_assignment(assignment: AssignmentRecord, scan_date: date) -> bool:
 
 def is_remote(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
+    percent_remote = re.search(r"\b(\d{1,3})\s*%\s*remote\b", fields)
+    if percent_remote and int(percent_remote.group(1)) < 100:
+        return False
     return any(term in fields for term in ("remote", "distans", "fjarrarbete", "fjärrarbete"))
 
 
@@ -455,29 +458,25 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if scope_match:
         return f"{scope_match.group(2)}%"
 
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
     return "not stated (probably full time)"
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
-    for pattern in (
-        r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
-    ):
-        match = re.search(pattern, description, re.I)
-        if match:
-            client = match.group(1).strip(" .")
-            if len(client) > 3 and normalize_text(client) not in {
-                "detta",
-                "denna",
-                "kunden",
-                "client",
-            }:
-                return client
+    match = re.search(r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)", description, re.I)
+    if match:
+        client = match.group(1).strip(" .")
+        if len(client) > 3 and normalize_text(client) not in {
+            "detta",
+            "denna",
+            "kunden",
+            "client",
+        }:
+            return client
+
+    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+)$", assignment.title)
+    if title_match:
+        return title_match.group(1).strip(" .")
     return "not stated"
 
 

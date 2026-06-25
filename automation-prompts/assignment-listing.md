@@ -4,7 +4,7 @@ Use this guidance when producing Slack assignment lists for consultant matching.
 
 ## Goal
 
-Post new IT consulting assignments from **all configured platforms** in three
+Post new IT consulting assignments from **all registered sources** in three
 sections, with a debug thread reply.
 
 **Python handles mechanical work** (platform fetch, dedupe, memory, Slack line
@@ -42,11 +42,12 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+This scans every active source in `scripts/assignment_platforms.py`, dedupes against
 `assignment-listing-seen.json`, and writes:
 
-- `assignments` — all currently visible unique records (for lookup)
-- `new_dedupe_keys` — ids not posted before
+- `assignments` — new report candidates after cross-source dedupe (for lookup)
+- `all_visible_assignments` — all currently visible unique records per source
+- `new_dedupe_keys` — per-source ids not posted before
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
@@ -136,8 +137,10 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: unified `sources` object. Each source stores its
+listing prefix, bare native `seen_ids`, and visible counts. Legacy `seen_keys`
+or single-source memory files may be migrated once, but new writes must use
+`sources`.
 
 ## Filtering rules
 
@@ -249,7 +252,7 @@ Pipe-separated lines. Verama ids use `v` prefix. Platform is implied by the
 assignment link.
 
 ```text
-6236 | Software Developer Java | Stockholm | not stated (probably full time) | Client: not stated | Broker: A Society | Link: https://... | Posted: 2026-06-01 | Match: Joel Holmberg
+a6236 | Software Developer Java | Stockholm | not stated (probably full time) | Client: not stated | Broker: A Society | Link: https://... | Posted: 2026-06-01 | Match: Joel Holmberg
 v81387 | Experience UX & UI Designer | Stockholm (SE) | ... | Match: Soma Azad
 ```
 
@@ -258,7 +261,7 @@ If a section has no matches, it shows `No new matches.`
 ## Follow-up commands
 
 ```text
-fit 6236 Joel
+fit a6236 Joel
 fit v81387 Soma
 generate v81387 Soma english
 ```
@@ -267,14 +270,15 @@ generate v81387 Soma english
 
 | Concern | Location |
 |---------|----------|
-| Platform scanners | `scripts/assignment_platforms.py` |
+| Source scanners and registry | `scripts/assignment_platforms.py` |
 | Fetch + dedupe | `scripts/fetch-assignments.py` |
 | Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
 | Slack formatting + memory | `scripts/finalize-listing.py` |
 | Consultant names, roles, locations | `consultants.yaml` |
 
-When adding a new platform, register a scanner in `assignment_platforms.py`.
+When adding a new source, choose an unused lowercase prefix and register the
+scanner in `assignment_platforms.py`.
 
 ## Debug / script-only mode
 

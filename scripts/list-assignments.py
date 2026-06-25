@@ -55,7 +55,7 @@ def build_platform_summary(platform_results: list[PlatformScanResult]) -> str:
             parts.append(f"{result.platform} (skipped)")
         else:
             parts.append(f"{result.platform} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def build_slack_debug(
@@ -106,7 +106,7 @@ def prepare_listing(
     headless: bool = True,
 ) -> dict[str, Any]:
     scan_date = scan_date or date.today()
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, memory_data = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
@@ -130,6 +130,7 @@ def prepare_listing(
         assignments=deduped_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        previous_memory=memory_data,
     )
 
     return {
@@ -169,7 +170,7 @@ def prepare_listing(
         "matches": [
             {
                 "listing_id": match.assignment.listing_id,
-                "platform": match.assignment.platform,
+                "platform": match.assignment.source_key,
                 "section": match.section,
                 "title": match.assignment.title,
                 "consultants": match.consultants,
