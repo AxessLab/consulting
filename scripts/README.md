@@ -1,14 +1,27 @@
 # CV rendering scripts
 
-Python utilities for the HTML/PDF CV generation pipeline.
+Python utilities for the HTML/PDF CV generation pipeline and assignment scanning.
 
 ## Setup
 
 ```bash
 pip install -r requirements.txt
+python -m playwright install chromium
 ```
 
 PDF rendering uses a Chromium-based browser (Edge or Chrome) in headless mode.
+Verama scanning also uses Playwright for login.
+
+## Scan assignment platforms
+
+```bash
+export VERAMA_EMAIL=...
+export VERAMA_PASSWORD=...
+python scripts/scan-assignments.py --debug-summary
+```
+
+Scans `allakonsultuppdrag.se` and `verama.com` by default. See
+`docs/assignment-sources.md`.
 
 ## Extract portraits and logo
 

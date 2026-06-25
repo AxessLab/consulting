@@ -104,13 +104,15 @@ Examples:
 
 - `fit 12345 Joel`
 - `fit 12345 Joel Andersson`
+- `fit v81387 Soma`
 - `fit Karin Toft`
 
-When the first token after `fit` is a numeric assignment id, the automation
-reads the Slack parent message, finds the assignment id, resolves the assignment
-ad link, and fetches the online ad page.
+When the first token after `fit` is a listed assignment id (all digits, or `v`
+followed by digits for Verama), the automation reads the Slack parent message,
+finds the assignment id, resolves the assignment ad link, and fetches the online
+ad page.
 
-When there is no numeric id, sales has pasted the assignment ad in the parent
+When there is no listed id, sales has pasted the assignment ad in the parent
 message. The automation uses that text as the assignment source instead of
 fetching an online ad.
 
@@ -136,17 +138,19 @@ Examples:
 - `generate 12345 Joel`
 - `generate 12345 Joel Holmberg english`
 - `generate 12345 Joel Holmberg sv`
+- `generate v81387 Soma english`
 - `generate Karin Toft`
 - `generate Karin Toft english`
 
 The optional language token must be the final token. Supported language values
 are `english`, `swedish`, `en`, and `sv`.
 
-When the first token after `generate` is a numeric assignment id, the
-automation reads the Slack parent message, finds the assignment id, resolves the
-assignment ad link, and fetches the online ad page.
+When the first token after `generate` is a listed assignment id (all digits, or
+`v` followed by digits for Verama), the automation reads the Slack parent
+message, finds the assignment id, resolves the assignment ad link, and fetches
+the online ad page.
 
-When there is no numeric id, sales has pasted the assignment ad in the parent
+When there is no listed id, sales has pasted the assignment ad in the parent
 message. The automation uses that text as the assignment source instead of
 fetching an online ad.
 

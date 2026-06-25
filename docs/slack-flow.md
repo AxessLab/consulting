@@ -36,14 +36,15 @@ Examples:
 ```text
 fit 12345 Joel
 fit 12345 Joel Andersson
+fit v81387 Soma
 fit Karin Toft
 ```
 
-When the first token after `fit` is a numeric assignment id, the automation
-uses **listed assignment mode** and reads the id and ad link from the parent
-message. When it is not numeric, the automation uses **pasted ad mode** and
-reads the assignment requirements from the parent message text instead of
-fetching an online ad.
+When the first token after `fit` is a listed assignment id (all digits, or `v`
+followed by digits for Verama), the automation uses **listed assignment mode**
+and reads the id and ad link from the parent message. When it is not a listed
+id, the automation uses **pasted ad mode** and reads the assignment requirements
+from the parent message text instead of fetching an online ad.
 
 ## Generate command
 
@@ -60,6 +61,7 @@ Examples:
 generate 12345 Joel
 generate 12345 Joel Holmberg english
 generate 12345 Joel Holmberg sv
+generate v81387 Soma english
 generate Karin Toft
 generate Karin Toft english
 generate Karin Toft sv
@@ -68,11 +70,11 @@ generate Karin Toft sv
 The optional language token must be the final token. Supported values are
 `english`, `swedish`, `en`, and `sv`.
 
-When the first token after `generate` is a numeric assignment id, the
-automation uses **listed assignment mode** and reads the id and ad link from the
-parent message. When it is not numeric, the automation uses **pasted ad mode**
-and reads the assignment requirements from the parent message text instead of
-fetching an online ad.
+When the first token after `generate` is a listed assignment id (all digits, or
+`v` followed by digits for Verama), the automation uses **listed assignment
+mode** and reads the id and ad link from the parent message. When it is not a
+listed id, the automation uses **pasted ad mode** and reads the assignment
+requirements from the parent message text instead of fetching an online ad.
 
 ## Pasted ad flow
 
@@ -90,7 +92,7 @@ required.
 
 1. Read the Slack parent message and thread.
 2. Parse the `fit` command and detect listed assignment mode vs pasted ad mode
-   (numeric first token vs consultant name).
+   (listed assignment id vs consultant name).
 3. **Listed assignment mode:** find the assignment id in the parent message,
    read the ad link, and fetch the online ad page.
 4. **Pasted ad mode:** use the parent message text as the assignment ad.
@@ -121,7 +123,7 @@ Cinode profile data is shared across variants for a consultant.
 
 1. Read the Slack parent message and thread.
 2. Parse the `generate` command and detect listed assignment mode vs pasted ad
-   mode (numeric first token vs consultant name).
+   mode (listed assignment id vs consultant name).
 3. **Listed assignment mode:** find the assignment id in the parent message and
    read the ad link; fetch the online ad page.
 4. **Pasted ad mode:** use the parent message text as the assignment ad; set

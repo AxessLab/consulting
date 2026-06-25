@@ -22,7 +22,11 @@ Practical implications for agents working here:
   running `python scripts/render-cv.py` on example or generated JSON and
   reviewing the HTML/PDF output.
 - If scripts or dependencies change, update this file and automation prompt
-  guidance in `automation-prompts/cv-generation.md`.
+  guidance in `automation-prompts/cv-generation.md` and
+  `automation-prompts/assignment-listing.md`.
+- **Assignment listing** runs `python scripts/scan-assignments.py` to fetch ads
+  from allakonsultuppdrag.se and Verama. Verama credentials live in automation
+  secrets as `VERAMA_EMAIL` and `VERAMA_PASSWORD` (see `docs/assignment-sources.md`).
 
 ## Cursor Automations
 
