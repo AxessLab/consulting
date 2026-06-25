@@ -503,9 +503,8 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
     location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
-    platform_note = f" [{assignment.platform}]" if assignment.platform else ""
     return (
-        f"{assignment.listing_id}{platform_note} | {assignment.title} | {location} | "
+        f"{assignment.listing_id} | {assignment.title} | {location} | "
         f"{match.hours_label} | Client: {match.client_label} | Broker: {assignment.broker} | "
         f"Link: {assignment.source_url} | Posted: {posted_date_label(assignment, scan_date)} | "
         f"Match: {consultants}"

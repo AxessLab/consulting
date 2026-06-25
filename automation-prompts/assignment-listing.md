@@ -14,6 +14,28 @@ before posting.
 
 ## Run flow
 
+### 0. Restore dedupe memory (cloud runs — required)
+
+Cloud agent checkouts **do not** keep `assignment-listing-seen.json` between runs
+(the file is gitignored). Without restoring memory, every run treats all visible
+assignments as new.
+
+1. Ensure **Memories** is enabled for this automation.
+2. Read the automation Memory entry named **`assignment-listing-seen.json`**.
+3. If it contains JSON, seed the local file before fetch:
+
+```bash
+python3 scripts/listing-memory-bridge.py seed <<'EOF'
+<paste the full JSON from the memory entry>
+EOF
+```
+
+If the memory entry does not exist yet, skip — the first run starts with an
+empty dedupe set.
+
+Local-only runs can skip this step when `assignment-listing-seen.json` already
+exists on disk from a previous `--commit-memory`.
+
 ### 1. Fetch candidates
 
 ```bash
@@ -98,14 +120,24 @@ Review `slack_main` in `listing-output.json`. If it looks wrong, fix
 - Reply in that thread with `slack_debug`.
 - Do not add CV weaknesses, availability, or internal notes.
 
-### 5. Commit memory (after Slack)
+### 5. Persist dedupe memory (after Slack)
+
+The local file alone is **not** enough for the next cloud run. After posting:
 
 ```bash
-python3 scripts/finalize-listing.py --commit-memory listing-output.json
+python3 scripts/finalize-listing.py --commit-memory listing-output.json --print-memory > memory-export.json
 ```
 
-Persistent dedupe: `assignment-listing-seen.json` (per-platform `seen_ids` plus
-unified `seen_keys`). Do not commit this file.
+Then **overwrite** the automation Memory entry **`assignment-listing-seen.json`**
+with the contents of `memory-export.json`. Do not commit that file or
+`assignment-listing-seen.json`.
+
+Verify the next run will restore correctly: `stats.previously_seen` in
+`listing-candidates.json` should be greater than zero after the first successful
+persist (except on the very first run ever).
+
+Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
+per-platform scan metadata under `platforms` (status and counts only).
 
 ## Filtering rules
 
@@ -213,12 +245,12 @@ Three sections (built by `finalize-listing.py`):
 2. Other roles mentioning accessibility related terms
 3. Other roles where accessibility is not mentioned
 
-Pipe-separated lines. Verama ids use `v` prefix; other platforms may show
-`[platform]` after the id.
+Pipe-separated lines. Verama ids use `v` prefix. Platform is implied by the
+assignment link.
 
 ```text
 6236 | Software Developer Java | Stockholm | not stated (probably full time) | Client: not stated | Broker: A Society | Link: https://... | Posted: 2026-06-01 | Match: Joel Holmberg
-v81387 [verama.com] | Experience UX & UI Designer | Stockholm (SE) | ... | Match: Soma Azad
+v81387 | Experience UX & UI Designer | Stockholm (SE) | ... | Match: Soma Azad
 ```
 
 If a section has no matches, it shows `No new matches.`
@@ -237,6 +269,7 @@ generate v81387 Soma english
 |---------|----------|
 | Platform scanners | `scripts/assignment_platforms.py` |
 | Fetch + dedupe | `scripts/fetch-assignments.py` |
+| Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
 | Slack formatting + memory | `scripts/finalize-listing.py` |
 | Consultant names, roles, locations | `consultants.yaml` |

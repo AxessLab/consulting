@@ -17,8 +17,11 @@ Verama raw scanning also uses Playwright when enabled.
 ```bash
 python scripts/fetch-assignments.py -o listing-candidates.json
 python scripts/finalize-listing.py listing-candidates.json curated-listing.json -o listing-output.json
-python scripts/finalize-listing.py --commit-memory listing-output.json
+python scripts/finalize-listing.py --commit-memory listing-output.json --print-memory
 ```
+
+Cloud automations must also sync via automation Memory — see
+`automation-prompts/assignment-listing.md` steps 0 and 5.
 
 Fetches from all registered platforms; the automation agent curates matches before
 finalize formats three-tier Slack text. See `automation-prompts/assignment-listing.md`.

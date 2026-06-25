@@ -11,7 +11,9 @@ python scripts/finalize-listing.py --commit-memory listing-output.json
 ```
 
 Python fetches and dedupes; the automation agent applies filtering rules and
-writes `curated-listing.json`. Dedupe memory: `assignment-listing-seen.json`.
+writes `curated-listing.json`. Dedupe memory: `assignment-listing-seen.json`
+locally, synced via automation Memory entry **`assignment-listing-seen.json`**
+on cloud runs (see `automation-prompts/assignment-listing.md` step 0 and 5).
 
 ## Registered platforms
 

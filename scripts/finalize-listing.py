@@ -16,7 +16,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from assignment_matching import MatchedAssignment, format_slack_line, parse_client_label, parse_hours_label
 from assignment_platforms import AssignmentRecord
-from listing_memory import DEFAULT_MEMORY_PATH, commit_memory
+from listing_memory import DEFAULT_MEMORY_PATH, commit_memory, read_memory_export
 
 
 SECTION_ORDER = ("accessibility_specialist", "other_a11y_mentions", "other")
@@ -224,6 +224,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         metavar="LISTING_JSON",
         help="Update seen-id memory from a previous listing JSON output",
     )
+    parser.add_argument(
+        "--print-memory",
+        action="store_true",
+        help="With --commit-memory, print the updated memory file to stdout",
+    )
     return parser.parse_args(argv)
 
 
@@ -232,6 +237,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.commit_memory:
         commit_memory(args.commit_memory, args.memory_path)
+        if args.print_memory:
+            sys.stdout.write(read_memory_export(args.memory_path))
         return 0
 
     if not args.candidates or not args.curated:
