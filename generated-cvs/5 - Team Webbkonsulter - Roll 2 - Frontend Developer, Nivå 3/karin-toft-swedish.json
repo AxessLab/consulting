@@ -1,0 +1,204 @@
+{
+  "consultantSlug": "karin-toft",
+  "language": "swedish",
+  "assignmentId": "5",
+  "assignmentTitle": "Team Webbkonsulter: Roll 2 - Frontend Developer, Nivå 3",
+  "assignmentFolder": "5 - Team Webbkonsulter - Roll 2 - Frontend Developer, Nivå 3",
+  "variantId": "frontend-engineer",
+  "variantLabel": "Frontend Engineer",
+  "sourceCv": "cvs/Axessibility_Lab_AB_Karin_Toft_Frontend_Engineer.docx",
+  "contact": {
+    "name": "Marisa Törnros",
+    "email": "marisa@axesslab.com",
+    "phone": "+46 76 571 3150"
+  },
+  "consultantName": "Karin Toft",
+  "roleTitle": "Frontendutvecklare och tillgänglighetsspecialist (CPWA)",
+  "profileParagraphs": [
+    "Karin är en senior frontendutvecklare med över tio års erfarenhet av webbutveckling, webbappar och återanvändbara frontendkomponenter. Hon har djup erfarenhet av TypeScript, React, HTML/CSS, responsiva gränssnitt, CMS-baserad leverans och nära samarbete med designers, backendutvecklare och verksamhetsnära intressenter.",
+    "Hon kombinerar praktisk frontendutveckling med certifierad tillgänglighetsexpertis. I uppdrag hos bland annat CSN, ViewMe och Zalando har hon arbetat med komponentbibliotek, e-tjänster, tillgängliga formulär, designstöd, kodgranskning och förbättringar i komplexa produkt- och myndighetsmiljöer.",
+    "Karin rör sig vant i större kodbaser, agila team och CI/CD-miljöer. Hon har särskilt stark erfarenhet av att omsätta designsystem, redaktörsbehov och WCAG-krav till hållbara, tillgängliga och förvaltningsbara frontendlösningar."
+  ],
+  "selectedEvidence": [
+    {
+      "title": "Frontendutvecklare och tillgänglighetsspecialist · CSN",
+      "subtitle": "Jun 2022 – Dec 2023",
+      "summary": "Arbetade brett med tillgänglighetsgranskning av myndighetens e-tjänster, webbplats och intranät samt utveckling av e-tjänster, designsystem och komponentbibliotek tillsammans med utvecklare och UX-designers.",
+      "skills": [
+        "Angular",
+        "Designsystem",
+        "Komponentbibliotek",
+        "WCAG",
+        "Myndighetsmiljö"
+      ]
+    },
+    {
+      "title": "React.js-utvecklare och tillgänglighetsspecialist · ViewMe",
+      "subtitle": "Jul 2023 – Jul 2024",
+      "summary": "Utvecklade tillgängliga frontendkomponenter och vyer för en webbapp som används inom personlig assistans dygnet runt. Arbetade tillsammans med UX-designers och backendutvecklare i Scrumprocess.",
+      "skills": [
+        "React.js",
+        "TypeScript",
+        "Tillgängliga komponenter",
+        "Scrum"
+      ]
+    },
+    {
+      "title": "Frontendutvecklare och tillgänglighetsspecialist · Zalando",
+      "subtitle": "Jan 2024 – Dec 2025 · Berlin",
+      "summary": "Ingick i ett tillgänglighetsfokuserat team i en stor e-handelsmiljö. Identifierade och åtgärdade brister i befintlig kodbas och stöttade designers och utvecklare med granskning av bland annat skärmläsarbeteende.",
+      "skills": [
+        "React.js",
+        "TypeScript",
+        "Kodgranskning",
+        "Tillgänglighet",
+        "Produktteam"
+      ]
+    }
+  ],
+  "competenceChips": [
+    "Frontendutveckling",
+    "TypeScript",
+    "React.js",
+    "Angular",
+    "HTML5",
+    "CSS/SCSS",
+    "Responsiv webb",
+    "Tillgängliga komponenter",
+    "WCAG 2.1/2.2 AA",
+    "Designsystem",
+    "Komponentbibliotek",
+    "Storybook",
+    "REST API",
+    "WordPress/CMS",
+    "Git",
+    "CI/CD",
+    "Jenkins",
+    "CircleCI",
+    "GitLab",
+    "Bitbucket",
+    "Jira",
+    "Scrum"
+  ],
+  "projects": [
+    {
+      "title": "Frontendutvecklare och tillgänglighetsspecialist · CSN",
+      "subtitle": "Jun 2022 – Dec 2023",
+      "summary": "Karins roll hos CSN var bred. Hon granskade tillgänglighet i myndighetens e-tjänster, webbplats och intranät, arbetade nära utvecklare och UX-designers vid framtagning av e-tjänster samt bidrog i designsystem och komponentbibliotek. Hon genomförde även utbildningar, championsprogram, tillgänglighetsnätverk och tog fram guider, utbildningsmaterial och checklistor.",
+      "skills": [
+        "Angular",
+        "Designsystem",
+        "Komponentbibliotek",
+        "WCAG",
+        "Tillgänglighetsgranskning",
+        "Myndighetsmiljö"
+      ]
+    },
+    {
+      "title": "React.js-utvecklare och tillgänglighetsspecialist · ViewMe",
+      "subtitle": "Jul 2023 – Jul 2024",
+      "summary": "ViewMe är en webbapp som används inom personlig assistans i Sverige varje dag, dygnet runt, och har höga krav på tillgänglighet. Karin skapade tillgängliga frontendkomponenter och vyer för mobil och administrativa desktopvyer tillsammans med UX-designers och backendutvecklare i Scrum.",
+      "skills": [
+        "React.js",
+        "TypeScript",
+        "Tillgängliga komponenter",
+        "Responsiva vyer",
+        "Scrum"
+      ]
+    },
+    {
+      "title": "Frontendutvecklare och tillgänglighetsspecialist inom e-handel · Zalando",
+      "subtitle": "Jan 2024 – Dec 2025 · Berlin",
+      "summary": "Karin arbetade i ett team med tillgänglighet i fokus hos Zalando. Rollen omfattade att identifiera och åtgärda tillgänglighetsbrister i befintlig kodbas samt stötta designers och andra utvecklare genom granskning av kod och annoteringar, exempelvis för skärmläsarbeteende i köpflöden.",
+      "skills": [
+        "React.js",
+        "TypeScript",
+        "Tillgänglighet",
+        "Kodgranskning",
+        "Skärmläsarstöd"
+      ]
+    },
+    {
+      "title": "Utvecklare WordPress · Samhall",
+      "subtitle": "Apr 2025 – pågående",
+      "summary": "Karin förvaltar och vidareutvecklar Samhalls medarbetarportal med nya funktioner. Hon har integrerat H5P i WordPress-temat så att redaktörer kan skapa interaktiva utbildningssidor, ansvarat för driftsättning och underhåll av produktions- och testmiljö samt granskat tredjepartslösningar mot WCAG 2.2 AA.",
+      "skills": [
+        "WordPress",
+        "CMS",
+        "Redaktörsstöd",
+        "H5P",
+        "Driftsättning",
+        "WCAG 2.2 AA"
+      ]
+    },
+    {
+      "title": "Reactutvecklare · Nordic Accessibility Group",
+      "subtitle": "Oct 2021 – Jun 2022",
+      "summary": "Vidareutvecklade DigiJag och DigiVi, digitala skol- och livsplattformar med höga tillgänglighetskrav. Arbetet omfattade en progressiv och responsiv React.js-webbapp samt komponenter för DigiJag component library.",
+      "skills": [
+        "React.js",
+        "Responsiv webbapp",
+        "Komponentbibliotek",
+        "Tillgänglighet"
+      ]
+    },
+    {
+      "title": "Frontendutvecklare WordPress · FAST2 (SWG)",
+      "subtitle": "May 2014 – Oct 2021 · Göteborg",
+      "summary": "Arbetade med en webbplatslösning baserad på WordPress och Scala-widgets för flera större svenska bostadsbolag. Karin utvecklade teman, plugins och shortcodes, byggde verktyg för automatiska uppdateringar och visuella tester samt utbildade redaktörer i tillgängligt webbinnehåll.",
+      "skills": [
+        "WordPress",
+        "PHP",
+        "Scala",
+        "CMS",
+        "Visuella tester",
+        "Tillgängligt innehåll"
+      ]
+    },
+    {
+      "title": "Frontendutvecklare · Kulturens bildningsverksamhet",
+      "subtitle": "Nov 2021 – Apr 2022",
+      "summary": "Utvecklade TK-Appen, en applikation för information om tillgänglighet på kulturarrangemang. Projektet hade mycket höga krav på tillgänglighet och användbarhet, bland annat för skärmläsaranvändare, och innehöll återanvändbara komponenter samt integration mot nationella tillgänglighetsdatabasen.",
+      "skills": [
+        "Återanvändbara komponenter",
+        "Tillgänglighet",
+        "Skärmläsarstöd",
+        "Integration"
+      ]
+    }
+  ],
+  "skillLevels": [
+    {
+      "level": "Expert",
+      "skills": "Frontendutveckling, tillgänglighetsspecialist, tillgänglighetsgranskning, tillgängliga komponenter, WCAG och tillgängliga formulär."
+    },
+    {
+      "level": "Avancerad",
+      "skills": "TypeScript, React.js, HTML5, CSS/SCSS, responsiv webb, designsystem, komponentbibliotek, Git, dokumentation och EN 301 549."
+    },
+    {
+      "level": "Hög kompetens",
+      "skills": "Angular, WordPress, CMS, REST, CI/CD, Jenkins, CircleCI, GitLab, Bitbucket, Jira, Scrum, Kanban och Storybook."
+    }
+  ],
+  "certifications": "CPACC - Certified Professional in Accessibility Core Competencies, 2023. WAS - IAAP Web Accessibility Specialist, 2024. CPWA - Certified Professional in Web Accessibility. Agile Web Developer, KYH, 2010-2013.",
+  "languages": [
+    {
+      "language": "Svenska",
+      "proficiency": "modersmål"
+    },
+    {
+      "language": "Engelska",
+      "proficiency": "professionell nivå"
+    }
+  ],
+  "labels": {
+    "contact": "Kontakt",
+    "selectedEvidence": "Utvalda projekt",
+    "relevantCompetence": "Tekniker",
+    "projects": "Projekt och uppdrag",
+    "skills": "Kompetenser",
+    "certifications": "Kurser, certifieringar och utbildning",
+    "languages": "Språk"
+  }
+}
