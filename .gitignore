@@ -10,5 +10,8 @@ secrets/
 *.pem
 *.p12
 *.log
+allakonsultuppdrag-seen.json
+assignment-listing-seen.json
+listing-output.json
 __pycache__/
 *.pyc

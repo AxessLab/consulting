@@ -10,9 +10,19 @@ python -m playwright install chromium
 ```
 
 PDF rendering uses a Chromium-based browser (Edge or Chrome) in headless mode.
-Verama scanning also uses Playwright for login.
+Verama raw scanning also uses Playwright when enabled.
 
-## Scan assignment platforms
+## List assignments (Slack listing)
+
+```bash
+python scripts/list-assignments.py -o listing-output.json
+python scripts/list-assignments.py --commit-memory listing-output.json
+```
+
+Scans all registered platforms, filters, matches against `consultants.yaml`, and
+outputs three-tier Slack text. See `automation-prompts/assignment-listing.md`.
+
+## Raw multi-platform fetch (optional)
 
 ```bash
 export VERAMA_EMAIL=...
@@ -20,8 +30,7 @@ export VERAMA_PASSWORD=...
 python scripts/scan-assignments.py --debug-summary
 ```
 
-Scans `allakonsultuppdrag.se` and `verama.com` by default. See
-`docs/assignment-sources.md`.
+See `docs/assignment-sources.md`.
 
 ## Extract portraits and logo
 

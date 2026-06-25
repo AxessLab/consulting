@@ -24,9 +24,10 @@ Practical implications for agents working here:
 - If scripts or dependencies change, update this file and automation prompt
   guidance in `automation-prompts/cv-generation.md` and
   `automation-prompts/assignment-listing.md`.
-- **Assignment listing** runs `python scripts/scan-assignments.py` to fetch ads
-  from allakonsultuppdrag.se and Verama. Verama credentials live in automation
-  secrets as `VERAMA_EMAIL` and `VERAMA_PASSWORD` (see `docs/assignment-sources.md`).
+- **Assignment listing** runs `python scripts/list-assignments.py` across all
+  platforms in `scripts/assignment_platforms.py`, producing a three-tier Slack
+  listing. Matching uses `consultants.yaml` via `scripts/assignment_matching.py`.
+  Dedupe memory: `assignment-listing-seen.json`.
 
 ## Cursor Automations
 

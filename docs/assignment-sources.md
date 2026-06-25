@@ -1,45 +1,42 @@
 # Assignment sources
 
-The assignment-listing automation scans these platforms on each run:
-
-| Platform | Scanner | Credentials |
-|----------|---------|-------------|
-| [allakonsultuppdrag.se](https://allakonsultuppdrag.se/) | Public REST API | None |
-| [Verama](https://app.verama.com/) (Ework) | Playwright login + authenticated REST API | `VERAMA_EMAIL`, `VERAMA_PASSWORD` |
-
-Run the scanner locally or from Cursor Automations:
+## Listing (Slack)
 
 ```bash
-pip install -r requirements.txt
-python -m playwright install chromium
-export VERAMA_EMAIL=consulting@axesslab.com
-export VERAMA_PASSWORD=veramaAxs!
+python scripts/list-assignments.py -o listing-output.json
+# post slack_main + slack_debug
+python scripts/list-assignments.py --commit-memory listing-output.json
+```
+
+Scans all registered platforms, applies three-tier filtering/matching, and
+outputs Slack-ready text. Dedupe memory: `assignment-listing-seen.json`.
+
+## Registered platforms
+
+Defined in `scripts/assignment_platforms.py` → `PLATFORM_SCANNERS`:
+
+| Platform | Auth | Notes |
+|----------|------|-------|
+| `allakonsultuppdrag.se` | None | JSON API only |
+| `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
+
+Add new platforms by implementing `scan_<name>() -> (list[AssignmentRecord], PlatformScanResult)`
+and registering it in `PLATFORM_SCANNERS`.
+
+## Matching
+
+`scripts/assignment_matching.py` loads active consultants from `consultants.yaml`
+(`mainRoles`, `locations`, active `cvs[].roles`) and applies role/location rules.
+
+## Raw fetch (debug)
+
+```bash
 python scripts/scan-assignments.py --debug-summary
 ```
 
-## Output
-
-`scripts/scan-assignments.py` prints JSON to stdout:
-
-- `scannedAt` — UTC timestamp
-- `platforms` — per-platform status, count, and optional error message
-- `assignments` — normalized assignment rows for Slack listing
-
-Assignment ids in Slack:
-
-- allakonsultuppdrag.se — numeric id, e.g. `[6236]`
-- verama.com — `v` prefix, e.g. `[v81392]`
-
-Verama ad links use `https://app.verama.com/app/job-requests/<id>`.
+Unfiltered fetch only — not for Slack posting.
 
 ## Secrets
 
-Store `VERAMA_EMAIL` and `VERAMA_PASSWORD` in Cursor Automation environment
-variables. Do not commit credentials to this repository. Copy `.env.example` to
-`.env` for local runs only.
-
-## Deduping
-
-Some Ework/Verama assignments also appear on allakonsultuppdrag.se via brokers.
-When posting Slack list items, skip duplicates that match the same buyer, title,
-and location across platforms.
+Store `VERAMA_EMAIL` and `VERAMA_PASSWORD` in Cursor Automation secrets or a
+local `.env` from `.env.example`. Do not commit credentials.

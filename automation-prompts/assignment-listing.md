@@ -1,94 +1,92 @@
-# Assignment listing automation prompt
-
-Use this guidance when producing compact Slack assignment lists for consultant
-matching.
-
-## Goal
-
-Post short Slack list items that help people quickly scan new IT assignments and
-request a consultant fit analysis in a thread.
-
-## Scan assignment sources
-
-On each run, scan all configured platforms before posting:
-
-1. Run `python scripts/scan-assignments.py --debug-summary` from the repo root.
-2. Read the JSON from stdout. Use `assignments` as the candidate pool.
-3. Configure Cursor Automation secrets `VERAMA_EMAIL` and `VERAMA_PASSWORD` for
-   Verama login. See `docs/assignment-sources.md`.
-
-Default platforms:
-
-- `allakonsultuppdrag.se` — public aggregator API
-- `verama.com` — authenticated Ework/Verama marketplace
-
-Skip assignments that are clear duplicates across platforms (same title, buyer,
-and location). Prefer the Verama listing when both point to the same role.
-
-## Debug summary message
-
-Before the assignment list items, post one short debug line to Slack summarizing
-the scan. Use the `platforms` array from scanner JSON, or the stderr line from
-`--debug-summary`.
-
-Example:
-
-```text
-Scanned platforms: allakonsultuppdrag.se (511), verama.com (191)
-```
-
-If a platform failed, include that in the summary, e.g. `verama.com (error)`.
-
-## Required Slack item content
-
-Each assignment list item must include:
-
-- `[assignment-id]`
-- assignment title
-- location and/or main role summary
-- full online assignment ad link
-- suggested consultant matches by first name or canonical name
-
-Assignment id conventions:
-
-- allakonsultuppdrag.se — numeric id, e.g. `[6236]`
-- verama.com — `v` prefix + numeric id, e.g. `[v81392]`
-
-Keep each item compact. Do not include sensitive consultant details, internal
-notes, private profile content, availability constraints, or CV weaknesses in
-the assignment list.
-
-## Matching names
-
-Use consultant names that can be resolved against `consultants.yaml`.
-
-Prefer first names when they are unambiguous in the consultant data. Use the
-canonical name when a first name could refer to more than one consultant.
-
-## Example Slack output
-
-```text
-Scanned platforms: allakonsultuppdrag.se (511), verama.com (191)
-
-[6236] Senior Front-end Developer, Stockholm
-<https://example.com/ad/6236|View ad>
-Good matches: Joel, Lena
-
-[v81387] Experience UX & UI Designer, Stockholm (SE)
-<https://app.verama.com/app/job-requests/81387|View ad>
-Good matches: Soma, Nikolaos
-```
-
-## Follow-up commands
-
-Slack users can request detailed analysis or tailored application guidance by
-replying in the thread:
-
-```text
-fit 6236 Joel
-fit v81387 Soma
-generate v81387 Soma english
-```
-
-For assignments not in the listing, post the full ad text in the channel and
-reply with `fit <name>` or `generate <name>` (no id).
+# Assignment listing automation prompt
+
+Use this guidance when producing Slack assignment lists for consultant matching.
+
+## Goal
+
+Post new IT consulting assignments from **all configured platforms** in three
+sections, with a debug thread reply. Filtering and matching are deterministic —
+do not re-implement them in the automation.
+
+## Run the listing script
+
+1. From the repo root, run:
+
+```bash
+python scripts/list-assignments.py -o listing-output.json
+```
+
+By default this scans every platform registered in
+`scripts/assignment_platforms.py` (currently `allakonsultuppdrag.se` and
+`verama.com`). Override with `--platform` if needed.
+
+2. Read `listing-output.json`. It contains:
+   - `slack_main` — post as the channel message
+   - `slack_debug` — post as a thread reply on that message (includes scanned
+     platforms summary)
+   - `memory_update` — do not edit manually
+
+3. After both Slack messages are sent, persist dedupe memory:
+
+```bash
+python scripts/list-assignments.py --commit-memory listing-output.json
+```
+
+4. Persistent dedupe state lives in `assignment-listing-seen.json` (per-platform
+   `seen_ids` plus unified `seen_keys`). Do not commit this file.
+
+Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama. See
+`docs/assignment-sources.md`.
+
+## Slack posting rules
+
+- Post **exactly once** per run: one main message, then one debug thread reply.
+- Use `slack_main` and `slack_debug` verbatim unless a field is clearly broken.
+- Do not add consultant CV weaknesses, availability, or internal notes.
+
+## Main message format
+
+Three sections (already formatted in `slack_main`):
+
+1. Accessibility specialist related roles
+2. Other roles mentioning accessibility related terms
+3. Other roles where accessibility is not mentioned
+
+Each assignment line is pipe-separated. Non-allakonsult assignments use a
+`v`-prefixed id for Verama and may include `[platform]` after the id.
+
+```text
+6236 | Software Developer Java | Stockholm | not stated (probably full time) | Client: not stated | Broker: A Society | Link: https://... | Posted: 2026-06-01 | Match: Joel Holmberg
+v81387 [verama.com] | Experience UX & UI Designer | Stockholm (SE) | ... | Match: Soma Azad
+```
+
+If a section has no matches, the script outputs `No new matches.`
+
+## Follow-up commands
+
+```text
+fit 6236 Joel
+fit v81387 Soma
+generate v81387 Soma english
+```
+
+Listed ids are all digits (allakonsultuppdrag) or `v` + digits (Verama). See
+`docs/slack-flow.md`.
+
+## Source of truth
+
+| Concern | Location |
+|---------|----------|
+| Platform scanners | `scripts/assignment_platforms.py` |
+| Role/location filters + matching | `scripts/assignment_matching.py` |
+| Consultant names, roles, locations | `consultants.yaml` |
+| Listing orchestration | `scripts/list-assignments.py` |
+
+When adding a new platform, register a scanner in `assignment_platforms.py`.
+Matching rules apply automatically once assignments use the normalized
+`AssignmentRecord` shape.
+
+## Raw fetch only
+
+`scripts/scan-assignments.py` fetches unfiltered assignments from configured
+platforms. Use it for debugging ingestion, not for Slack posting.
