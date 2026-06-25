@@ -129,6 +129,7 @@ consultants:
     mainRoles:
       - accessibility
       - frontend
+      - wordpress
     locations:
       - stockholm
     cvs:
