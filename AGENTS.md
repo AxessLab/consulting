@@ -10,8 +10,9 @@ Practical implications for agents working here:
 
 - **CV generation** uses a two-step pipeline: automations produce structured JSON;
   `scripts/render-cv.py` renders HTML and PDF from `templates/cv.html.j2`.
-- Install dependencies before rendering:
-  `pip install -r requirements.txt`
+- Install dependencies before rendering or listing:
+  `pip install -r requirements.txt` (or `python3 -m pip install -r requirements.txt`
+  on Linux cloud agents). Cloud setup runs `.cursor/install.sh`.
 - PDF rendering needs a Chromium-based browser (Edge, Chrome, or Chromium).
 - Do **not** generate or edit DOCX files for assignment-specific CVs. Source
   DOCX files under `cvs/` are factual content sources only.

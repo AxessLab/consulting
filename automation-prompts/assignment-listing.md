@@ -17,7 +17,7 @@ before posting.
 ### 1. Fetch candidates
 
 ```bash
-python scripts/fetch-assignments.py -o listing-candidates.json
+python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
 This scans every platform in `scripts/assignment_platforms.py`, dedupes against
@@ -86,7 +86,7 @@ Use canonical consultant names from `consultants.yaml` (`canonicalName`).
 ### 3. Finalize Slack output
 
 ```bash
-python scripts/finalize-listing.py listing-candidates.json curated-listing.json -o listing-output.json
+python3 scripts/finalize-listing.py listing-candidates.json curated-listing.json -o listing-output.json
 ```
 
 Review `slack_main` in `listing-output.json`. If it looks wrong, fix
@@ -101,7 +101,7 @@ Review `slack_main` in `listing-output.json`. If it looks wrong, fix
 ### 5. Commit memory (after Slack)
 
 ```bash
-python scripts/finalize-listing.py --commit-memory listing-output.json
+python3 scripts/finalize-listing.py --commit-memory listing-output.json
 ```
 
 Persistent dedupe: `assignment-listing-seen.json` (per-platform `seen_ids` plus
@@ -246,7 +246,7 @@ When adding a new platform, register a scanner in `assignment_platforms.py`.
 ## Debug / script-only mode
 
 ```bash
-python scripts/list-assignments.py --deterministic -o listing-output.json
+python3 scripts/list-assignments.py --deterministic -o listing-output.json
 ```
 
 Heuristic matches only — useful for tuning `assignment_matching.py`, not for

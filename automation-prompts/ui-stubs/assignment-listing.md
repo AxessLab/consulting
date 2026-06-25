@@ -10,12 +10,12 @@ these files from the repo and follow them as your source of truth:**
 
 ## Your job this run
 
-1. `python scripts/fetch-assignments.py -o listing-candidates.json`
+1. `python3 scripts/fetch-assignments.py -o listing-candidates.json`
 2. Curate matches per the prompt — write `curated-listing.json` (do not post script suggestions verbatim).
-3. `python scripts/finalize-listing.py listing-candidates.json curated-listing.json -o listing-output.json`
+3. `python3 scripts/finalize-listing.py listing-candidates.json curated-listing.json -o listing-output.json`
 4. Review `slack_main`; refine curated JSON and re-finalize if needed.
 5. Post `slack_main`, then reply with `slack_debug`.
-6. `python scripts/finalize-listing.py --commit-memory listing-output.json`
+6. `python3 scripts/finalize-listing.py --commit-memory listing-output.json`
 
 ## Constraints
 
