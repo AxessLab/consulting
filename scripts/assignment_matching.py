@@ -456,7 +456,7 @@ def match_consultants_for_assignment(
 def parse_hours_label(assignment: AssignmentRecord) -> str:
     text = f"{assignment.description} {assignment.duration}"
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[\s\S]{0,80}?(\d{1,3})\s*%",
         text,
         re.I,
     )
@@ -507,7 +507,11 @@ def validate_match(match: MatchedAssignment) -> str | None:
 
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
-    location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
+    work_mode = assignment.work_mode.strip()
+    if normalize_text(work_mode) in {"", "unknown"}:
+        location = assignment.location
+    else:
+        location = f"{assignment.location} | {work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     return (
         f"{assignment.listing_id} | {assignment.title} | {location} | "
