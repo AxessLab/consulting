@@ -10,21 +10,25 @@ python scripts/finalize-listing.py listing-candidates.json curated-listing.json 
 python scripts/finalize-listing.py --commit-memory listing-output.json
 ```
 
-Python fetches and dedupes; the automation agent applies filtering rules and
-writes `curated-listing.json`. Dedupe memory: `assignment-listing-seen.json`
-locally, synced via automation Memory entry **`assignment-listing-seen.json`**
-on cloud runs (see `automation-prompts/assignment-listing.md` step 0 and 5).
+Python fetches, normalizes, and dedupes; the automation agent applies filtering
+rules and writes `curated-listing.json`. Dedupe memory:
+`assignment-listing-seen.json` locally, synced via automation Memory entry
+**`assignment-listing-seen.json`** on cloud runs (see
+`automation-prompts/assignment-listing.md` step 0 and 5). Memory uses a unified
+`sources` object with bare per-source `seen_ids`.
 
-## Registered platforms
+## Registered Sources
 
-Defined in `scripts/assignment_platforms.py` → `PLATFORM_SCANNERS`:
+Defined in `scripts/assignment_platforms.py` → `SOURCE_REGISTRY` and
+`PLATFORM_SCANNERS`:
 
-| Platform | Auth | Notes |
-|----------|------|-------|
-| `allakonsultuppdrag.se` | None | JSON API only |
-| `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
+| Prefix | Source | Auth | Notes |
+|--------|--------|------|-------|
+| `a` | `allakonsultuppdrag.se` | None | Public JSON API only |
+| `v` | `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API list/detail JSON |
 
-Add new platforms by implementing `scan_<name>()` and registering it in
+Add new sources by picking an unused lowercase prefix, implementing
+`scan_<name>()`, and registering it in both `SOURCE_REGISTRY` and
 `PLATFORM_SCANNERS`.
 
 ## Matching

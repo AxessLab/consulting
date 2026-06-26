@@ -179,6 +179,8 @@ def skill_names(assignment: AssignmentRecord) -> list[str]:
     for skill in assignment.skills:
         if isinstance(skill, dict) and skill.get("name"):
             names.append(normalize_text(str(skill["name"])))
+        elif isinstance(skill, str) and skill:
+            names.append(normalize_text(skill))
     return names
 
 
@@ -210,11 +212,17 @@ def is_active_assignment(assignment: AssignmentRecord, scan_date: date) -> bool:
 
 def is_remote(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
+    for match in re.finditer(r"\b(\d{1,3})\s*%\s*remote\b", fields):
+        if int(match.group(1)) >= 100:
+            return True
+    fields = re.sub(r"\b\d{1,3}\s*%\s*remote\b", " ", fields)
     return any(term in fields for term in ("remote", "distans", "fjarrarbete", "fjärrarbete"))
 
 
 def is_hybrid(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
+    if re.search(r"\b([1-9]\d?)\s*%\s*remote\b", fields):
+        return True
     return "hybrid" in fields
 
 
@@ -455,19 +463,14 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if scope_match:
         return f"{scope_match.group(2)}%"
 
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    if re.search(r"\b(heltid|full[-\s]?time)\b", text, re.I):
+        return "Full time"
     return "not stated (probably full time)"
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
-    for pattern in (
-        r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
-    ):
+    for pattern in (r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",):
         match = re.search(pattern, description, re.I)
         if match:
             client = match.group(1).strip(" .")
@@ -478,6 +481,9 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
+    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+)$", assignment.title)
+    if title_match:
+        return title_match.group(1).strip(" .")
     return "not stated"
 
 
@@ -609,7 +615,8 @@ def suggestion_to_dict(suggestion: AssignmentSuggestion) -> dict[str, Any]:
     return {
         "dedupe_key": assignment.dedupe_key,
         "listing_id": assignment.listing_id,
-        "platform": assignment.platform,
+        "source_key": assignment.source_key,
+        "platform": assignment.source_key,
         "title": assignment.title,
         "location": assignment.location,
         "work_mode": assignment.work_mode,
