@@ -1,0 +1,255 @@
+{
+  "consultantSlug": "joel-holmberg",
+  "language": "swedish",
+  "assignmentId": "a7011",
+  "assignmentTitle": "Senior Tech Lead",
+  "assignmentFolder": "a7011 - Senior Tech Lead",
+  "variantId": "fullstack-java-react-ai",
+  "variantLabel": "Senior fullstack (Java, React, AI)",
+  "sourceCv": "cvs/Axessibility_Lab_AB_Joel_Holmberg_Senior_fullstackutvecklare_inom_Java_React_och_AI (1).docx",
+  "contact": {
+    "name": "Joel Holmberg",
+    "email": "joel@axesslab.com",
+    "phone": "+46 70 748 36 24"
+  },
+  "consultantName": "Joel Holmberg",
+  "roleTitle": "Senior fullstackutvecklare och mjukvaruarkitekt",
+  "profileParagraphs": [
+    "Joel är en senior fullstackutvecklare och mjukvaruarkitekt med över 14 års erfarenhet av att utveckla och förvalta affärskritiska system i produktion. Han har djup kompetens inom Java, Spring Boot, React, TypeScript och PostgreSQL samt gedigen erfarenhet av mikrotjänstarkitektur, API-design, integrationsintensiva lösningar och CI/CD.",
+    "Han kombinerar tekniskt helhetsperspektiv med praktisk leveransförmåga och har återkommande tagit ansvar för arkitektur, lösningsdesign, datamodellering, backend, frontend och långsiktig förvaltning. Joel trivs i tvärfunktionella team, samarbetar nära produktägare, verksamhet och andra intressenter och kan omsätta komplexa behov till robusta tekniska lösningar.",
+    "Joel är en analytisk problemlösare med stark pedagogisk förmåga. Han sätter sig snabbt in i tekniska flöden, organisationer och produktmål, stöttar utvecklare i tekniska vägval och bidrar till hållbara arbetssätt, kodkvalitet och modern utveckling med bland annat Cursor och LLM-baserade verktyg."
+  ],
+  "selectedEvidence": [
+    {
+      "title": "Mjukvaruarkitekt och fullstackutvecklare · We-U-Me AB",
+      "subtitle": "Okt 2021 – pågående",
+      "summary": "Var med från idé och förstudie till MVP och fortsatt utveckling för en startup inom personlig assistans. Bidrog med lösningsförslag, mjukvaruarkitektur, databasstruktur, backend- och frontendkod samt UX-design, och stöttade yngre kollegor och Scrum Master-arbete vid behov.",
+      "skills": [
+        "Mjukvaruarkitektur",
+        "Java",
+        "PostgreSQL",
+        "React.js",
+        "Datamodellering",
+        "CI/CD"
+      ]
+    },
+    {
+      "title": "Lead developer och tillgänglighetsspecialist · Kulturens Bildningsverksamhet",
+      "subtitle": "Nov 2021 – Dec 2022",
+      "summary": "Ledde utvecklingsteamet i arbetet med TK-appen, en webbplats där kulturarrangörer kan skapa tillgänglighetsblad för evenemang. Rollen omfattade arkitektur, kod, design, verksamhetsanalys samt tillgänglighetsanalys och förbättringar för bland annat skärmläsaranvändare.",
+      "skills": [
+        "Tekniskt ledarskap",
+        "Java",
+        "Spring Boot",
+        "REST API",
+        "React.js",
+        "Scrum Master"
+      ]
+    },
+    {
+      "title": "Arkitekt och fullstackutvecklare · Teknik i Väst",
+      "subtitle": "Jun 2019 – Jan 2025",
+      "summary": "Skapade arkitekturen för Techformance, en interaktiv teaterapplikation där deltagare påverkar det som händer på scenen. Lösningen byggdes med flera React-gränssnitt, Java/Spring Boot i backend, WebSockets och PostgreSQL.",
+      "skills": [
+        "Arkitektur",
+        "Java",
+        "Spring Boot",
+        "WebSockets",
+        "PostgreSQL",
+        "React.js"
+      ]
+    },
+    {
+      "title": "Backendutvecklare · Bankgirot",
+      "subtitle": "Jan 2012 – Dec 2016 · Stockholm",
+      "summary": "Backendutvecklare i teamet bakom Swish. Arbetade med affärskritiska betalningsflöden och integrationer mot banker, handlare och interna system samt ledde införandet av B2B-betalningar i en mikrotjänstarkitektur med höga krav på säkerhet, spårbarhet, tillgänglighet och prestanda.",
+      "skills": [
+        "Java",
+        "Spring",
+        "Mikrotjänster",
+        "Integrationer",
+        "IBM MQ",
+        "Docker"
+      ]
+    }
+  ],
+  "competenceChips": [
+    "Tekniskt ledarskap",
+    "Mjukvaruarkitektur",
+    "Lösningsdesign",
+    "Java",
+    "Spring Boot",
+    "Spring",
+    "React.js",
+    "TypeScript",
+    "PostgreSQL",
+    "SQL",
+    "Datamodellering",
+    "REST API",
+    "Swagger",
+    "Mikrotjänster",
+    "Integrationer",
+    "WebSockets",
+    "CI/CD",
+    "CircleCI",
+    "Jenkins",
+    "Docker",
+    "OpenShift",
+    "AWS",
+    "Git",
+    "Scrum Master",
+    "AI-stödd utveckling",
+    "Cursor AI"
+  ],
+  "projects": [
+    {
+      "title": "Mjukvaruarkitekt och fullstackutvecklare · We-U-Me AB",
+      "subtitle": "Okt 2021 – pågående",
+      "summary": "Joel har varit med från idé och förstudie till MVP och fortsatt utveckling för en startup inom personlig assistans. Han har tagit fram lösningsförslag, mjukvaruarkitektur, databasstruktur, backendkod, frontendkod och UX-design. Rollen har även omfattat stöd till yngre kollegor och Scrum Master-ansvar i omgångar.",
+      "skills": [
+        "Java",
+        "Hibernate",
+        "PostgreSQL",
+        "Datamodellering",
+        "React.js",
+        "Material UI",
+        "CleverCloud",
+        "CI/CD"
+      ]
+    },
+    {
+      "title": "Lead developer och tillgänglighetsspecialist · Kulturens Bildningsverksamhet",
+      "subtitle": "Nov 2021 – Dec 2022",
+      "summary": "Som ledare för utvecklingsteamet skapade Joel och teamet TK-appen, en webbplats där kulturarrangörer kan skapa tillgänglighetsblad för att informera personer med funktionsnedsättning om möjligheten att delta i evenemang. Joel arbetade med arkitektur, kod, design, verksamhetsanalys samt tillgänglighetsanalys och förbättringar för bland annat skärmläsaranvändare.",
+      "skills": [
+        "Tekniskt ledarskap",
+        "Java",
+        "Spring Boot",
+        "REST API",
+        "React.js",
+        "Material UI",
+        "Scrum Master",
+        "Skärmläsare"
+      ]
+    },
+    {
+      "title": "Arkitekt och fullstackutvecklare · Teknik i Väst",
+      "subtitle": "Jun 2019 – Jan 2025",
+      "summary": "Joel skapade arkitekturen för Techformance, en interaktiv teaterapplikation som låter deltagare bestämma vad som händer på scenen. Arbetet omfattade flera React-gränssnitt för publik och skådespelare samt backend i Java/Spring Boot med WebSockets och PostgreSQL.",
+      "skills": [
+        "Arkitektur",
+        "Java",
+        "Spring Boot",
+        "WebSockets",
+        "PostgreSQL",
+        "React.js",
+        "Material UI"
+      ]
+    },
+    {
+      "title": "Fullstackutvecklare · Riksförbundet FUB",
+      "subtitle": "Jan 2025 – Jan 2026",
+      "summary": "För DigiVi ansvarade Joel för datamodellering, API-design och utveckling av backend i Java, Spring Boot och PostgreSQL samt frontend i React. Han arbetade genom hela utvecklingskedjan från lösningsdesign till implementation och förvaltning av en app som underlättar relationer för personer med funktionsnedsättningar.",
+      "skills": [
+        "Java",
+        "Spring Boot",
+        "PostgreSQL",
+        "API-design",
+        "Swagger",
+        "React.js"
+      ]
+    },
+    {
+      "title": "Fullstackutvecklare · Dit-i-tid",
+      "subtitle": "Jan 2020 – Dec 2024",
+      "summary": "Joel skrev majoriteten av koden för Dit-i-tid, en påminnelsetjänst med fokus på kognitiva funktionsnedsättningar. Lösningen byggdes med Java, Spring Boot, Angular/TypeScript/JavaScript och AWS, med REST API, JWT, Liquibase och höga krav på användbarhet och tillgänglighet.",
+      "skills": [
+        "Java",
+        "Spring Boot",
+        "REST API",
+        "JWT",
+        "Liquibase",
+        "AWS",
+        "Angular"
+      ]
+    },
+    {
+      "title": "Fullstackutvecklare · SBAB",
+      "subtitle": "Apr 2019 – Dec 2023",
+      "summary": "Tillsammans med SBAB och Make Equal tog Joel fram Respekttrappan, en Trello-liknande webbapp för övningar inom likabehandling och antidiskriminering. Han arbetade med både backend- och frontendutveckling och bidrog till en hög nivå av tillgänglighet i webbappen.",
+      "skills": [
+        "Java",
+        "Spring",
+        "React.js",
+        "Material UI",
+        "Användartester",
+        "Tillgänglighet"
+      ]
+    },
+    {
+      "title": "AI-assisted development · ViewMe",
+      "subtitle": "Jan 2026 – Apr 2026",
+      "summary": "Joel ledde ett initiativ för att övergå till AI-ledd utveckling på ViewMe. Arbetet omfattade implementation av Cursor i flera utvecklingsflöden, bland annat boilerplate för DTO:er, mappers och controllers, refaktorering, JUnit-testgenerering, debugging, dokumentation av legacykod, SQL-generering, databasoptimering, API-kontrakt och best-practice-analys.",
+      "skills": [
+        "Cursor AI",
+        "AI development tools",
+        "JUnit",
+        "SQL",
+        "API-kontrakt",
+        "Databasoptimering"
+      ]
+    },
+    {
+      "title": "Backendutvecklare · Bankgirot",
+      "subtitle": "Jan 2012 – Dec 2016 · Stockholm",
+      "summary": "Joel arbetade som backendutvecklare i teamet bakom Swish. Han arbetade med affärskritiska betalningsflöden och integrationer mot banker, handlare och interna system samt ledde införandet av B2B-betalningar i en mikrotjänstarkitektur med höga krav på säkerhet, spårbarhet, tillgänglighet och prestanda.",
+      "skills": [
+        "Java",
+        "Spring",
+        "Mikrotjänster",
+        "Jenkins",
+        "Docker",
+        "IBM MQ",
+        "Docker Compose"
+      ]
+    }
+  ],
+  "skillLevels": [
+    {
+      "level": "Expert",
+      "skills": "Java, backendutveckling, programmering, prototypframtagning, kodgranskning och felsökning, tillgänglighet och WCAG 2.2 AA."
+    },
+    {
+      "level": "Avancerad",
+      "skills": "Spring Boot, React.js, TypeScript, PostgreSQL, SQL, datamodellering, REST API, Swagger, mikrotjänster, WebSockets, integrationer, CI/CD, AWS, OpenShift, Git, Material UI och komponentutveckling."
+    },
+    {
+      "level": "Hög kompetens",
+      "skills": "Mjukvaruarkitektur, lösningsdesign, Scrum Master-stöd, Docker, Docker Compose, Jenkins, CircleCI, IBM MQ, JWT, Liquibase, Hibernate, Angular, Storybook, incident management och production operations."
+    },
+    {
+      "level": "Ytterligare kompetens",
+      "skills": "Cursor AI, AI-stödd utveckling, AI development tools, LLM Integration, Atlassian Rovo AI, C#, Xamarin Android/iOS, Android SDK, .NET och Jira-pluginutveckling."
+    }
+  ],
+  "certifications": "Java Certified Programmer, Oracle, 2012. Master i Computer Science and Teaching, Royal Institute of Technology (KTH), Stockholm, 2007–2012.",
+  "languages": [
+    {
+      "language": "Svenska",
+      "proficiency": "Modersmål"
+    },
+    {
+      "language": "Engelska",
+      "proficiency": "Flytande"
+    }
+  ],
+  "labels": {
+    "contact": "Kontakt",
+    "selectedEvidence": "Utvalda projekt",
+    "relevantCompetence": "Tekniker",
+    "projects": "Projekt och uppdrag",
+    "skills": "Kompetenser",
+    "certifications": "Kurser, certifieringar och utbildning",
+    "languages": "Språk"
+  }
+}
