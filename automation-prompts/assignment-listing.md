@@ -136,8 +136,10 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: unified `sources` object. Each source stores its
+listing prefix, bare native `seen_ids`, `total_visible`, and
+`total_unique_visible`. Legacy `seen_keys`, `platforms.*.seen_ids`, and
+single-source `seen_ids` are migrated on seed/commit.
 
 ## Filtering rules
 
@@ -245,11 +247,12 @@ Three sections (built by `finalize-listing.py`):
 2. Other roles mentioning accessibility related terms
 3. Other roles where accessibility is not mentioned
 
-Pipe-separated lines. Verama ids use `v` prefix. Platform is implied by the
+Pipe-separated lines. Listing ids use the source prefix (`a` for
+allakonsultuppdrag.se, `v` for Verama). Source is implied by the id prefix and
 assignment link.
 
 ```text
-6236 | Software Developer Java | Stockholm | not stated (probably full time) | Client: not stated | Broker: A Society | Link: https://... | Posted: 2026-06-01 | Match: Joel Holmberg
+a6236 | Software Developer Java | Stockholm | not stated (probably full time) | Client: not stated | Broker: A Society | Link: https://... | Posted: 2026-06-01 | Match: Joel Holmberg
 v81387 | Experience UX & UI Designer | Stockholm (SE) | ... | Match: Soma Azad
 ```
 
@@ -258,7 +261,7 @@ If a section has no matches, it shows `No new matches.`
 ## Follow-up commands
 
 ```text
-fit 6236 Joel
+fit a6236 Joel
 fit v81387 Soma
 generate v81387 Soma english
 ```
@@ -267,14 +270,15 @@ generate v81387 Soma english
 
 | Concern | Location |
 |---------|----------|
-| Platform scanners | `scripts/assignment_platforms.py` |
+| Source registry/scanners | `scripts/assignment_platforms.py` |
 | Fetch + dedupe | `scripts/fetch-assignments.py` |
 | Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
 | Slack formatting + memory | `scripts/finalize-listing.py` |
 | Consultant names, roles, locations | `consultants.yaml` |
 
-When adding a new platform, register a scanner in `assignment_platforms.py`.
+When adding a new source, pick an unused lowercase prefix and register it in
+`SOURCE_REGISTRY` and `PLATFORM_SCANNERS` in `assignment_platforms.py`.
 
 ## Debug / script-only mode
 
