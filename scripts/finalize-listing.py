@@ -79,7 +79,11 @@ def build_slack_main(
         if not section_matches:
             parts.append("No new matches.")
         else:
-            parts.extend(format_slack_line(match, scan_date) for match in section_matches)
+            parts.append(
+                "\n\n".join(
+                    format_slack_line(match, scan_date) for match in section_matches
+                )
+            )
         parts.append("")
     return "\n".join(parts).strip()
 

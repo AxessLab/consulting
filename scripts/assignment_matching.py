@@ -445,6 +445,10 @@ def match_consultants_for_assignment(
     return section, matched
 
 
+UNKNOWN_HOURS_LABEL = "not stated (probably full time)"
+UNKNOWN_CLIENT_LABEL = "not stated"
+
+
 def parse_hours_label(assignment: AssignmentRecord) -> str:
     text = f"{assignment.description} {assignment.duration}"
     scope_match = re.search(
@@ -459,7 +463,7 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         return "100%"
     if re.search(r"\b50\s*%", text):
         return "50%"
-    return "not stated (probably full time)"
+    return UNKNOWN_HOURS_LABEL
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
@@ -478,7 +482,7 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
-    return "not stated"
+    return UNKNOWN_CLIENT_LABEL
 
 
 def posted_date_label(assignment: AssignmentRecord, scan_date: date) -> str:
@@ -499,16 +503,31 @@ def validate_match(match: MatchedAssignment) -> str | None:
     return None
 
 
+def slack_title_link(url: str, title: str) -> str:
+    """Slack mrkdwn link; sanitize characters that break `<url|label>` parsing."""
+    label = title.replace("|", " ").replace("<", "").replace(">", "").strip() or "View listing"
+    return f"<{url}|{label}>"
+
+
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
     location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
-    return (
-        f"{assignment.listing_id} | {assignment.title} | {location} | "
-        f"{match.hours_label} | Client: {match.client_label} | Broker: {assignment.broker} | "
-        f"Link: {assignment.source_url} | Posted: {posted_date_label(assignment, scan_date)} | "
-        f"Match: {consultants}"
+    segments = [
+        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+    ]
+    if match.hours_label != UNKNOWN_HOURS_LABEL:
+        segments.append(match.hours_label)
+    if match.client_label != UNKNOWN_CLIENT_LABEL:
+        segments.append(f"Client: {match.client_label}")
+    segments.extend(
+        [
+            assignment.broker,
+            posted_date_label(assignment, scan_date),
+            f"Match: {consultants}",
+        ]
     )
+    return " | ".join(segments)
 
 
 def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[AssignmentRecord]:

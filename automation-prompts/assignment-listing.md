@@ -239,18 +239,23 @@ Post exactly once: one main message and one debug reply.
 
 ## Main message format
 
-Three sections (built by `finalize-listing.py`):
+Three sections (built by `finalize-listing.py`). Section titles are **bold** in Slack (`*1. …*`). Assignment lines are separated by a blank line.
 
 1. Accessibility specialist related roles
 2. Other roles mentioning accessibility related terms
 3. Other roles where accessibility is not mentioned
 
 Pipe-separated lines. Verama ids use `v` prefix. Platform is implied by the
-assignment link.
+assignment link. Title is a Slack link (`<url|title>`). Omit client and hours/scope when unknown.
 
 ```text
-6236 | Software Developer Java | Stockholm | not stated (probably full time) | Client: not stated | Broker: A Society | Link: https://... | Posted: 2026-06-01 | Match: Joel Holmberg
-v81387 | Experience UX & UI Designer | Stockholm (SE) | ... | Match: Soma Azad
+*1. Accessibility specialist related roles*
+No new matches.
+
+*3. Other roles where accessibility is not mentioned*
+a6236 | 2026-06-01 | <https://...|Software Developer Java> | Stockholm | A Society | Match: Joel Holmberg
+
+v81387 | 2026-06-01 | <https://...|Experience UX & UI Designer> | Stockholm (SE) | 50% | Client: Acme | Ework | Match: Soma Azad
 ```
 
 If a section has no matches, it shows `No new matches.`
@@ -258,7 +263,7 @@ If a section has no matches, it shows `No new matches.`
 ## Follow-up commands
 
 ```text
-fit 6236 Joel
+fit a6236 Joel
 fit v81387 Soma
 generate v81387 Soma english
 ```

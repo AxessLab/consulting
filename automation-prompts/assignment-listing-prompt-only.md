@@ -318,7 +318,7 @@ Apply to **new** records after cross-source dedupe.
 
 - Fulltime/part-time/fixed-hours parsing should avoid false hour matches from dates, IDs, “1 year”, “1 person”, or application countdown text.
 - Only report percentages when tied to words like `omfattning`, `scope`, `utilization`, `beläggning`, `engagemang`, or `max`.
-- If both `100%` and `50%` appear, prefer the one tied to scope/omfattning; otherwise say `not stated (probably full time)` rather than guessing.
+- If both `100%` and `50%` appear, prefer the one tied to scope/omfattning; otherwise omit hours/scope from the Slack line (do not guess or write `not stated`).
 - End-client/company should be conservative. Only include a company/client when explicitly stated as `Kund:`, `End client:`, or clearly named in the title such as `till Folkhälsomyndigheten`. Do not infer from broker boilerplate, contact text, or malformed scraped/CSS fragments inside the description.
 
 ## Pre-Slack validation
@@ -357,31 +357,40 @@ If the first pass produces suspicious matches, refine locally before Slack. Post
 
 One main message for all sources combined.
 
-**Sections:**
+**Sections** (bold Slack headers — wrap each in `*…*`):
 
-1. Accessibility specialist related roles
-2. Other roles mentioning accessibility related terms
-3. Other roles where accessibility is not mentioned
+1. `*1. Accessibility specialist related roles*`
+2. `*2. Other roles mentioning accessibility related terms*`
+3. `*3. Other roles where accessibility is not mentioned*`
 
 If a section has no matches: `No new matches.`
+
+Separate assignment lines with **two newlines** (one blank line between items).
 
 **Per assignment** (pipe-separated, one line each):
 
 - `listing_id` — letter-prefixed id (`a6236`, `v81387`, …)
-- `title`
+- posted date (no `Posted:` label) — `{date part of publishedDate}` or scan date
+- `title` as a Slack link: `<{sourceUrl}|{title}>` (no separate link field)
 - `location` + `workMode`
-- Fulltime/part-time/fixed-hours from `description`, `duration`, `startDate`, `endDate`; if unknown: `not stated (probably full time)`
-- `Client: …` or `Client: not stated`
-- `Broker: …`
-- `Link: {sourceUrl}`
-- `Posted: {date part of publishedDate}` or scan date
+- Fulltime/part-time/fixed-hours from `description`, `duration`, `startDate`, `endDate` — **only when known** (e.g. `100%`, `50%`, `Part time`); omit when unknown (do not write `not stated` or `probably full time`)
+- `Client: …` — **only when a real client name is known**; omit when unknown
+- broker name (no `Broker:` label)
 - `Match: …` consultant names
 
 Examples:
 
 ```text
-a6236 | Software Developer Java | Stockholm | Full time | Client: not stated | Broker: A Society | Link: https://www.asocietygroup.com/sv/uppdrag/software-developer-java-16055 | Posted: 2026-06-01 | Match: Joel Holmberg
-v81387 | Experience UX & UI Designer | Stockholm (SE) | 25% remote | Client: not stated | Broker: Ework | Link: https://app.verama.com/app/job-requests/81387 | Posted: 2026-06-01 | Match: Soma Azad
+*1. Accessibility specialist related roles*
+No new matches.
+
+*2. Other roles mentioning accessibility related terms*
+No new matches.
+
+*3. Other roles where accessibility is not mentioned*
+a6236 | 2026-06-01 | <https://www.asocietygroup.com/sv/uppdrag/software-developer-java-16055|Software Developer Java> | Stockholm | A Society | Match: Joel Holmberg
+
+v81387 | 2026-06-01 | <https://app.verama.com/app/job-requests/81387|Experience UX & UI Designer> | Stockholm (SE) | 25% remote | 50% | Client: Acme AB | Ework | Match: Soma Azad
 ```
 
 Do not add source names or platform labels to main message lines — the listing id prefix and link identify the source.

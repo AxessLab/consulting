@@ -25,23 +25,23 @@ from assignment_platforms import DEFAULT_PLATFORMS, AssignmentRecord, PlatformSc
 from listing_memory import DEFAULT_MEMORY_PATH, build_memory_payload, commit_memory, load_memory
 
 
-def section_lines(matches: list[MatchedAssignment], section: str, scan_date: date) -> list[str]:
+def section_lines(matches: list[MatchedAssignment], section: str, scan_date: date) -> str:
     section_matches = [match for match in matches if match.section == section]
     if not section_matches:
-        return ["No new matches."]
-    return [format_slack_line(match, scan_date) for match in section_matches]
+        return "No new matches."
+    return "\n\n".join(format_slack_line(match, scan_date) for match in section_matches)
 
 
 def build_slack_main(matches: list[MatchedAssignment], scan_date: date) -> str:
     parts = [
         "*1. Accessibility specialist related roles*",
-        *section_lines(matches, "accessibility_specialist", scan_date),
+        section_lines(matches, "accessibility_specialist", scan_date),
         "",
         "*2. Other roles mentioning accessibility related terms*",
-        *section_lines(matches, "other_a11y_mentions", scan_date),
+        section_lines(matches, "other_a11y_mentions", scan_date),
         "",
         "*3. Other roles where accessibility is not mentioned*",
-        *section_lines(matches, "other", scan_date),
+        section_lines(matches, "other", scan_date),
     ]
     return "\n".join(parts).strip()
 
