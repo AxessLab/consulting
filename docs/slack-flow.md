@@ -8,7 +8,7 @@ analysis and CV generation requests should work.
 The assignment-listing automation posts compact Slack items. Each item should
 include:
 
-- assignment id in square brackets
+- letter-prefixed assignment id (`a` for allakonsultuppdrag.se, `v` for Verama)
 - assignment title
 - location and/or main role summary
 - link to the full online ad
@@ -17,7 +17,7 @@ include:
 Example:
 
 ```text
-[12345] Senior Front-end Developer, Stockholm
+a12345 | Senior Front-end Developer | Stockholm | Link: https://example.com/ad/12345 | Match: Joel
 <https://example.com/ad/12345|View ad>
 Good matches: Joel, Lena
 ```
@@ -34,14 +34,14 @@ fit <name>                     # from pasted ad text
 Examples:
 
 ```text
-fit 12345 Joel
-fit 12345 Joel Andersson
+fit a12345 Joel
+fit a12345 Joel Andersson
 fit v81387 Soma
 fit Karin Toft
 ```
 
-When the first token after `fit` is a listed assignment id (all digits, or `v`
-followed by digits for Verama), the automation uses **listed assignment mode**
+When the first token after `fit` is a listed assignment id (`a` or `v` followed
+by digits), the automation uses **listed assignment mode**
 and reads the id and ad link from the parent message. When it is not a listed
 id, the automation uses **pasted ad mode** and reads the assignment requirements
 from the parent message text instead of fetching an online ad.
@@ -58,9 +58,9 @@ generate <name> [language]                     # from pasted ad text
 Examples:
 
 ```text
-generate 12345 Joel
-generate 12345 Joel Holmberg english
-generate 12345 Joel Holmberg sv
+generate a12345 Joel
+generate a12345 Joel Holmberg english
+generate a12345 Joel Holmberg sv
 generate v81387 Soma english
 generate Karin Toft
 generate Karin Toft english
@@ -70,8 +70,8 @@ generate Karin Toft sv
 The optional language token must be the final token. Supported values are
 `english`, `swedish`, `en`, and `sv`.
 
-When the first token after `generate` is a listed assignment id (all digits, or
-`v` followed by digits for Verama), the automation uses **listed assignment
+When the first token after `generate` is a listed assignment id (`a` or `v`
+followed by digits), the automation uses **listed assignment
 mode** and reads the id and ad link from the parent message. When it is not a
 listed id, the automation uses **pasted ad mode** and reads the assignment
 requirements from the parent message text instead of fetching an online ad.
