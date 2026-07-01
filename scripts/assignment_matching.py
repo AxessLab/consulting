@@ -492,7 +492,7 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
     title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö&\-\s]+)$", assignment.title)
     if title_match:
         client = title_match.group(1).strip(" .")
-        if len(client) > 3:
+        if len(client) > 3 and normalize_text(client) not in {"registret", "kunden"}:
             return client
     return UNKNOWN_CLIENT_LABEL
 
