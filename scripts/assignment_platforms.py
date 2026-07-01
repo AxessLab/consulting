@@ -485,17 +485,23 @@ def scan_verama(
 
                 page.on("request", capture_auth_headers)
                 page.goto(f"{VERAMA_BASE}/sv/login", wait_until="domcontentloaded", timeout=60000)
-                page.locator('input[type="email"], input[name="email"]').first.fill(email)
-                page.locator('input[type="password"]').first.fill(password)
-                page.locator(
-                    'button[type="submit"], button:has-text("Logga in"), button:has-text("Log in")'
-                ).first.click()
-                page.wait_for_timeout(8000)
+                email_input = page.locator(
+                    'input[type="email"], input[name="email"], input[name="username"], input[type="text"]'
+                ).first
+                try:
+                    email_input.wait_for(timeout=5000)
+                    email_input.fill(email)
+                    page.locator('input[type="password"]').first.fill(password)
+                    page.locator(
+                        'button[type="submit"], button:has-text("Logga in"), button:has-text("Log in")'
+                    ).first.click()
+                    page.wait_for_timeout(8000)
+                except PlaywrightTimeoutError:
+                    # Verama sometimes redirects an already authenticated browser straight into the app.
+                    pass
                 page.goto(f"{VERAMA_BASE}/app/job-requests", wait_until="networkidle", timeout=90000)
                 page.wait_for_timeout(3000)
                 page.close()
-                if not auth_headers:
-                    raise RuntimeError("Could not capture Verama auth headers after login")
                 return auth_headers
 
             auth_headers = login_and_capture()
