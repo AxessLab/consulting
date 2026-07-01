@@ -329,7 +329,8 @@ TARGET_TITLE = re.compile(
     r"next\.?js|angular|wordpress|java|spring|fullstack|full-stack|full stack|ux|ui|"
     r"product designer|interaction design|interaktionsdesign|tjänstedesign|tjanstedesign|"
     r"project manager|projektledare|scrum master|projektkoordinator|project coordinator|"
-    r"agile coach|leveransansvarig|developer|utvecklare|consultant|konsult)\b",
+    r"agile coach|leveransansvarig|developer|utvecklare|systemutvecklare|"
+    r"backendutvecklare|frontendutvecklare|fullstackutvecklare|consultant|konsult)\b",
     re.I,
 )
 
