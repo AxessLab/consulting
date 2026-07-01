@@ -460,8 +460,9 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         text,
         re.I,
     )
-    if scope_matches:
-        return f"{scope_matches[-1]}%"
+    valid_scope_matches = [int(match) for match in scope_matches if 0 < int(match) <= 100]
+    if valid_scope_matches:
+        return f"{valid_scope_matches[-1]}%"
     if re.search(r"\b(part[- ]?time|deltid)\b", text, re.I):
         return "Part time"
     hours_match = re.search(
@@ -530,7 +531,7 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     ]
     if assignment.location:
         segments.append(assignment.location)
-    if assignment.workMode:
+    if assignment.workMode and normalize_text(assignment.workMode) != "unknown":
         segments.append(assignment.workMode)
     if match.hours_label:
         segments.append(match.hours_label)
