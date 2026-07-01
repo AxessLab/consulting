@@ -21,14 +21,14 @@ from assignment_platforms import DEFAULT_PLATFORMS, scan_platforms
 def build_slack_debug_summary(platform_results: list[dict[str, Any]]) -> str:
     parts: list[str] = []
     for result in platform_results:
-        label = result["platform"]
+        label = result.get("source_key", result.get("platform"))
         if result["status"] == "ok":
             parts.append(f"{label} ({result['count']})")
         elif result["status"] == "skipped":
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -80,7 +80,7 @@ def main(argv: list[str] | None = None) -> int:
 
     payload = {
         "scannedAt": datetime.now(UTC).isoformat(),
-        "platforms": [asdict(result) for result in results],
+        "platforms": [result.to_dict() for result in results],
         "assignments": [record.to_dict() for record in assignments],
     }
 
