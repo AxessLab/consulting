@@ -1,0 +1,259 @@
+{
+  "consultantSlug": "nikolaos-syropoulos",
+  "language": "english",
+  "assignmentId": "a7031",
+  "assignmentTitle": "Konsultuppdrag | Senior Experience Designer",
+  "assignmentFolder": "a7031 - Konsultuppdrag Senior Experience Designer",
+  "variantId": "senior-ux-ui-designer",
+  "variantLabel": "Senior UX/UI Designer",
+  "sourceCv": "cvs/Axessibility_Lab_AB_Nikolaos_Syropoulos_Senior_UXUI_Designer__Senterprise.docx",
+  "contact": {
+    "name": "Marisa Törnros",
+    "email": "marisa@axesslab.com",
+    "phone": "+46 76 571 3150"
+  },
+  "consultantName": "Nikolaos Syropoulos",
+  "roleTitle": "Senior UX/UI Designer & Product Designer (CPACC)",
+  "profileParagraphs": [
+    "Nikolaos \"Nicko\" Syropoulos is a senior Product Designer and UX/UI Designer with more than 12 years of experience designing digital products for web and mobile. He works across the full design process, from user research, discovery, workshops, information architecture and concept development to interaction design, high-fidelity prototyping, usability testing, design systems and implementation support.",
+    "Nicko has delivered design work in complex, stakeholder-rich environments for organizations including Zalando, Nordea, CSN, ICA, FUB and public-sector healthcare initiatives. He collaborates closely with product owners, engineers, researchers and business stakeholders, and has experience aligning teams around clear product direction, scalable UX patterns and inclusive customer experiences.",
+    "He is CPACC certified and has deep expertise in accessibility, cognitive accessibility and inclusive design. His recent work includes design-system evolution and large-scale accessibility adoption at Zalando, innovation-platform design at Nordea, and end-to-end product design for services used by people with cognitive disabilities."
+  ],
+  "selectedEvidence": [
+    {
+      "title": "Senior Product Designer and Accessibility Specialist - Zalando",
+      "subtitle": "Aug 2023 - Dec 2025 - Berlin",
+      "summary": "Contributed to the redesign and evolution of Zalando's design system across web, mobile web, iOS and Android. Worked with component design, Figma tokens and variables, accessibility improvements, usability testing, design reviews and cross-team adoption in a large international e-commerce organization.",
+      "skills": [
+        "Product design",
+        "UX/UI",
+        "Figma",
+        "Design tokens",
+        "Design systems",
+        "Usability testing",
+        "WCAG 2.2 AA",
+        "Cross-functional collaboration"
+      ]
+    },
+    {
+      "title": "Product Designer and UX Strategist - Nordea Innovation Platform",
+      "subtitle": "Jan 2019 - May 2019 - Stockholm",
+      "summary": "Designed an internal innovation platform that enabled Nordea employees to collaborate, develop ideas and share initiatives. Worked in an agile setup with Scrum Masters, product managers and developers, creating prototypes, interaction flows and accessible patterns for a platform later integrated into Nordea's intranet and used daily by thousands of employees.",
+      "skills": [
+        "UX strategy",
+        "Product design",
+        "Concept development",
+        "Prototyping",
+        "Agile collaboration",
+        "Design validation"
+      ]
+    },
+    {
+      "title": "Product Designer and UX Lead - Relationer som funkar / Riksförbundet FUB",
+      "subtitle": "Oct 2021 - Aug 2022 - Stockholm",
+      "summary": "Led UX strategy, concept development and end-to-end design for DigiVi, a social and dating application designed for users with mild to moderate cognitive disabilities and autism. Facilitated research and co-creation workshops, defined information architecture and interaction patterns, created branding and high-fidelity Figma prototypes, and collaborated with developers and stakeholders through iterative testing.",
+      "skills": [
+        "UX leadership",
+        "User research",
+        "Co-creation",
+        "Information architecture",
+        "High-fidelity prototyping",
+        "Inclusive design"
+      ]
+    },
+    {
+      "title": "Senior Product Designer - NKC / Hjärnkraft",
+      "subtitle": "Jan 2022 - Dec 2024 - Stockholm",
+      "summary": "Designed a digital knowledge platform for brain injury information together with Hjärnkraft. Conducted research, workshops and qualitative interviews, defined navigation and information architecture, developed the visual identity and design system, and collaborated with the web development team to create an accessible and trustworthy service experience.",
+      "skills": [
+        "User research",
+        "Workshop facilitation",
+        "Information architecture",
+        "Visual design",
+        "Content strategy",
+        "Developer collaboration"
+      ]
+    }
+  ],
+  "competenceChips": [
+    "Senior product design",
+    "UX/UI design",
+    "Experience design",
+    "Figma",
+    "Design systems",
+    "Design tokens",
+    "High-fidelity prototyping",
+    "Information architecture",
+    "Interaction design",
+    "User research",
+    "Usability testing",
+    "Workshop facilitation",
+    "Co-creation",
+    "Customer journey mapping",
+    "Service design",
+    "UX writing",
+    "Accessibility design",
+    "Cognitive accessibility",
+    "WCAG 2.1/2.2 AA",
+    "Cross-functional leadership",
+    "Agile collaboration",
+    "AI-supported design tooling"
+  ],
+  "projects": [
+    {
+      "title": "Senior Product Designer and Accessibility Specialist - Zalando",
+      "subtitle": "Aug 2023 - Dec 2025 - Berlin",
+      "summary": "Nicko worked in Zalando's Core Accessibility Team, evaluating web, mobile web, iOS and Android experiences and providing actionable design recommendations aligned with WCAG 2.2 and cognitive accessibility guidelines. He was appointed Design Captain for Open Houses, creating a real-time bridge between designers and engineers to unblock implementation, and contributed to the redesign of design-system components using Figma tokens and variables. He trained more than 100 designers in accessible design and supported teams with technical specifications, annotation templates, design reviews and usability testing.",
+      "skills": [
+        "Product design",
+        "UX/UI",
+        "Figma",
+        "Design tokens",
+        "Design systems",
+        "iOS",
+        "Android",
+        "Usability testing",
+        "WCAG 2.2 AA",
+        "Team leadership"
+      ]
+    },
+    {
+      "title": "Product Designer and UX Strategist - Nordea Innovation Platform",
+      "subtitle": "Jan 2019 - May 2019 - Stockholm",
+      "summary": "Nicko helped design and develop an internal platform for idea generation and innovation across Nordea. The platform was later integrated into Nordea's intranet and is used daily by thousands of employees. He led UX design and concept development, iterated with Scrum Masters, product managers and developers, created high-fidelity prototypes and design specifications, and supported rollout and validation across employee groups.",
+      "skills": [
+        "UX strategy",
+        "Concept development",
+        "Product design",
+        "Prototyping",
+        "Scrum",
+        "Accessible interaction patterns"
+      ]
+    },
+    {
+      "title": "Senior Product Designer - NKC / Hjärnkraft",
+      "subtitle": "Jan 2022 - Dec 2024 - Stockholm",
+      "summary": "For the national Swedish brain injury association Hjärnkraft, Nicko designed a digital platform for knowledge about brain injuries, patient rights, health programs and care guidelines. He conducted user research, workshops and qualitative interviews, defined functional and informational requirements, designed information architecture and navigation, developed brand identity and visual design, and worked with developers to translate specifications into a responsive and accessible platform.",
+      "skills": [
+        "User research",
+        "Workshop facilitation",
+        "Information architecture",
+        "Brand identity",
+        "Visual design",
+        "UX writing",
+        "Accessibility design"
+      ]
+    },
+    {
+      "title": "Product Designer, UX Lead and Accessibility Specialist - Relationer som funkar / Riksförbundet FUB",
+      "subtitle": "Oct 2021 - Aug 2022 - Stockholm",
+      "summary": "Nicko led UX strategy, conceptualization and end-to-end design for DigiVi, a social application for users with mild to moderate cognitive disabilities and autism. He designed and facilitated research and co-creation workshops, defined information architecture, interaction patterns and content strategy, created UX documentation, branding, high-fidelity Figma prototypes and user flows, and collaborated closely with developers, researchers and product managers in an agile setup.",
+      "skills": [
+        "UX leadership",
+        "Co-creation",
+        "User research",
+        "Information architecture",
+        "Interaction design",
+        "High-fidelity prototyping",
+        "Accessibility guidelines"
+      ]
+    },
+    {
+      "title": "Product Designer, UX Designer and Researcher - CoDeAc / Forte / 1177",
+      "subtitle": "Sep 2019 - Aug 2020 - Stockholm",
+      "summary": "Nicko contributed to an R&D initiative focused on improving Sweden's national e-health service 1177 for users with multiple disabilities and chronic conditions. He designed and implemented more than 40 participatory online workshops, led experimental design and concept creation, produced UX documentation and design-system components, created high-fidelity prototypes and worked with researchers, healthcare experts and developers to translate findings into design solutions.",
+      "skills": [
+        "Participatory research",
+        "Workshop facilitation",
+        "UX strategy",
+        "Prototyping",
+        "Design systems",
+        "Healthcare",
+        "WCAG 2.2"
+      ]
+    },
+    {
+      "title": "Senior Product Designer and Accessibility Specialist - CSN",
+      "subtitle": "Jun 2022 - May 2023 - Sundsvall",
+      "summary": "Nicko worked in a cross-functional team of designers, developers and accessibility experts to improve accessibility across CSN's digital ecosystem. He evaluated web and app services, identified usability and accessibility barriers, delivered design recommendations, conducted usability testing, user observations and interviews, and collaborated with developers, content designers and product owners to improve information architecture and interaction design.",
+      "skills": [
+        "Product design",
+        "Web accessibility",
+        "User research",
+        "Usability testing",
+        "Information architecture",
+        "Cross-functional collaboration"
+      ]
+    },
+    {
+      "title": "Product Designer and UX Lead - DigiJag / Riksförbundet FUB",
+      "subtitle": "Mar 2018 - Aug 2023 - Stockholm",
+      "summary": "Nicko led UX research, concept development and design for a cross-device educational platform for users with moderate intellectual disabilities. He designed information architecture and interaction flows, created wireframes and high-fidelity prototypes, developed UX documentation and design specifications, facilitated usability testing with diverse user groups and collaborated with developers and the product owner in Scrum sprints.",
+      "skills": [
+        "Product design",
+        "UX research",
+        "Wireframing",
+        "Prototyping",
+        "UX writing",
+        "Usability testing",
+        "Cognitive accessibility"
+      ]
+    },
+    {
+      "title": "Product Designer and UX Lead - Mitt Vuxenliv / Riksförbundet FUB",
+      "subtitle": "Sep 2020 - Aug 2022 - Stockholm",
+      "summary": "Nicko led UX strategy, conceptualization and design of three responsive web applications supporting young adults with cognitive disabilities in independent living. The suite included financial management, time management and gamified learning tools that are widely used across special schools in Sweden. He facilitated workshops and user research, defined information architecture and content structure, delivered interactive prototypes and collaborated with educators, developers and stakeholders.",
+      "skills": [
+        "Service design",
+        "Responsive design",
+        "Interaction design",
+        "User research",
+        "Workshop facilitation",
+        "High-fidelity prototyping",
+        "Cognitive accessibility"
+      ]
+    },
+    {
+      "title": "Product Designer and Accessibility Specialist - HowlRound Theatre Commons",
+      "subtitle": "Feb 2024 - May 2024 - Boston",
+      "summary": "Nicko led accessibility evaluations and usability research for HowlRound's digital platform. The work included a design-focused evaluation and a formal compliance audit against WCAG 2.2 and EN 301 549, usability testing with diverse participants, actionable design recommendations, an educational seminar for content editors and collaboration with developers and stakeholders to embed accessibility practices into design and editorial workflows.",
+      "skills": [
+        "Accessibility evaluation",
+        "Usability research",
+        "Inclusive design",
+        "Stakeholder collaboration",
+        "WCAG 2.2",
+        "EN 301 549"
+      ]
+    }
+  ],
+  "skillLevels": [
+    {
+      "level": "Expert",
+      "skills": "Senior product design, UX/UI design, user-centered design, information architecture, interaction design, high-fidelity prototyping, user research, usability testing, accessibility design, cognitive accessibility and WCAG 2.1/2.2 AA."
+    },
+    {
+      "level": "Advanced",
+      "skills": "Figma, design systems, design tokens, visual design, service design, customer journey mapping, workshop facilitation, co-creation, UX strategy, UX writing, stakeholder facilitation and cross-functional collaboration with engineers, researchers and product owners."
+    },
+    {
+      "level": "High competence",
+      "skills": "Agile product development, Scrum collaboration, native iOS and Android design evaluation, web and mobile accessibility audits, EN 301 549, inclusive content workflows, AI-supported design tooling and complex healthcare, public-sector, banking, e-commerce and disability-domain services."
+    }
+  ],
+  "certifications": "CPACC - IAAP Certified Professional in Accessibility Core Competencies, International Association of Accessibility Professionals (IAAP), 2024. Voice Interaction and Voice Assistants Design Sprint, Technische Universität Dresden, 2019. Research in Human-Computer Interaction and Accessibility, KTH Royal Institute of Technology, PhD studies not completed, 2020-2022. Master of Science in Interactive Media Technology, KTH Royal Institute of Technology, 2016-2019. Master of Science in Health Informatics, Karolinska Institutet, 2012-2014. Bachelor of Science in Speech and Language Pathology, University of Ioannina, 2004-2008.",
+  "languages": [
+    {
+      "language": "Greek",
+      "proficiency": "Native or bilingual proficiency"
+    },
+    {
+      "language": "Swedish",
+      "proficiency": "Full professional proficiency"
+    },
+    {
+      "language": "English",
+      "proficiency": "Full professional proficiency"
+    }
+  ]
+}
