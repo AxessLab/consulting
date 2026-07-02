@@ -511,6 +511,12 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
+    customer_match = re.search(
+        r"\bkund\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&.\- ]{2,60}?)\s+söker\b",
+        description,
+    )
+    if customer_match:
+        return customer_match.group(1).strip(" .")
     title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö&.\- ]{3,60})$", assignment.title)
     if title_match:
         return title_match.group(1).strip(" .")
