@@ -473,12 +473,14 @@ UNKNOWN_CLIENT_LABEL = ""
 def parse_hours_label(assignment: AssignmentRecord) -> str:
     text = f"{assignment.description} {assignment.duration} {assignment.startDate or ''} {assignment.endDate or ''}"
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}?(\d{1,3})\s*%",
         text,
         re.I,
     )
     if scope_match:
-        return f"{scope_match.group(2)}%"
+        percentage = int(scope_match.group(2))
+        if 0 < percentage <= 100:
+            return f"{percentage}%"
 
     part_time = re.search(r"\b(part[- ]?time|deltid|halvtid)\b", text, re.I)
     if part_time:
