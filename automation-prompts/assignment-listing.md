@@ -4,13 +4,13 @@ Use this guidance when producing Slack assignment lists for consultant matching.
 
 ## Goal
 
-Post new IT consulting assignments from **all configured platforms** in three
+Post new IT consulting assignments from **all configured sources** in three
 sections, with a debug thread reply.
 
-**Python handles mechanical work** (platform fetch, dedupe, memory, Slack line
-formatting). **You handle judgment** (role/location matching, false-positive
-removal, missed matches, validation). Iterate until the curated list is good
-before posting.
+**Python handles mechanical work** (source fetch, normalization, per-source
+dedupe, cross-source dedupe, memory, Slack line formatting). **You handle
+judgment** (role/location matching, false-positive removal, missed matches,
+validation). Iterate until the curated list is good before posting.
 
 ## Run flow
 
@@ -42,16 +42,16 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+This scans every source in `scripts/assignment_platforms.py`, dedupes against
 `assignment-listing-seen.json`, and writes:
 
-- `assignments` — all currently visible unique records (for lookup)
-- `new_dedupe_keys` — ids not posted before
+- `assignments` — all currently visible records after within-source dedupe
+- `new_dedupe_keys` — cross-source reporting-pool ids not posted before
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
 - `memory_update` — draft memory (do not commit until after Slack post)
-- `platform_summary` — for the debug thread
+- `platform_summary` — source counts for the debug thread
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
 
@@ -87,7 +87,7 @@ Write `curated-listing.json`:
   "debug_rejects": [
     {
       "listing_id": "6830",
-      "platform": "allakonsultuppdrag.se",
+      "source_key": "allakonsultuppdrag.se",
       "title": "GIS Consultant - Project Manager",
       "reason": "location",
       "would_match": ["Erik Gustafsson Spagnoli", "Karin Skog"]
@@ -136,8 +136,10 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: top-level `sources`; each source stores its registry
+`prefix`, bare native `seen_ids`, `total_visible`, and `total_unique_visible`.
+Cloud runs restore and overwrite the automation Memory entry named
+`assignment-listing-seen.json` with that JSON.
 
 ## Filtering rules
 
@@ -272,7 +274,7 @@ generate v81387 Soma english
 
 | Concern | Location |
 |---------|----------|
-| Platform scanners | `scripts/assignment_platforms.py` |
+| Source scanners and registry | `scripts/assignment_platforms.py` |
 | Fetch + dedupe | `scripts/fetch-assignments.py` |
 | Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
