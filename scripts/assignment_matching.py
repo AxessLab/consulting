@@ -242,6 +242,20 @@ def in_gothenburg(location: str) -> bool:
     return any(alias in normalized for alias in GOTHENBURG_ALIASES)
 
 
+def cross_source_broker_key(broker: str) -> str:
+    normalized = normalize_text(broker)
+    normalized = re.sub(r"\b(group|ab|aktiebolag|consulting|konsult)\b", " ", normalized)
+    return re.sub(r"[^a-z0-9]+", "", normalized)
+
+
+def cross_source_location_key(location: str) -> str:
+    if near_stockholm(location):
+        return "stockholm-region"
+    if in_gothenburg(location):
+        return "gothenburg"
+    return re.sub(r"[^a-z0-9]+", "", normalize_text(location))
+
+
 def location_passes_for_categories(
     assignment: AssignmentRecord,
     categories: set[str],
@@ -554,8 +568,12 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
     platform_rank = {"verama.com": 0, "allakonsultuppdrag.se": 1}
 
     for assignment in assignments:
-        fingerprint = normalize_text(
-            f"{assignment.title}|{assignment.broker}|{assignment.location}"
+        fingerprint = "|".join(
+            (
+                re.sub(r"\s+", " ", normalize_text(assignment.title)).strip(),
+                cross_source_broker_key(assignment.broker),
+                cross_source_location_key(assignment.location),
+            )
         )
         existing = by_fingerprint.get(fingerprint)
         if existing is None:
