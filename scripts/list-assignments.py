@@ -55,7 +55,7 @@ def build_platform_summary(platform_results: list[PlatformScanResult]) -> str:
             parts.append(f"{result.platform} (skipped)")
         else:
             parts.append(f"{result.platform} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def build_slack_debug(
@@ -74,7 +74,7 @@ def build_slack_debug(
         f"Visible assignments: {total_visible} (unique after cross-platform dedupe: {total_unique_visible})",
         f"New ids: {new_count}",
         f"Reported matches: {reported_count}",
-        "(deterministic mode — prefer fetch + AI curation for production)",
+        "(deterministic mode — prefer fetch + curation for production)",
         "",
         "Close non-matches (sample):",
     ]
@@ -106,22 +106,26 @@ def prepare_listing(
     headless: bool = True,
 ) -> dict[str, Any]:
     scan_date = scan_date or date.today()
-    seen_keys, _ = load_memory(memory_path)
+    seen_by_source, memory_data = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_by_source=seen_by_source,
+        scan_date=scan_date,
     )
     deduped_assignments = cross_platform_dedupe(raw_assignments)
     new_assignments = [
-        assignment for assignment in deduped_assignments if assignment.dedupe_key not in seen_keys
+        assignment
+        for assignment in deduped_assignments
+        if assignment.source_id not in seen_by_source.get(assignment.source_key, set())
     ]
 
     profiles = load_consultant_profiles()
     matches, rejects = process_assignments(
         new_assignments,
-        seen_keys=seen_keys,
+        seen_by_source=seen_by_source,
         scan_date=scan_date,
         profiles=profiles,
     )
@@ -130,16 +134,17 @@ def prepare_listing(
         assignments=deduped_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        previous_memory=memory_data,
     )
 
     return {
         "source": "deterministic-listing",
         "scan_date": scan_date.isoformat(),
         "memory_path": str(memory_path),
-        "platforms": [result.platform for result in platform_results],
+        "sources": [result.source_key for result in platform_results],
         "platform_results": [
             {
-                "platform": result.platform,
+                "source_key": result.source_key,
                 "status": result.status,
                 "count": result.count,
                 "message": result.message,
@@ -149,7 +154,7 @@ def prepare_listing(
         "stats": {
             "total_visible": len(raw_assignments),
             "total_unique_visible": len(deduped_assignments),
-            "previously_seen": len(seen_keys),
+            "previously_seen": sum(len(ids) for ids in seen_by_source.values()),
             "new_ids": len(new_assignments),
             "reported_matches": len(matches),
             "rejected": len(rejects),
@@ -169,7 +174,7 @@ def prepare_listing(
         "matches": [
             {
                 "listing_id": match.assignment.listing_id,
-                "platform": match.assignment.platform,
+                "source_key": match.assignment.source_key,
                 "section": match.section,
                 "title": match.assignment.title,
                 "consultants": match.consultants,
