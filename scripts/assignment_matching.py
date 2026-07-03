@@ -465,7 +465,7 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         r"|\bmax(?:imum)?\b)"
     )
     scope_match = re.search(
-        scope_marker + r"[^%\n]{0,40}(\d{1,3})\s*%",
+        scope_marker + r"[^%\n]{0,40}?\b(\d{1,3})\s*%",
         text,
         re.I,
     )
@@ -474,7 +474,7 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
 
     fixed_hours = re.search(
         scope_marker
-        + r"[^\n]{0,50}\b(\d{1,3})\s*(?:h|hours|timmar)\s*(?:/|per)?\s*(?:week|vecka)\b",
+        + r"[^\n]{0,50}?\b(\d{1,3})\s*(?:h|hours|timmar)\s*(?:/|per)?\s*(?:week|vecka)\b",
         text,
         re.I,
     )
