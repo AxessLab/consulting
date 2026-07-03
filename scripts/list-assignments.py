@@ -22,7 +22,14 @@ from assignment_matching import (
     process_assignments,
 )
 from assignment_platforms import DEFAULT_PLATFORMS, AssignmentRecord, PlatformScanResult, scan_platforms
-from listing_memory import DEFAULT_MEMORY_PATH, build_memory_payload, commit_memory, load_memory
+from listing_memory import (
+    DEFAULT_MEMORY_PATH,
+    build_memory_payload,
+    commit_memory,
+    load_source_memory,
+    seen_ids_by_source,
+    source_is_new,
+)
 
 
 def section_lines(matches: list[MatchedAssignment], section: str, scan_date: date) -> str:
@@ -50,12 +57,12 @@ def build_platform_summary(platform_results: list[PlatformScanResult]) -> str:
     parts: list[str] = []
     for result in platform_results:
         if result.status == "ok":
-            parts.append(f"{result.platform} ({result.count})")
+            parts.append(f"{result.source_key} ({result.count})")
         elif result.status == "skipped":
-            parts.append(f"{result.platform} (skipped)")
+            parts.append(f"{result.source_key} (skipped)")
         else:
-            parts.append(f"{result.platform} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+            parts.append(f"{result.source_key} (error)")
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def build_slack_debug(
@@ -106,40 +113,46 @@ def prepare_listing(
     headless: bool = True,
 ) -> dict[str, Any]:
     scan_date = scan_date or date.today()
-    seen_keys, _ = load_memory(memory_path)
+    memory = load_source_memory(memory_path)
+    seen_by_source = seen_ids_by_source(memory)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_ids_by_source=seen_by_source,
+        scan_date=scan_date,
     )
     deduped_assignments = cross_platform_dedupe(raw_assignments)
     new_assignments = [
-        assignment for assignment in deduped_assignments if assignment.dedupe_key not in seen_keys
+        assignment for assignment in deduped_assignments if source_is_new(memory, assignment)
     ]
 
     profiles = load_consultant_profiles()
     matches, rejects = process_assignments(
         new_assignments,
-        seen_keys=seen_keys,
+        seen_keys=set(),
         scan_date=scan_date,
         profiles=profiles,
     )
 
     memory_payload = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        previous_memory=memory,
     )
 
     return {
         "source": "deterministic-listing",
         "scan_date": scan_date.isoformat(),
         "memory_path": str(memory_path),
-        "platforms": [result.platform for result in platform_results],
+        "sources": [result.source_key for result in platform_results],
+        "platforms": [result.source_key for result in platform_results],
         "platform_results": [
             {
-                "platform": result.platform,
+                "source_key": result.source_key,
+                "platform": result.source_key,
                 "status": result.status,
                 "count": result.count,
                 "message": result.message,
@@ -149,7 +162,7 @@ def prepare_listing(
         "stats": {
             "total_visible": len(raw_assignments),
             "total_unique_visible": len(deduped_assignments),
-            "previously_seen": len(seen_keys),
+            "previously_seen": sum(len(ids) for ids in seen_by_source.values()),
             "new_ids": len(new_assignments),
             "reported_matches": len(matches),
             "rejected": len(rejects),
@@ -169,11 +182,12 @@ def prepare_listing(
         "matches": [
             {
                 "listing_id": match.assignment.listing_id,
-                "platform": match.assignment.platform,
+                "source_key": match.assignment.source_key,
+                "platform": match.assignment.source_key,
                 "section": match.section,
                 "title": match.assignment.title,
                 "consultants": match.consultants,
-                "source_url": match.assignment.source_url,
+                "sourceUrl": match.assignment.sourceUrl,
             }
             for match in matches
         ],

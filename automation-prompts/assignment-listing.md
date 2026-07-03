@@ -4,10 +4,10 @@ Use this guidance when producing Slack assignment lists for consultant matching.
 
 ## Goal
 
-Post new IT consulting assignments from **all configured platforms** in three
+Post new IT consulting assignments from **all configured sources** in three
 sections, with a debug thread reply.
 
-**Python handles mechanical work** (platform fetch, dedupe, memory, Slack line
+**Python handles mechanical work** (source fetch, dedupe, memory, Slack line
 formatting). **You handle judgment** (role/location matching, false-positive
 removal, missed matches, validation). Iterate until the curated list is good
 before posting.
@@ -42,7 +42,7 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+This scans every source in `scripts/assignment_platforms.py`, dedupes against
 `assignment-listing-seen.json`, and writes:
 
 - `assignments` — all currently visible unique records (for lookup)
@@ -51,7 +51,7 @@ This scans every platform in `scripts/assignment_platforms.py`, dedupes against
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
 - `memory_update` — draft memory (do not commit until after Slack post)
-- `platform_summary` — for the debug thread
+- `platform_summary` — source scan counts for the debug thread
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
 
@@ -87,7 +87,7 @@ Write `curated-listing.json`:
   "debug_rejects": [
     {
       "listing_id": "6830",
-      "platform": "allakonsultuppdrag.se",
+      "source_key": "allakonsultuppdrag.se",
       "title": "GIS Consultant - Project Manager",
       "reason": "location",
       "would_match": ["Erik Gustafsson Spagnoli", "Karin Skog"]
@@ -136,8 +136,9 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: a top-level `sources` object. Each source stores its
+registry prefix, bare native `seen_ids`, and current visible counts. Legacy
+`seen_keys` / `platforms` memories are migrated when seeded.
 
 ## Filtering rules
 
@@ -272,14 +273,15 @@ generate v81387 Soma english
 
 | Concern | Location |
 |---------|----------|
-| Platform scanners | `scripts/assignment_platforms.py` |
+| Source scanners | `scripts/assignment_platforms.py` |
 | Fetch + dedupe | `scripts/fetch-assignments.py` |
 | Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
 | Slack formatting + memory | `scripts/finalize-listing.py` |
 | Consultant names, roles, locations | `consultants.yaml` |
 
-When adding a new platform, register a scanner in `assignment_platforms.py`.
+When adding a new source, add it to `SOURCE_REGISTRY` and register a scanner in
+`assignment_platforms.py`.
 
 ## Debug / script-only mode
 

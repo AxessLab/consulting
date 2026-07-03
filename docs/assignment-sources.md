@@ -14,17 +14,21 @@ Python fetches and dedupes; the automation agent applies filtering rules and
 writes `curated-listing.json`. Dedupe memory: `assignment-listing-seen.json`
 locally, synced via automation Memory entry **`assignment-listing-seen.json`**
 on cloud runs (see `automation-prompts/assignment-listing.md` step 0 and 5).
+The memory file uses one top-level `sources` object with each source's prefix,
+bare native `seen_ids`, and current visible counts.
 
-## Registered platforms
+## Registered sources
 
-Defined in `scripts/assignment_platforms.py` → `PLATFORM_SCANNERS`:
+Defined in `scripts/assignment_platforms.py` → `SOURCE_REGISTRY` and
+`PLATFORM_SCANNERS`:
 
-| Platform | Auth | Notes |
-|----------|------|-------|
-| `allakonsultuppdrag.se` | None | JSON API only |
-| `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
+| Prefix | Source | Auth | Notes |
+|--------|--------|------|-------|
+| `a` | `allakonsultuppdrag.se` | None | JSON API only |
+| `v` | `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API, conditional detail fetch |
 
-Add new platforms by implementing `scan_<name>()` and registering it in
+Add new sources by choosing an unused lowercase prefix, adding it to
+`SOURCE_REGISTRY`, implementing `scan_<name>()`, and registering it in
 `PLATFORM_SCANNERS`.
 
 ## Matching
