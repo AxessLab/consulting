@@ -460,9 +460,12 @@ UNKNOWN_CLIENT_LABEL = "not stated"
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
     text = f"{assignment.description} {assignment.duration} {assignment.startDate or ''} {assignment.endDate or ''}"
+    scope_marker = (
+        r"(?:\b(?:omfattning|omfattar|scope|utilization|beläggning|belaggning|engagemang)\b"
+        r"|\bmax(?:imum)?\b)"
+    )
     scope_match = re.search(
-        r"(omfattning|omfattar|scope|utilization|beläggning|belaggning|engagemang|max)"
-        r"[^%\n]{0,40}(\d{1,3})\s*%",
+        scope_marker + r"[^%\n]{0,40}(\d{1,3})\s*%",
         text,
         re.I,
     )
@@ -470,8 +473,8 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         return f"{scope_match.group(2)}%"
 
     fixed_hours = re.search(
-        r"(omfattning|omfattar|scope|utilization|beläggning|belaggning|engagemang|max)"
-        r"[^\n]{0,50}\b(\d{1,3})\s*(?:h|hours|timmar)\s*(?:/|per)?\s*(?:week|vecka)\b",
+        scope_marker
+        + r"[^\n]{0,50}\b(\d{1,3})\s*(?:h|hours|timmar)\s*(?:/|per)?\s*(?:week|vecka)\b",
         text,
         re.I,
     )
