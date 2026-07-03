@@ -470,7 +470,7 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         re.I,
     )
     if scope_match:
-        return f"{scope_match.group(2)}%"
+        return f"{scope_match.group(1)}%"
 
     fixed_hours = re.search(
         scope_marker
@@ -479,7 +479,7 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         re.I,
     )
     if fixed_hours:
-        return f"{fixed_hours.group(2)} h/week"
+        return f"{fixed_hours.group(1)} h/week"
 
     if re.search(r"\b(part[- ]?time|deltid)\b", text, re.I):
         return "Part time"
