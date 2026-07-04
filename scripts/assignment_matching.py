@@ -311,7 +311,7 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
         r"solution architect|platform architect)\b",
         text,
     ):
-        if re.search(r"\b(react|next\.js|nextjs|frontend|front-end)\b", title_summary):
+        if re.search(r"\b(react|next\.js|nextjs)\b", title_summary):
             categories.add("react_frontend")
     elif phrase_match(r"\b(fullstack|full-stack|full stack)\b", title_text):
         pass
