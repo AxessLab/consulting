@@ -468,7 +468,9 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         re.I,
     )
     if scope_match:
-        return f"{scope_match.group(2)}%"
+        percentage = int(scope_match.group(2))
+        if percentage > 0:
+            return f"{percentage}%"
 
     reverse_scope_match = re.search(
         r"\b(\d{1,3})\s*%[^.\n]{0,40}(omfattning|scope|utilization|"
@@ -477,7 +479,9 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         re.I,
     )
     if reverse_scope_match:
-        return f"{reverse_scope_match.group(1)}%"
+        percentage = int(reverse_scope_match.group(1))
+        if percentage > 0:
+            return f"{percentage}%"
 
     if re.search(r"\b(part[- ]?time|deltid)\b", text, re.I):
         return "Part time"
