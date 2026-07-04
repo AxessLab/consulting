@@ -301,6 +301,8 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
         return {"accessibility_specialist"}
 
     text = combined_text(assignment)
+    title_text = normalize_text(assignment.title)
+    title_summary = normalize_text(f"{assignment.title} {assignment.description_summary}")
     skills = skill_names(assignment)
     categories: set[str] = set()
 
@@ -309,11 +311,13 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
         r"solution architect|platform architect)\b",
         text,
     ):
-        if re.search(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text):
+        if re.search(r"\b(react|next\.js|nextjs|frontend|front-end)\b", title_summary):
             categories.add("react_frontend")
-    elif phrase_match(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text) or (
+    elif phrase_match(r"\b(fullstack|full-stack|full stack)\b", title_text):
+        pass
+    elif phrase_match(r"\b(react|next\.js|nextjs|frontend|front-end)\b", title_summary) or (
         any(s in skills for s in ("react", "nextjs", "frontend"))
-        and phrase_match(r"\b(frontend|front-end|react)\b", text)
+        and phrase_match(r"\b(frontend|front-end|react)\b", title_summary)
     ):
         categories.add("react_frontend")
 
@@ -339,18 +343,18 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
 
     if re.search(r"\b(ui artist|game art|graphic artist)\b", text):
         pass
-    elif re.search(r"\b(ios|android|mobile developer|software developer)\b", text):
-        if re.search(r"\b(ux|ui designer|product designer|user experience)\b", text, re.I):
+    elif re.search(r"\b(ios|android|mobile developer|software developer)\b", title_text):
+        if re.search(r"\b(ux|ui designer|product designer|user experience)\b", title_summary, re.I):
             categories.add("ux")
     elif re.search(
         r"\b(ux|ui|product designer|user experience|interaction design|"
         r"interaktionsdesign|tjanstedesign|tjänstedesign)\b",
-        text,
+        title_summary,
         re.I,
     ):
         categories.add("ux")
 
-    if matches_pm(text):
+    if PM_TITLES.search(title_text) and matches_pm(text):
         categories.add("pm")
 
     if phrase_match(r"\b(arkitekt|architect)\b", text) and not PM_TITLES.search(text):
