@@ -4,10 +4,10 @@ Use this guidance when producing Slack assignment lists for consultant matching.
 
 ## Goal
 
-Post new IT consulting assignments from **all configured platforms** in three
+Post new IT consulting assignments from **all configured sources** in three
 sections, with a debug thread reply.
 
-**Python handles mechanical work** (platform fetch, dedupe, memory, Slack line
+**Python handles mechanical work** (source fetch, normalization, dedupe, memory, Slack line
 formatting). **You handle judgment** (role/location matching, false-positive
 removal, missed matches, validation). Iterate until the curated list is good
 before posting.
@@ -42,16 +42,18 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+This scans every active source in `scripts/assignment_platforms.py`, dedupes against
 `assignment-listing-seen.json`, and writes:
 
-- `assignments` — all currently visible unique records (for lookup)
+- `assignments` — all currently visible per-source unique canonical records (for lookup)
+- `reporting_assignments` — records after cross-source duplicate collapse
 - `new_dedupe_keys` — ids not posted before
+- `new_ids_by_source` — per-source ids not seen before
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
 - `memory_update` — draft memory (do not commit until after Slack post)
-- `platform_summary` — for the debug thread
+- `source_summary` — for the debug thread
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
 
@@ -136,8 +138,9 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: top-level `sources`, keyed by source key. Store bare
+native `seen_ids` only (no `a`/`v` prefix). Source failures keep the previous
+entry for that source unchanged.
 
 ## Filtering rules
 
@@ -245,8 +248,9 @@ Three sections (built by `finalize-listing.py`). Section titles are **bold** in 
 2. Other roles mentioning accessibility related terms
 3. Other roles where accessibility is not mentioned
 
-Pipe-separated lines. Verama ids use `v` prefix. Platform is implied by the
-assignment link. Title is a Slack link (`<url|title>`). Omit client and hours/scope when unknown.
+Pipe-separated lines. Listing ids use the source prefix (`a6236`, `v81387`).
+The source is implied by the listing id and link. Title is a Slack link
+(`<url|title>`). Omit client and hours/scope when unknown.
 
 ```text
 *1. Accessibility specialist related roles*
@@ -272,14 +276,15 @@ generate v81387 Soma english
 
 | Concern | Location |
 |---------|----------|
-| Platform scanners | `scripts/assignment_platforms.py` |
+| Source scanners | `scripts/assignment_platforms.py` |
 | Fetch + dedupe | `scripts/fetch-assignments.py` |
 | Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
 | Slack formatting + memory | `scripts/finalize-listing.py` |
 | Consultant names, roles, locations | `consultants.yaml` |
 
-When adding a new platform, register a scanner in `assignment_platforms.py`.
+When adding a new source, register it with an unused lowercase prefix in
+`assignment_platforms.py`.
 
 ## Debug / script-only mode
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch assignments from all platforms, apply dedupe, emit candidates for AI curation."""
+"""Fetch assignments from all sources, apply dedupe, emit candidates for curation."""
 
 from __future__ import annotations
 
@@ -15,51 +15,59 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from assignment_matching import (
-    cross_platform_dedupe,
+    cross_source_dedupe,
     export_consultant_summaries,
     load_consultant_profiles,
     suggest_assignments,
     suggestion_to_dict,
 )
-from assignment_platforms import DEFAULT_PLATFORMS, AssignmentRecord, scan_platforms
-from listing_memory import DEFAULT_MEMORY_PATH, build_memory_payload, load_memory
+from assignment_platforms import DEFAULT_SOURCES, AssignmentRecord, scan_platforms
+from listing_memory import DEFAULT_MEMORY_PATH, build_memory_payload, load_memory, total_seen_ids
 
 
-def build_platform_summary(platform_results: list[dict[str, Any]]) -> str:
+def build_source_summary(source_results: list[dict[str, Any]]) -> str:
     parts: list[str] = []
-    for result in platform_results:
-        label = result["platform"]
+    for result in source_results:
+        label = result["source_key"]
         if result["status"] == "ok":
             parts.append(f"{label} ({result['count']})")
         elif result["status"] == "skipped":
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def prepare_candidates(
     *,
     memory_path: Path,
-    platform_ids: list[str],
+    source_ids: list[str],
     scan_date: date,
     max_pages: int | None = None,
     headless: bool = True,
     with_suggestions: bool = True,
 ) -> dict[str, Any]:
-    seen_keys, _ = load_memory(memory_path)
+    seen_ids_by_source, memory_data = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
-        platform_ids,
+        source_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_ids_by_source=seen_ids_by_source,
+        scan_date=scan_date,
     )
-    deduped_assignments = cross_platform_dedupe(raw_assignments)
+    reporting_pool = cross_source_dedupe(raw_assignments)
     new_assignments = [
         assignment
-        for assignment in deduped_assignments
-        if assignment.dedupe_key not in seen_keys
+        for assignment in reporting_pool
+        if assignment.source_id not in seen_ids_by_source.get(assignment.source_key, set())
     ]
+    new_ids_by_source: dict[str, list[str]] = {}
+    for assignment in raw_assignments:
+        if assignment.source_id not in seen_ids_by_source.get(assignment.source_key, set()):
+            new_ids_by_source.setdefault(assignment.source_key, []).append(assignment.source_id)
+    for source_key, ids in list(new_ids_by_source.items()):
+        new_ids_by_source[source_key] = sorted(set(ids), key=lambda value: (len(value), value))
 
     profiles = load_consultant_profiles()
     suggestions: list[dict[str, Any]] = []
@@ -75,7 +83,8 @@ def prepare_candidates(
 
     platform_payload = [
         {
-            "platform": result.platform,
+            "source_key": result.source_key,
+            "platform": result.source_key,
             "status": result.status,
             "count": result.count,
             "message": result.message,
@@ -84,9 +93,10 @@ def prepare_candidates(
     ]
 
     memory_update = build_memory_payload(
-        assignments=deduped_assignments,
-        platform_results=platform_results,
+        assignments=raw_assignments,
+        source_results=platform_results,
         scan_date=scan_date,
+        previous_memory=memory_data,
     )
 
     suggested_report = [
@@ -97,21 +107,28 @@ def prepare_candidates(
         "source": "assignment-fetch",
         "scan_date": scan_date.isoformat(),
         "memory_path": str(memory_path),
-        "platforms": [result.platform for result in platform_results],
+        "sources": [result.source_key for result in platform_results],
+        "platforms": [result.source_key for result in platform_results],
         "platform_results": platform_payload,
-        "platform_summary": build_platform_summary(platform_payload),
+        "source_summary": build_source_summary(platform_payload),
+        "platform_summary": build_source_summary(platform_payload),
         "consultants": export_consultant_summaries(profiles),
         "stats": {
             "total_visible": len(raw_assignments),
-            "total_unique_visible": len(deduped_assignments),
-            "previously_seen": len(seen_keys),
+            "total_unique_visible": len(raw_assignments),
+            "total_unique_after_cross_source_dedupe": len(reporting_pool),
+            "previously_seen": total_seen_ids(seen_ids_by_source),
             "new_ids": len(new_assignments),
+            "new_ids_by_source": {key: len(ids) for key, ids in new_ids_by_source.items()},
             "expired_new_ids": len(expired),
             "script_suggestions": len(suggested_report),
             "active_consultants": len(profiles),
         },
-        "assignments": [record.to_dict() for record in deduped_assignments],
+        "assignments": [record.to_dict() for record in raw_assignments],
+        "reporting_assignments": [record.to_dict() for record in reporting_pool],
         "new_dedupe_keys": [assignment.dedupe_key for assignment in new_assignments],
+        "new_listing_ids": [assignment.listing_id for assignment in new_assignments],
+        "new_ids_by_source": new_ids_by_source,
         "suggestions": suggestions,
         "expired": expired,
         "memory_update": memory_update,
@@ -142,8 +159,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--platform",
         action="append",
         dest="platforms",
-        choices=DEFAULT_PLATFORMS,
-        help="Platform to scan (default: all registered platforms)",
+        choices=DEFAULT_SOURCES,
+        help="Source to scan (default: all active registered sources)",
     )
     parser.add_argument(
         "--scan-date",
@@ -179,11 +196,11 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parse_args(argv)
     scan_date = date.fromisoformat(args.scan_date) if args.scan_date else date.today()
-    platform_ids = args.platforms or DEFAULT_PLATFORMS
+    source_ids = args.platforms or DEFAULT_SOURCES
 
     payload = prepare_candidates(
         memory_path=args.memory_path,
-        platform_ids=platform_ids,
+        source_ids=source_ids,
         scan_date=scan_date,
         max_pages=args.max_pages,
         headless=not args.headed,

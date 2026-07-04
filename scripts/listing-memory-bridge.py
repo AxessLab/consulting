@@ -12,7 +12,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from listing_memory import DEFAULT_MEMORY_PATH, load_memory, write_memory_file
+from listing_memory import DEFAULT_MEMORY_PATH, load_memory, total_seen_ids, write_memory_file
 
 MEMORY_ENTRY_NAME = "assignment-listing-seen.json"
 
@@ -32,9 +32,9 @@ def cmd_seed(args: argparse.Namespace) -> int:
         raise SystemExit(f"{MEMORY_ENTRY_NAME} must be a JSON object.")
 
     write_memory_file(args.memory_path, payload)
-    seen_keys, _ = load_memory(args.memory_path)
+    seen_by_source, _ = load_memory(args.memory_path)
     print(
-        f"Seeded {args.memory_path.name} with {len(seen_keys)} seen key(s).",
+        f"Seeded {args.memory_path.name} with {total_seen_ids(seen_by_source)} seen id(s).",
         file=sys.stderr,
     )
     return 0
@@ -48,8 +48,16 @@ def cmd_print(args: argparse.Namespace) -> int:
 
 
 def cmd_stats(args: argparse.Namespace) -> int:
-    seen_keys, _ = load_memory(args.memory_path)
-    print(json.dumps({"previously_seen": len(seen_keys), "memory_path": str(args.memory_path)}))
+    seen_by_source, _ = load_memory(args.memory_path)
+    print(
+        json.dumps(
+            {
+                "previously_seen": total_seen_ids(seen_by_source),
+                "sources": {key: len(ids) for key, ids in seen_by_source.items()},
+                "memory_path": str(args.memory_path),
+            }
+        )
+    )
     return 0
 
 

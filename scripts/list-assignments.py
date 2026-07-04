@@ -16,13 +16,13 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from assignment_matching import (
     MatchedAssignment,
-    cross_platform_dedupe,
+    cross_source_dedupe,
     format_slack_line,
     load_consultant_profiles,
     process_assignments,
 )
-from assignment_platforms import DEFAULT_PLATFORMS, AssignmentRecord, PlatformScanResult, scan_platforms
-from listing_memory import DEFAULT_MEMORY_PATH, build_memory_payload, commit_memory, load_memory
+from assignment_platforms import DEFAULT_SOURCES, AssignmentRecord, SourceScanResult, scan_platforms
+from listing_memory import DEFAULT_MEMORY_PATH, build_memory_payload, commit_memory, load_memory, total_seen_ids
 
 
 def section_lines(matches: list[MatchedAssignment], section: str, scan_date: date) -> str:
@@ -46,22 +46,22 @@ def build_slack_main(matches: list[MatchedAssignment], scan_date: date) -> str:
     return "\n".join(parts).strip()
 
 
-def build_platform_summary(platform_results: list[PlatformScanResult]) -> str:
+def build_platform_summary(platform_results: list[SourceScanResult]) -> str:
     parts: list[str] = []
     for result in platform_results:
         if result.status == "ok":
-            parts.append(f"{result.platform} ({result.count})")
+            parts.append(f"{result.source_key} ({result.count})")
         elif result.status == "skipped":
-            parts.append(f"{result.platform} (skipped)")
+            parts.append(f"{result.source_key} (skipped)")
         else:
-            parts.append(f"{result.platform} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+            parts.append(f"{result.source_key} (error)")
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def build_slack_debug(
     *,
     scan_date: date,
-    platform_results: list[PlatformScanResult],
+    platform_results: list[SourceScanResult],
     total_visible: int,
     total_unique_visible: int,
     new_count: int,
@@ -71,7 +71,7 @@ def build_slack_debug(
     lines = [
         build_platform_summary(platform_results),
         f"Scan date: {scan_date.isoformat()}",
-        f"Visible assignments: {total_visible} (unique after cross-platform dedupe: {total_unique_visible})",
+        f"Visible assignments: {total_visible} (unique after cross-source dedupe: {total_unique_visible})",
         f"New ids: {new_count}",
         f"Reported matches: {reported_count}",
         "(deterministic mode — prefer fetch + AI curation for production)",
@@ -84,10 +84,10 @@ def build_slack_debug(
     for item in location_rejects[:15] + other_rejects[:10]:
         consultants = item.get("would_match") or []
         suffix = f" | would match: {', '.join(consultants)}" if consultants else ""
-        platform = item.get("platform", "")
-        platform_suffix = f" [{platform}]" if platform else ""
+        source_key = item.get("source_key") or item.get("platform", "")
+        source_suffix = f" [{source_key}]" if source_key else ""
         lines.append(
-            f"- {item['id']}{platform_suffix} | {item['title']} | {item['reason']}{suffix}"
+            f"- {item['id']}{source_suffix} | {item['title']} | {item['reason']}{suffix}"
         )
 
     if len(rejects) > 25:
@@ -106,40 +106,47 @@ def prepare_listing(
     headless: bool = True,
 ) -> dict[str, Any]:
     scan_date = scan_date or date.today()
-    seen_keys, _ = load_memory(memory_path)
+    seen_ids_by_source, memory_data = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_ids_by_source=seen_ids_by_source,
+        scan_date=scan_date,
     )
-    deduped_assignments = cross_platform_dedupe(raw_assignments)
+    deduped_assignments = cross_source_dedupe(raw_assignments)
     new_assignments = [
-        assignment for assignment in deduped_assignments if assignment.dedupe_key not in seen_keys
+        assignment
+        for assignment in deduped_assignments
+        if assignment.source_id not in seen_ids_by_source.get(assignment.source_key, set())
     ]
 
     profiles = load_consultant_profiles()
     matches, rejects = process_assignments(
         new_assignments,
-        seen_keys=seen_keys,
+        seen_ids_by_source=seen_ids_by_source,
         scan_date=scan_date,
         profiles=profiles,
     )
 
     memory_payload = build_memory_payload(
-        assignments=deduped_assignments,
-        platform_results=platform_results,
+        assignments=raw_assignments,
+        source_results=platform_results,
         scan_date=scan_date,
+        previous_memory=memory_data,
     )
 
     return {
         "source": "deterministic-listing",
         "scan_date": scan_date.isoformat(),
         "memory_path": str(memory_path),
-        "platforms": [result.platform for result in platform_results],
+        "sources": [result.source_key for result in platform_results],
+        "platforms": [result.source_key for result in platform_results],
         "platform_results": [
             {
-                "platform": result.platform,
+                "source_key": result.source_key,
+                "platform": result.source_key,
                 "status": result.status,
                 "count": result.count,
                 "message": result.message,
@@ -149,7 +156,7 @@ def prepare_listing(
         "stats": {
             "total_visible": len(raw_assignments),
             "total_unique_visible": len(deduped_assignments),
-            "previously_seen": len(seen_keys),
+            "previously_seen": total_seen_ids(seen_ids_by_source),
             "new_ids": len(new_assignments),
             "reported_matches": len(matches),
             "rejected": len(rejects),
@@ -169,7 +176,8 @@ def prepare_listing(
         "matches": [
             {
                 "listing_id": match.assignment.listing_id,
-                "platform": match.assignment.platform,
+                "source_key": match.assignment.source_key,
+                "platform": match.assignment.source_key,
                 "section": match.section,
                 "title": match.assignment.title,
                 "consultants": match.consultants,
@@ -204,8 +212,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--platform",
         action="append",
         dest="platforms",
-        choices=DEFAULT_PLATFORMS,
-        help="Platform to scan (default: all registered platforms)",
+        choices=DEFAULT_SOURCES,
+        help="Source to scan (default: all active registered sources)",
     )
     parser.add_argument(
         "--scan-date",
@@ -264,7 +272,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     scan_date = date.fromisoformat(args.scan_date) if args.scan_date else date.today()
-    platform_ids = args.platforms or DEFAULT_PLATFORMS
+    platform_ids = args.platforms or DEFAULT_SOURCES
     payload = prepare_listing(
         memory_path=args.memory_path,
         platform_ids=platform_ids,
