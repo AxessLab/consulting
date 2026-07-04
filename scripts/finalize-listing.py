@@ -38,9 +38,9 @@ def load_curated(path: Path) -> dict[str, Any]:
 def assignment_index(candidates: dict[str, Any]) -> dict[str, AssignmentRecord]:
     index: dict[str, AssignmentRecord] = {}
     for row in candidates.get("assignments", []):
-        record = AssignmentRecord(**row)
+        record = AssignmentRecord.from_dict(row)
         index[record.dedupe_key] = record
-        index[f"{record.platform}:{record.listing_id}"] = record
+        index[f"{record.source_key}:{record.listing_id}"] = record
         index[record.listing_id] = record
     return index
 
@@ -95,16 +95,31 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    source_results = candidates.get("platform_results", [])
+    visible_parts = []
+    for result in source_results:
+        label = result.get("source_key") or result.get("platform") or "?"
+        if result.get("status") == "ok":
+            visible_parts.append(f"{label}: {result.get('count', 0)}")
+        else:
+            visible_parts.append(f"{label}: {result.get('status', 'error')}")
+    new_by_source = stats.get("new_ids_by_source") or {}
+    new_parts = [f"{key}: {count}" for key, count in sorted(new_by_source.items())]
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("source_summary")
+        or candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
         (
-            "Visible assignments: "
-            f"{stats.get('total_visible', 0)} "
-            f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
+            "Total visible per source: "
+            + (", ".join(visible_parts) if visible_parts else "unknown")
         ),
-        f"New ids: {stats.get('new_ids', 0)}",
-        f"Reported matches: {reported_count}",
+        "New ids per source: " + (", ".join(new_parts) if new_parts else "none"),
+        (
+            "Reported matches after cross-source dedupe: "
+            f"{reported_count} (visible: {stats.get('total_visible', 0)}, "
+            f"unique after cross-source dedupe: "
+            f"{stats.get('total_unique_after_cross_source_dedupe', stats.get('total_unique_visible', 0))})"
+        ),
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
         "",
         "Close non-matches (sample):",
@@ -118,10 +133,10 @@ def build_slack_debug(
             consultants = item.get("would_match") or []
             suffix = f" | would match: {', '.join(consultants)}" if consultants else ""
             listing_id = item.get("listing_id", item.get("id", "?"))
-            platform = item.get("platform", "")
-            platform_suffix = f" [{platform}]" if platform else ""
+            source_key = item.get("source_key") or item.get("platform", "")
+            source_suffix = f" [{source_key}]" if source_key else ""
             lines.append(
-                f"- {listing_id}{platform_suffix} | {item.get('title', '?')} | "
+                f"- {listing_id}{source_suffix} | {item.get('title', '?')} | "
                 f"{item.get('reason', 'rejected')}{suffix}"
             )
         if len(rejects) > 25:
@@ -173,6 +188,7 @@ def finalize_listing(
         "source": "curated-listing",
         "scan_date": candidates["scan_date"],
         "memory_path": candidates.get("memory_path"),
+        "sources": candidates.get("sources", candidates.get("platforms", [])),
         "platforms": candidates.get("platforms", []),
         "platform_results": candidates.get("platform_results", []),
         "stats": {
@@ -185,7 +201,8 @@ def finalize_listing(
         "matches": [
             {
                 "listing_id": match.assignment.listing_id,
-                "platform": match.assignment.platform,
+                "source_key": match.assignment.source_key,
+                "platform": match.assignment.source_key,
                 "section": match.section,
                 "title": match.assignment.title,
                 "consultants": match.consultants,

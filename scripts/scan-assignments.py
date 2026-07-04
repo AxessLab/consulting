@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Raw multi-platform assignment fetch (no filtering). Prefer list-assignments.py."""
+"""Raw multi-source assignment fetch (no filtering). Prefer fetch-assignments.py."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import sys
-from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -15,20 +14,20 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from assignment_platforms import DEFAULT_PLATFORMS, scan_platforms
+from assignment_platforms import DEFAULT_SOURCES, scan_platforms
 
 
-def build_slack_debug_summary(platform_results: list[dict[str, Any]]) -> str:
+def build_slack_debug_summary(source_results: list[dict[str, Any]]) -> str:
     parts: list[str] = []
-    for result in platform_results:
-        label = result["platform"]
+    for result in source_results:
+        label = result["source_key"]
         if result["status"] == "ok":
             parts.append(f"{label} ({result['count']})")
         elif result["status"] == "skipped":
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -37,8 +36,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--platform",
         action="append",
         dest="platforms",
-        choices=DEFAULT_PLATFORMS,
-        help="Platform to scan (default: all registered platforms)",
+        choices=DEFAULT_SOURCES,
+        help="Source to scan (default: all active registered sources)",
     )
     parser.add_argument(
         "--max-pages",
@@ -70,7 +69,7 @@ def main(argv: list[str] | None = None) -> int:
         pass
 
     args = parse_args(argv)
-    platform_ids = args.platforms or DEFAULT_PLATFORMS
+    platform_ids = args.platforms or DEFAULT_SOURCES
 
     assignments, results = scan_platforms(
         platform_ids,
@@ -80,7 +79,8 @@ def main(argv: list[str] | None = None) -> int:
 
     payload = {
         "scannedAt": datetime.now(UTC).isoformat(),
-        "platforms": [asdict(result) for result in results],
+        "sources": [result.to_dict() for result in results],
+        "platforms": [result.to_dict() for result in results],
         "assignments": [record.to_dict() for record in assignments],
     }
 
@@ -90,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.debug_summary:
         print(build_slack_debug_summary(payload["platforms"]), file=sys.stderr)
 
-    failed = [p for p in payload["platforms"] if p["status"] == "error"]
+    failed = [p for p in payload["sources"] if p["status"] == "error"]
     return 1 if failed and not payload["assignments"] else 0
 
 
