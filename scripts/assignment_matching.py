@@ -535,14 +535,38 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     return " | ".join(segments)
 
 
+def _dedupe_broker(value: str) -> str:
+    broker = normalize_text(value)
+    broker = re.sub(r"\b(group|ab|as|aps|oy|consulting|konsult|sweden|sverige)\b", " ", broker)
+    broker = re.sub(r"[^a-z0-9]+", " ", broker)
+    return re.sub(r"\s+", " ", broker).strip()
+
+
+def _dedupe_location(value: str) -> str:
+    location = normalize_text(value)
+    location = re.sub(r"\([^)]*\)", " ", location)
+    location = re.sub(r"\b(se|swe|sweden|sverige|dk|dnk|denmark)\b", " ", location)
+    return re.sub(r"[^a-z0-9åäö]+", " ", location).strip()
+
+
+def _dedupe_title(value: str) -> str:
+    title = normalize_text(value)
+    title = re.sub(r"[^a-z0-9åäö]+", " ", title)
+    return re.sub(r"\s+", " ", title).strip()
+
+
 def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[AssignmentRecord]:
     """Prefer Verama when the same role appears on multiple sources."""
     by_fingerprint: dict[str, AssignmentRecord] = {}
     source_rank = {"verama.com": 0, "allakonsultuppdrag.se": 1}
 
     for assignment in assignments:
-        fingerprint = normalize_text(
-            f"{assignment.title}|{assignment.broker}|{assignment.location}"
+        fingerprint = "|".join(
+            (
+                _dedupe_title(assignment.title),
+                _dedupe_broker(assignment.broker),
+                _dedupe_location(assignment.location),
+            )
         )
         existing = by_fingerprint.get(fingerprint)
         if existing is None:
