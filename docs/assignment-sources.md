@@ -10,22 +10,25 @@ python scripts/finalize-listing.py listing-candidates.json curated-listing.json 
 python scripts/finalize-listing.py --commit-memory listing-output.json
 ```
 
-Python fetches and dedupes; the automation agent applies filtering rules and
+Python fetches from registered sources, normalizes to one canonical assignment
+shape, and dedupes; the automation agent applies filtering rules and
 writes `curated-listing.json`. Dedupe memory: `assignment-listing-seen.json`
 locally, synced via automation Memory entry **`assignment-listing-seen.json`**
 on cloud runs (see `automation-prompts/assignment-listing.md` step 0 and 5).
+The memory file uses `sources.<source_key>.seen_ids` with bare native ids.
 
-## Registered platforms
+## Registered sources
 
-Defined in `scripts/assignment_platforms.py` → `PLATFORM_SCANNERS`:
+Defined in `scripts/assignment_platforms.py` → `SOURCE_REGISTRY` and
+`SOURCE_SCANNERS`:
 
-| Platform | Auth | Notes |
-|----------|------|-------|
-| `allakonsultuppdrag.se` | None | JSON API only |
-| `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
+| Prefix | Source | Auth | Notes |
+|--------|--------|------|-------|
+| `a` | `allakonsultuppdrag.se` | None | JSON API only |
+| `v` | `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API; list first, conditional detail fetches |
 
-Add new platforms by implementing `scan_<name>()` and registering it in
-`PLATFORM_SCANNERS`.
+Add new sources by choosing an unused lowercase prefix, implementing
+`scan_<name>()`, and registering it in `SOURCE_REGISTRY` / `SOURCE_SCANNERS`.
 
 ## Matching
 

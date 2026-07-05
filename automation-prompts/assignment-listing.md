@@ -4,10 +4,10 @@ Use this guidance when producing Slack assignment lists for consultant matching.
 
 ## Goal
 
-Post new IT consulting assignments from **all configured platforms** in three
+Post new IT consulting assignments from **all configured sources** in three
 sections, with a debug thread reply.
 
-**Python handles mechanical work** (platform fetch, dedupe, memory, Slack line
+**Python handles mechanical work** (source fetch, normalization, dedupe, memory, Slack line
 formatting). **You handle judgment** (role/location matching, false-positive
 removal, missed matches, validation). Iterate until the curated list is good
 before posting.
@@ -42,16 +42,18 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+This scans every active source in `scripts/assignment_platforms.py`, dedupes against
 `assignment-listing-seen.json`, and writes:
 
-- `assignments` — all currently visible unique records (for lookup)
-- `new_dedupe_keys` — ids not posted before
+- `assignments` — reporting pool after cross-source dedupe (for lookup)
+- `visible_assignments` — all currently visible unique records per source
+- `new_source_ids_by_source` — source ids not seen before, grouped by source
+- `new_dedupe_keys` — `source_key:source_id` keys not seen before after cross-source dedupe
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
 - `memory_update` — draft memory (do not commit until after Slack post)
-- `platform_summary` — for the debug thread
+- `source_summary` — for the debug thread
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
 
@@ -87,7 +89,7 @@ Write `curated-listing.json`:
   "debug_rejects": [
     {
       "listing_id": "6830",
-      "platform": "allakonsultuppdrag.se",
+      "source_key": "allakonsultuppdrag.se",
       "title": "GIS Consultant - Project Manager",
       "reason": "location",
       "would_match": ["Erik Gustafsson Spagnoli", "Karin Skog"]
@@ -136,8 +138,10 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: one JSON object with `sources.<source_key>.seen_ids`
+containing bare native source ids. Each source also stores its listing `prefix`,
+`total_visible`, and `total_unique_visible`. If a source fails or is skipped in a
+run, keep its previous memory entry unchanged.
 
 ## Filtering rules
 
@@ -237,6 +241,17 @@ Before finalize/post:
 If the first pass looks suspicious, refine `curated-listing.json` and re-finalize.
 Post exactly once: one main message and one debug reply.
 
+## Source registry
+
+| Prefix | Source key | Status |
+|--------|------------|--------|
+| `a` | `allakonsultuppdrag.se` | active |
+| `v` | `verama.com` | active |
+
+Slack/fit/generate ids are `{prefix}{source_id}` (for example `a6236` or
+`v81387`). Cross-source duplicate reporting prefers Verama (`v`) over
+allakonsultuppdrag (`a`) when title, broker, and location clearly match.
+
 ## Main message format
 
 Three sections (built by `finalize-listing.py`). Section titles are **bold** in Slack (`*1. …*`). Assignment lines are separated by a blank line.
@@ -245,8 +260,8 @@ Three sections (built by `finalize-listing.py`). Section titles are **bold** in 
 2. Other roles mentioning accessibility related terms
 3. Other roles where accessibility is not mentioned
 
-Pipe-separated lines. Verama ids use `v` prefix. Platform is implied by the
-assignment link. Title is a Slack link (`<url|title>`). Omit client and hours/scope when unknown.
+Pipe-separated lines. Source is implied by the listing id prefix and assignment
+link. Title is a Slack link (`<url|title>`). Omit client and hours/scope when unknown.
 
 ```text
 *1. Accessibility specialist related roles*
@@ -272,14 +287,15 @@ generate v81387 Soma english
 
 | Concern | Location |
 |---------|----------|
-| Platform scanners | `scripts/assignment_platforms.py` |
+| Source scanners | `scripts/assignment_platforms.py` |
 | Fetch + dedupe | `scripts/fetch-assignments.py` |
 | Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
 | Slack formatting + memory | `scripts/finalize-listing.py` |
 | Consultant names, roles, locations | `consultants.yaml` |
 
-When adding a new platform, register a scanner in `assignment_platforms.py`.
+When adding a new source, pick an unused lowercase prefix and register a scanner
+in `assignment_platforms.py`.
 
 ## Debug / script-only mode
 
