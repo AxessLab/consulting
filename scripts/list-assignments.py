@@ -22,7 +22,13 @@ from assignment_matching import (
     process_assignments,
 )
 from assignment_platforms import DEFAULT_PLATFORMS, AssignmentRecord, PlatformScanResult, scan_platforms
-from listing_memory import DEFAULT_MEMORY_PATH, build_memory_payload, commit_memory, load_memory
+from listing_memory import (
+    DEFAULT_MEMORY_PATH,
+    build_memory_payload,
+    commit_memory,
+    load_memory,
+    seen_ids_by_source,
+)
 
 
 def section_lines(matches: list[MatchedAssignment], section: str, scan_date: date) -> str:
@@ -55,7 +61,7 @@ def build_platform_summary(platform_results: list[PlatformScanResult]) -> str:
             parts.append(f"{result.platform} (skipped)")
         else:
             parts.append(f"{result.platform} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def build_slack_debug(
@@ -106,12 +112,15 @@ def prepare_listing(
     headless: bool = True,
 ) -> dict[str, Any]:
     scan_date = scan_date or date.today()
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, memory_data = load_memory(memory_path)
+    source_seen_ids = seen_ids_by_source(memory_data)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_ids_by_source=source_seen_ids,
+        scan_date=scan_date,
     )
     deduped_assignments = cross_platform_dedupe(raw_assignments)
     new_assignments = [
@@ -127,9 +136,10 @@ def prepare_listing(
     )
 
     memory_payload = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        previous_memory=memory_data,
     )
 
     return {
@@ -169,7 +179,8 @@ def prepare_listing(
         "matches": [
             {
                 "listing_id": match.assignment.listing_id,
-                "platform": match.assignment.platform,
+                "source_key": match.assignment.source_key,
+                "platform": match.assignment.source_key,
                 "section": match.section,
                 "title": match.assignment.title,
                 "consultants": match.consultants,
