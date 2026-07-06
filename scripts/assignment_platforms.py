@@ -265,7 +265,15 @@ def _extract_verama_skills(detail: dict[str, Any]) -> list[Any]:
     for key in ("skills", "competences", "requiredSkills", "requiredCompetences"):
         value = detail.get(key)
         if isinstance(value, list):
-            return value
+            normalized: list[Any] = []
+            for item in value:
+                if isinstance(item, dict) and isinstance(item.get("skill"), dict):
+                    name = item["skill"].get("name")
+                    if name:
+                        normalized.append({"name": name})
+                        continue
+                normalized.append(item)
+            return normalized
     return []
 
 
