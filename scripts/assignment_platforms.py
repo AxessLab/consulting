@@ -279,7 +279,8 @@ def _verama_work_mode(remoteness: Any, *extra_fields: str) -> str:
 
 TARGET_TITLE_TERMS = re.compile(
     r"\b(accessibility|tillgänglighet|tillganglighet|wcag|frontend|front-end|"
-    r"react|next\.?js|angular|wordpress|java|spring|backend|systemutvecklare|"
+    r"react|next\.?js|angular|wordpress|java|javautvecklare|spring|backend|"
+    r"systemutvecklare|"
     r"fullstack|full-stack|ux|ui|product designer|produktdesigner|"
     r"interaction designer|interaktionsdesigner|tjänstedesign|tjanstedesign|"
     r"projektledare|project manager|scrum master|agile coach|"
@@ -296,6 +297,7 @@ OUTSIDE_TITLE_TERMS = re.compile(
 
 A11Y_STRONG_TITLE_TERMS = re.compile(
     r"\b(tillgänglighetsgranskare|tillganglighetsgranskare|"
+    r"tilgjengelighetsgranskning|tilgjengelighetsgranskere|"
     r"tillgänglighetsspecialist|tillganglighetsspecialist|"
     r"accessibility specialist|accessibility consultant|wcag specialist|"
     r"document accessibility|dokumenttillgänglighet|dokumenttillganglighet|"
@@ -374,10 +376,13 @@ def _should_fetch_verama_detail(
     deadline = _parse_date(record.last_application_date)
     if deadline is not None and deadline < scan_date:
         return False
-    if not _verama_title_needs_detail(record.title):
+    plausible_title = _verama_title_needs_detail(record.title)
+    if not plausible_title:
         return False
     if not _location_prefilter_passes(record):
         return False
+    if deadline is None:
+        return True
     return True
 
 

@@ -53,6 +53,8 @@ GOTHENBURG_ALIASES = {"gothenburg", "goteborg", "göteborg"}
 A11Y_STRONG_TERMS = [
     r"tillgänglighetsgranskare",
     r"tillganglighetsgranskare",
+    r"tilgjengelighetsgranskning",
+    r"tilgjengelighetsgranskere",
     r"tillgänglighetsspecialist",
     r"tillganglighetsspecialist",
     r"accessibility specialist",
@@ -281,7 +283,8 @@ def is_accessibility_specialist_role(assignment: AssignmentRecord) -> bool:
         for term in ("tillganglighet", "accessibility", "wcag", "tillganglighetsgransk")
     )
     reviewer_title = phrase_match(
-        r"tillgänglighetsgransk|tillganglighetsgransk|accessibility", title
+        r"tillgänglighetsgransk|tillganglighetsgransk|tilgjengelighetsgransk|accessibility",
+        title,
     )
     return has_a11y_skill and reviewer_title
 
@@ -292,9 +295,11 @@ def mentions_accessibility(assignment: AssignmentRecord) -> bool:
         term in text
         for term in (
             "tillganglighet",
+            "tilgjengelighet",
             "accessibility",
             "wcag",
             "tillganglighetsgransk",
+            "tilgjengelighetsgransk",
         )
     )
 
