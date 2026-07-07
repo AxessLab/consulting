@@ -393,7 +393,13 @@ def _normalize_skills(value: Any) -> list[Any]:
         normalized: list[Any] = []
         for item in value:
             if isinstance(item, dict):
-                name = item.get("name") or item.get("label") or item.get("title")
+                nested_skill = item.get("skill") if isinstance(item.get("skill"), dict) else {}
+                name = (
+                    item.get("name")
+                    or item.get("label")
+                    or item.get("title")
+                    or nested_skill.get("name")
+                )
                 normalized.append({"name": str(name)} if name else item)
             elif isinstance(item, str):
                 normalized.append(item)
