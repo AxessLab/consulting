@@ -4,10 +4,10 @@ Use this guidance when producing Slack assignment lists for consultant matching.
 
 ## Goal
 
-Post new IT consulting assignments from **all configured platforms** in three
+Post new IT consulting assignments from **all configured sources** in three
 sections, with a debug thread reply.
 
-**Python handles mechanical work** (platform fetch, dedupe, memory, Slack line
+**Python handles mechanical work** (source fetch, dedupe, memory, Slack line
 formatting). **You handle judgment** (role/location matching, false-positive
 removal, missed matches, validation). Iterate until the curated list is good
 before posting.
@@ -42,22 +42,24 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+This scans every source in `scripts/assignment_platforms.py`, dedupes against
 `assignment-listing-seen.json`, and writes:
 
-- `assignments` — all currently visible unique records (for lookup)
-- `new_dedupe_keys` — ids not posted before
+- `assignments` — currently visible canonical records after cross-source dedupe
+- `new_dedupe_keys` / `new_listing_ids` — ids not seen for their source before
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
-- `memory_update` — draft memory (do not commit until after Slack post)
-- `platform_summary` — for the debug thread
+- `source_stats` — visible, unique, and new counts per source
+- `memory_update` — draft per-source memory (do not commit until after Slack post)
+- `platform_summary` — source scan summary for the debug thread
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
 
 ### 2. Curate matches (your main job)
 
-Read `listing-candidates.json`. For each **new** assignment (`new_dedupe_keys`):
+Read `listing-candidates.json`. For each **new** assignment (`new_dedupe_keys`
+or `new_listing_ids`):
 
 1. Apply the filtering and matching rules below.
 2. Use `suggestions` as a starting point — accept, adjust, or reject each one.
@@ -86,8 +88,8 @@ Write `curated-listing.json`:
   ],
   "debug_rejects": [
     {
-      "listing_id": "6830",
-      "platform": "allakonsultuppdrag.se",
+      "listing_id": "a6830",
+      "source_key": "allakonsultuppdrag.se",
       "title": "GIS Consultant - Project Manager",
       "reason": "location",
       "would_match": ["Erik Gustafsson Spagnoli", "Karin Skog"]
@@ -136,8 +138,9 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: a top-level `sources` object. Each source stores its
+listing prefix, bare native `seen_ids`, and visible counts. Prefixes are not
+stored in `seen_ids`; Slack ids are reconstructed as `{prefix}{source_id}`.
 
 ## Filtering rules
 
@@ -272,14 +275,15 @@ generate v81387 Soma english
 
 | Concern | Location |
 |---------|----------|
-| Platform scanners | `scripts/assignment_platforms.py` |
+| Source scanners | `scripts/assignment_platforms.py` |
 | Fetch + dedupe | `scripts/fetch-assignments.py` |
 | Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
 | Slack formatting + memory | `scripts/finalize-listing.py` |
 | Consultant names, roles, locations | `consultants.yaml` |
 
-When adding a new platform, register a scanner in `assignment_platforms.py`.
+When adding a new source, add its prefix to `SOURCE_REGISTRY` and register a
+scanner in `assignment_platforms.py`.
 
 ## Debug / script-only mode
 

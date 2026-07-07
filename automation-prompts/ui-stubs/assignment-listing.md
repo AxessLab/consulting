@@ -6,7 +6,7 @@ these files from the repo and follow them as your source of truth:**
 1. `automation-prompts/assignment-listing.md` — full instructions and filtering rules
 2. `consultants.yaml` — consultant names, roles, locations
 3. `docs/slack-flow.md` — follow-up commands (`fit`, `generate`)
-4. `docs/assignment-sources.md` — platforms and credentials
+4. `docs/assignment-sources.md` — sources and credentials
 
 ## Your job this run
 

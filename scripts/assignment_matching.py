@@ -53,6 +53,8 @@ GOTHENBURG_ALIASES = {"gothenburg", "goteborg", "göteborg"}
 A11Y_STRONG_TERMS = [
     r"tillgänglighetsgranskare",
     r"tillganglighetsgranskare",
+    r"tilgjengelighetsgranskning",
+    r"tilgjengelighetsgranskere",
     r"tillgänglighetsspecialist",
     r"tillganglighetsspecialist",
     r"accessibility specialist",
@@ -179,6 +181,12 @@ def skill_names(assignment: AssignmentRecord) -> list[str]:
     for skill in assignment.skills:
         if isinstance(skill, dict) and skill.get("name"):
             names.append(normalize_text(str(skill["name"])))
+        elif isinstance(skill, dict) and isinstance(skill.get("skill"), dict):
+            nested_name = skill["skill"].get("name")
+            if nested_name:
+                names.append(normalize_text(str(nested_name)))
+        elif isinstance(skill, str):
+            names.append(normalize_text(skill))
     return names
 
 
@@ -210,12 +218,20 @@ def is_active_assignment(assignment: AssignmentRecord, scan_date: date) -> bool:
 
 def is_remote(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
-    return any(term in fields for term in ("remote", "distans", "fjarrarbete", "fjärrarbete"))
+    if any(term in fields for term in ("distans", "fjarrarbete", "fjärrarbete")):
+        return True
+    remote_percentage = re.search(r"\b(\d{1,3})\s*%\s*remote\b", fields)
+    if remote_percentage:
+        return int(remote_percentage.group(1)) >= 100
+    return re.search(r"\bremote\b", fields) is not None
 
 
 def is_hybrid(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
-    return "hybrid" in fields
+    remote_percentage = re.search(r"\b(\d{1,3})\s*%\s*remote\b", fields)
+    return "hybrid" in fields or (
+        remote_percentage is not None and 0 < int(remote_percentage.group(1)) < 100
+    )
 
 
 def location_tokens(location: str) -> set[str]:
@@ -271,7 +287,8 @@ def is_accessibility_specialist_role(assignment: AssignmentRecord) -> bool:
         for term in ("tillganglighet", "accessibility", "wcag", "tillganglighetsgransk")
     )
     reviewer_title = phrase_match(
-        r"tillgänglighetsgransk|tillganglighetsgransk|accessibility", title
+        r"tillgänglighetsgransk|tillganglighetsgransk|tilgjengelighetsgransk|accessibility",
+        title,
     )
     return has_a11y_skill and reviewer_title
 
@@ -282,9 +299,11 @@ def mentions_accessibility(assignment: AssignmentRecord) -> bool:
         term in text
         for term in (
             "tillganglighet",
+            "tilgjengelighet",
             "accessibility",
             "wcag",
             "tillganglighetsgransk",
+            "tilgjengelighetsgransk",
         )
     )
 
@@ -445,32 +464,51 @@ def match_consultants_for_assignment(
     return section, matched
 
 
-UNKNOWN_HOURS_LABEL = "not stated (probably full time)"
-UNKNOWN_CLIENT_LABEL = "not stated"
+UNKNOWN_HOURS_LABEL = ""
+UNKNOWN_CLIENT_LABEL = ""
 
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
-    text = f"{assignment.description} {assignment.duration}"
+    text = f"{assignment.description} {assignment.duration} {assignment.start_date or ''} {assignment.end_date or ''}"
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)"
+        r"[^%\n]{0,60}?(\d{1,3})\s*%",
         text,
         re.I,
     )
     if scope_match:
         return f"{scope_match.group(2)}%"
 
-    if re.search(r"\b100\s*%", text):
+    fixed_hours = re.search(
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)"
+        r"[^\n]{0,60}?(\d{1,3})\s*(?:h|hours|timmar)(?:\s*/\s*(?:week|vecka|v))?",
+        text,
+        re.I,
+    )
+    if fixed_hours:
+        return f"{fixed_hours.group(2)} h/week"
+
+    if re.search(
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang)"
+        r"[^\n]{0,40}\b(full\s*time|heltid)\b",
+        text,
+        re.I,
+    ):
         return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    if re.search(
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang)"
+        r"[^\n]{0,40}\b(part\s*time|deltid)\b",
+        text,
+        re.I,
+    ):
+        return "Part time"
     return UNKNOWN_HOURS_LABEL
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
     for pattern in (
-        r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
+        r"(?:Kund|End client|Slutkund|Client)\s*:\s*([^\n|<>{}]+)",
     ):
         match = re.search(pattern, description, re.I)
         if match:
@@ -482,6 +520,12 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
+    title_match = re.search(
+        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&.\-\s]{2,}?)(?:\s*[|,]|\s*$)",
+        assignment.title,
+    )
+    if title_match:
+        return title_match.group(1).strip(" .")
     return UNKNOWN_CLIENT_LABEL
 
 
@@ -514,7 +558,10 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
+        location,
     ]
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
@@ -523,11 +570,10 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     segments.extend(
         [
             assignment.broker,
-            posted_date_label(assignment, scan_date),
             f"Match: {consultants}",
         ]
     )
-    return " | ".join(segments)
+    return " | ".join(segment for segment in segments if segment)
 
 
 def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[AssignmentRecord]:
@@ -536,15 +582,17 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
     platform_rank = {"verama.com": 0, "allakonsultuppdrag.se": 1}
 
     for assignment in assignments:
-        fingerprint = normalize_text(
-            f"{assignment.title}|{assignment.broker}|{assignment.location}"
-        )
+        fingerprint = re.sub(
+            r"\s+",
+            " ",
+            normalize_text(f"{assignment.title}|{assignment.broker}|{assignment.location}"),
+        ).strip()
         existing = by_fingerprint.get(fingerprint)
         if existing is None:
             by_fingerprint[fingerprint] = assignment
             continue
-        if platform_rank.get(assignment.platform, 99) < platform_rank.get(
-            existing.platform, 99
+        if platform_rank.get(assignment.source_key, 99) < platform_rank.get(
+            existing.source_key, 99
         ):
             by_fingerprint[fingerprint] = assignment
 
@@ -628,7 +676,8 @@ def suggestion_to_dict(suggestion: AssignmentSuggestion) -> dict[str, Any]:
     return {
         "dedupe_key": assignment.dedupe_key,
         "listing_id": assignment.listing_id,
-        "platform": assignment.platform,
+        "source_key": assignment.source_key,
+        "platform": assignment.source_key,
         "title": assignment.title,
         "location": assignment.location,
         "work_mode": assignment.work_mode,
