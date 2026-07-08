@@ -1,0 +1,196 @@
+{
+  "consultantSlug": "joel-holmberg",
+  "language": "english",
+  "assignmentId": "a7517",
+  "assignmentTitle": "Fullstack Developer (Java/React) (Fraud/Banking)",
+  "variantId": "fullstack-java-react-ai",
+  "variantLabel": "Senior fullstack (Java, React, AI)",
+  "sourceCv": "cvs/Axessibility_Lab_AB_Joel_Holmberg_Senior_fullstackutvecklare_inom_Java_React_och_AI (1).docx",
+  "contact": {
+    "name": "Joel Holmberg",
+    "email": "joel@axesslab.com",
+    "phone": "+46 70 748 36 24"
+  },
+  "consultantName": "Joel Holmberg",
+  "roleTitle": "Senior Fullstack Developer (Java/React) & Software Architect",
+  "profileParagraphs": [
+    "Joel is a senior fullstack developer and software architect with more than 14 years of experience developing and maintaining production systems. He has deep competence in Java, Spring Boot, TypeScript, React and PostgreSQL, with strong experience in microservice architecture, API design, data modeling and integration-heavy solutions.",
+    "He has delivered business-critical systems in banking and payments, e-health, education, culture and startup environments. His work includes payment flows and integrations for Swish at Bankgirot, Java/Spring Boot backends, React interfaces, CI/CD, cloud platforms, production operations and systems with high requirements for security, traceability, uptime, performance and test coverage.",
+    "Joel combines a broad technical perspective with pragmatic delivery. He quickly understands complex flows and technical stacks, collaborates closely with product owners and stakeholders, and contributes across architecture, backend, frontend, code review, debugging, quality practices and knowledge sharing."
+  ],
+  "selectedEvidence": [
+    {
+      "title": "Backend Developer - Bankgirot",
+      "subtitle": "Jan 2012 - Dec 2016 - Stockholm",
+      "summary": "Backend developer in the team behind Swish. Worked on business-critical payment flows and integrations with banks, merchants and internal systems, and led the introduction of B2B payments in a microservice architecture with high requirements for security, traceability, uptime and performance."
+    },
+    {
+      "title": "Fullstack Developer - SBAB",
+      "subtitle": "Apr 2019 - Dec 2023",
+      "summary": "Built Respekttrappan together with SBAB and Make Equal: a Trello-like web application for workplace exercises in equal treatment and anti-discrimination. Worked with Java/Spring backend development, React frontend development, Material UI, user testing and accessible implementation."
+    },
+    {
+      "title": "Software Architect and Fullstack Developer - We-U-Me AB",
+      "subtitle": "Oct 2021 - present",
+      "summary": "Contributed from idea and pre-study through MVP and continued development for a personal-assistance startup. Worked with solution proposals, software architecture, database structure, backend and frontend code, UX design, CI/CD, cloud platform setup and support for junior colleagues."
+    },
+    {
+      "title": "Fullstack Developer - Riksforbundet FUB",
+      "subtitle": "Jan 2025 - Jan 2026",
+      "summary": "Built DigiVi, a web application for users with disabilities. Responsible for data modeling, API design, Java/Spring Boot/PostgreSQL backend development and React frontend development across solution design, implementation and maintenance."
+    }
+  ],
+  "competenceChips": [
+    "Java",
+    "Spring Boot",
+    "Spring",
+    "React.js",
+    "TypeScript",
+    "PostgreSQL",
+    "REST APIs",
+    "API design",
+    "Microservices",
+    "Data modeling",
+    "Integrations",
+    "Security-aware development",
+    "Traceability",
+    "CI/CD",
+    "CircleCI",
+    "Docker",
+    "OpenShift",
+    "AWS",
+    "Material UI",
+    "Swagger",
+    "WebSockets",
+    "Git"
+  ],
+  "projects": [
+    {
+      "title": "Backend Developer - Bankgirot",
+      "subtitle": "Jan 2012 - Dec 2016 - Stockholm",
+      "summary": "Joel worked as a backend developer in the team behind Swish. He developed business-critical payment flows and integrations with banks, merchants and internal systems, and led the introduction of B2B payments in a microservice architecture. The environment had high requirements for security, traceability, uptime, performance and production quality.",
+      "skills": [
+        "Java",
+        "Spring",
+        "Microservices",
+        "Jenkins",
+        "Docker",
+        "IBM MQ",
+        "Docker Compose"
+      ]
+    },
+    {
+      "title": "Fullstack Developer - SBAB",
+      "subtitle": "Apr 2019 - Dec 2023",
+      "summary": "Together with SBAB and Make Equal, Joel developed Respekttrappan, a Trello-like web application with exercises for equal treatment and anti-discrimination at work. The application supports large organisations with many teams, follow-up, statistics and gamification. Joel worked with backend and frontend development and helped secure a high level of accessibility in the web application.",
+      "skills": [
+        "Java",
+        "Spring",
+        "React.js",
+        "Material UI",
+        "User testing",
+        "Accessible implementation"
+      ]
+    },
+    {
+      "title": "Software Architect and Fullstack Developer - We-U-Me AB",
+      "subtitle": "Oct 2021 - present",
+      "summary": "Joel has contributed from idea and pre-study through MVP and continued development for a startup in personal assistance. He has worked with solution proposals, software architecture, database structure, backend code, frontend code and UX design, while also supporting junior colleagues and taking Scrum Master responsibilities when needed.",
+      "skills": [
+        "Java",
+        "Hibernate",
+        "PostgreSQL",
+        "Data modeling",
+        "React.js",
+        "Material UI",
+        "CleverCloud",
+        "CI/CD"
+      ]
+    },
+    {
+      "title": "Fullstack Developer - Riksforbundet FUB",
+      "subtitle": "Jan 2025 - Jan 2026",
+      "summary": "For DigiVi, Joel was responsible for the data model, API design and development of the Java/Spring Boot/PostgreSQL backend as well as React frontend development. The application supports people with disabilities and covers the full development chain from solution design to implementation and maintenance.",
+      "skills": [
+        "Java",
+        "Spring Boot",
+        "PostgreSQL",
+        "REST APIs",
+        "Swagger",
+        "React.js",
+        "Data modeling"
+      ]
+    },
+    {
+      "title": "Architect and Fullstack Developer - Teknik i Vast",
+      "subtitle": "Jun 2019 - Jan 2025",
+      "summary": "Joel created the architecture for Techformance, an interactive theatre application where participants influence what happens on stage. The solution used React.js for components and multiple interfaces for audiences and actors, with a Java/Spring Boot backend, WebSockets and PostgreSQL.",
+      "skills": [
+        "Java",
+        "Spring Boot",
+        "React.js",
+        "WebSockets",
+        "PostgreSQL",
+        "Material UI",
+        "Architecture"
+      ]
+    },
+    {
+      "title": "Fullstack Developer - Dit-i-tid",
+      "subtitle": "Jan 2020 - Dec 2024",
+      "summary": "Joel wrote most of the code for Dit-i-tid, a reminder service focused on cognitive disabilities. The service is built with Java, Spring Boot and Angular/TypeScript/JavaScript and hosted on AWS. Joel also participated in user testing and design for an application that remains active and popular among its users.",
+      "skills": [
+        "Java",
+        "Spring Boot",
+        "REST APIs",
+        "JWT",
+        "Liquibase",
+        "AWS",
+        "Angular",
+        "TypeScript"
+      ]
+    },
+    {
+      "title": "AI-assisted Development Lead - ViewMe",
+      "subtitle": "Jan 2026 - Apr 2026",
+      "summary": "Joel led an initiative to introduce AI-supported development with Cursor and related tools. The work covered boilerplate generation for DTOs, mappers and controllers, refactoring, JUnit test generation, debugging, legacy-code documentation, SQL generation, database optimization, API contracts and best-practice analysis.",
+      "skills": [
+        "Cursor AI",
+        "AI development tools",
+        "JUnit",
+        "SQL",
+        "API contracts",
+        "Database optimization"
+      ]
+    }
+  ],
+  "skillLevels": [
+    {
+      "level": "Expert",
+      "skills": "Java, Java 8, backend development, frontend development, accessibility specialist work, programming in HTML, prototyping, code review and debugging, WCAG and WCAG-aware development."
+    },
+    {
+      "level": "Advanced",
+      "skills": "Spring Boot, React.js, TypeScript, PostgreSQL, SQL, REST API, Swagger, data modeling, design systems, CI/CD with CircleCI, Git, Hibernate, Liquibase, Material UI, AWS, cloud platforms, screen readers and accessible code."
+    },
+    {
+      "level": "High competence",
+      "skills": "Microservices, Docker, Docker Compose, OpenShift, Jenkins, IBM MQ, JWT, WebSockets, MapStruct, JHipster, Cursor AI, AI-supported development, incident management, production operations, Scrum Master support, Angular and user testing."
+    },
+    {
+      "level": "Additional competence",
+      "skills": "C#, Xamarin Android/iOS, Android SDK, .NET, app accessibility, BlazeMeter, Spring Batch, MVVM, push notifications and GPS tracking."
+    }
+  ],
+  "certifications": "Oracle Java SE 8 Programmer certification, 2012. Master in Computer Science and Teaching, Royal Institute of Technology (KTH), Stockholm, 2007-2012.",
+  "languages": [
+    {
+      "language": "Swedish",
+      "proficiency": "Native"
+    },
+    {
+      "language": "English",
+      "proficiency": "Fluent"
+    }
+  ]
+}
