@@ -549,8 +549,14 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
     source_rank = {"verama.com": 0, "allakonsultuppdrag.se": 1}
 
     for assignment in assignments:
+        broker = re.sub(
+            r"\b(group|ab|oy|consulting|konsult|konsultuppdrag)\b",
+            " ",
+            normalize_text(assignment.broker),
+        )
+        location = re.sub(r"\([a-z]{2,3}\)", " ", normalize_text(assignment.location))
         fingerprint = normalize_text(
-            re.sub(r"\W+", " ", f"{assignment.title}|{assignment.broker}|{assignment.location}")
+            re.sub(r"\W+", " ", f"{assignment.title}|{broker}|{location}")
         )
         existing = by_fingerprint.get(fingerprint)
         if existing is None:
