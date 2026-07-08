@@ -38,7 +38,7 @@ def load_curated(path: Path) -> dict[str, Any]:
 def assignment_index(candidates: dict[str, Any]) -> dict[str, AssignmentRecord]:
     index: dict[str, AssignmentRecord] = {}
     for row in candidates.get("assignments", []):
-        record = AssignmentRecord(**row)
+        record = AssignmentRecord.from_dict(row)
         index[record.dedupe_key] = record
         index[f"{record.platform}:{record.listing_id}"] = record
         index[record.listing_id] = record
@@ -96,14 +96,20 @@ def build_slack_debug(
 ) -> str:
     stats = candidates.get("stats", {})
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
         (
-            "Visible assignments: "
-            f"{stats.get('total_visible', 0)} "
-            f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
+            "Total visible per source: "
+            + ", ".join(
+                f"{item.get('platform')}: {item.get('count')}"
+                for item in candidates.get("platform_results", [])
+            )
         ),
-        f"New ids: {stats.get('new_ids', 0)}",
+        "New ids per source: "
+        + ", ".join(
+            f"{source_key}: {len(ids)}"
+            for source_key, ids in (candidates.get("new_ids_by_source") or {}).items()
+        ),
         f"Reported matches: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
         "",
