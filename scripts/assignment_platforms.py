@@ -249,6 +249,8 @@ def _skill_items(value: Any) -> list[Any]:
             skills.append(item)
         elif isinstance(item, dict):
             name = item.get("name") or item.get("title") or item.get("label")
+            if not name and isinstance(item.get("skill"), dict):
+                name = item["skill"].get("name")
             skills.append({"name": name} if name else item)
     return skills
 
