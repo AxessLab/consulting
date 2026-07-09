@@ -55,7 +55,7 @@ def build_platform_summary(platform_results: list[PlatformScanResult]) -> str:
             parts.append(f"{result.platform} (skipped)")
         else:
             parts.append(f"{result.platform} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def build_slack_debug(
@@ -84,10 +84,10 @@ def build_slack_debug(
     for item in location_rejects[:15] + other_rejects[:10]:
         consultants = item.get("would_match") or []
         suffix = f" | would match: {', '.join(consultants)}" if consultants else ""
-        platform = item.get("platform", "")
-        platform_suffix = f" [{platform}]" if platform else ""
+        source_key = item.get("source_key") or item.get("platform", "")
+        source_suffix = f" [{source_key}]" if source_key else ""
         lines.append(
-            f"- {item['id']}{platform_suffix} | {item['title']} | {item['reason']}{suffix}"
+            f"- {item['id']}{source_suffix} | {item['title']} | {item['reason']}{suffix}"
         )
 
     if len(rejects) > 25:
@@ -106,14 +106,24 @@ def prepare_listing(
     headless: bool = True,
 ) -> dict[str, Any]:
     scan_date = scan_date or date.today()
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, previous_memory = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_keys=seen_keys,
+        scan_date=scan_date,
     )
-    deduped_assignments = cross_platform_dedupe(raw_assignments)
+    successful_sources = {
+        result.platform for result in platform_results if result.status == "ok"
+    }
+    successful_assignments = [
+        assignment
+        for assignment in raw_assignments
+        if assignment.source_key in successful_sources
+    ]
+    deduped_assignments = cross_platform_dedupe(successful_assignments)
     new_assignments = [
         assignment for assignment in deduped_assignments if assignment.dedupe_key not in seen_keys
     ]
@@ -127,9 +137,10 @@ def prepare_listing(
     )
 
     memory_payload = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=successful_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        previous_memory=previous_memory,
     )
 
     return {
@@ -169,7 +180,7 @@ def prepare_listing(
         "matches": [
             {
                 "listing_id": match.assignment.listing_id,
-                "platform": match.assignment.platform,
+                "source_key": match.assignment.source_key,
                 "section": match.section,
                 "title": match.assignment.title,
                 "consultants": match.consultants,

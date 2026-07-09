@@ -38,7 +38,22 @@ def load_curated(path: Path) -> dict[str, Any]:
 def assignment_index(candidates: dict[str, Any]) -> dict[str, AssignmentRecord]:
     index: dict[str, AssignmentRecord] = {}
     for row in candidates.get("assignments", []):
-        record = AssignmentRecord(**row)
+        normalized_row = dict(row)
+        if "source_key" not in normalized_row and "platform" in normalized_row:
+            normalized_row["source_key"] = normalized_row.pop("platform")
+        field_aliases = {
+            "description_summary": "descriptionSummary",
+            "published_date": "publishedDate",
+            "last_application_date": "lastApplicationDate",
+            "start_date": "startDate",
+            "end_date": "endDate",
+            "work_mode": "workMode",
+            "source_url": "sourceUrl",
+        }
+        for old_name, new_name in field_aliases.items():
+            if old_name in normalized_row and new_name not in normalized_row:
+                normalized_row[new_name] = normalized_row.pop(old_name)
+        record = AssignmentRecord(**normalized_row)
         index[record.dedupe_key] = record
         index[f"{record.platform}:{record.listing_id}"] = record
         index[record.listing_id] = record
@@ -95,16 +110,30 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    source_stats = candidates.get("source_stats") or {}
+    visible_parts = []
+    new_parts = []
+    for source_key, state in source_stats.items():
+        status = state.get("status")
+        if status == "ok":
+            visible_parts.append(
+                f"{source_key}: {state.get('total_visible', 0)} visible "
+                f"({state.get('total_unique_visible', 0)} unique)"
+            )
+            new_parts.append(f"{source_key}: {state.get('new_count', 0)}")
+        elif status == "skipped":
+            visible_parts.append(f"{source_key}: skipped")
+            new_parts.append(f"{source_key}: skipped")
+        else:
+            visible_parts.append(f"{source_key}: error")
+            new_parts.append(f"{source_key}: error")
+
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
-        (
-            "Visible assignments: "
-            f"{stats.get('total_visible', 0)} "
-            f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
-        ),
-        f"New ids: {stats.get('new_ids', 0)}",
-        f"Reported matches: {reported_count}",
+        "Total visible per source: " + ("; ".join(visible_parts) if visible_parts else "unknown"),
+        "New ids per source: " + ("; ".join(new_parts) if new_parts else str(stats.get("new_ids", 0))),
+        f"Reported matches after cross-source dedupe: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
         "",
         "Close non-matches (sample):",
@@ -118,10 +147,10 @@ def build_slack_debug(
             consultants = item.get("would_match") or []
             suffix = f" | would match: {', '.join(consultants)}" if consultants else ""
             listing_id = item.get("listing_id", item.get("id", "?"))
-            platform = item.get("platform", "")
-            platform_suffix = f" [{platform}]" if platform else ""
+            source_key = item.get("source_key") or item.get("platform", "")
+            source_suffix = f" [{source_key}]" if source_key else ""
             lines.append(
-                f"- {listing_id}{platform_suffix} | {item.get('title', '?')} | "
+                f"- {listing_id}{source_suffix} | {item.get('title', '?')} | "
                 f"{item.get('reason', 'rejected')}{suffix}"
             )
         if len(rejects) > 25:
@@ -185,7 +214,7 @@ def finalize_listing(
         "matches": [
             {
                 "listing_id": match.assignment.listing_id,
-                "platform": match.assignment.platform,
+                "source_key": match.assignment.source_key,
                 "section": match.section,
                 "title": match.assignment.title,
                 "consultants": match.consultants,
