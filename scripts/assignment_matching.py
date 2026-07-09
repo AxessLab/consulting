@@ -546,9 +546,7 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
     platform_rank = {"verama.com": 0, "allakonsultuppdrag.se": 1}
 
     for assignment in assignments:
-        fingerprint = normalize_text(
-            f"{assignment.title}|{assignment.broker}|{assignment.location}"
-        )
+        fingerprint = assignment_fingerprint(assignment)
         existing = by_fingerprint.get(fingerprint)
         if existing is None:
             by_fingerprint[fingerprint] = assignment
@@ -559,6 +557,38 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
             by_fingerprint[fingerprint] = assignment
 
     return list(by_fingerprint.values())
+
+
+def assignment_fingerprint(assignment: AssignmentRecord) -> str:
+    title = normalize_text(assignment.title)
+    broker = normalize_broker_name(assignment.broker)
+    location = normalize_location_name(assignment.location)
+    return f"{title}|{broker}|{location}"
+
+
+def normalize_broker_name(value: str) -> str:
+    normalized = normalize_text(value)
+    normalized = re.sub(r"\b(group|ab|oy|aps|sp z o o|sp\. z o\.o\.)\b", "", normalized)
+    normalized = re.sub(r"[^a-z0-9]+", " ", normalized)
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
+def normalize_location_name(value: str) -> str:
+    normalized = normalize_text(value)
+    normalized = re.sub(r"\((swe|se|fin|fi|dnk|dk|pol|pl)\)", "", normalized)
+    aliases = {
+        "gothenburg": "goteborg",
+        "helsinki": "helsingfors",
+        "copenhagen": "kopenhamn",
+        "malmo": "malmo",
+    }
+    normalized = normalized.replace("köpenhamn", "kopenhamn")
+    normalized = normalized.replace("göteborg", "goteborg")
+    normalized = normalized.replace("malmö", "malmo")
+    for source, target in aliases.items():
+        normalized = normalized.replace(source, target)
+    normalized = re.sub(r"[^a-z0-9, ]+", " ", normalized)
+    return re.sub(r"\s+", " ", normalized).strip()
 
 
 def export_consultant_summaries(
