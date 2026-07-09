@@ -35,7 +35,7 @@ def build_platform_summary(platform_results: list[dict[str, Any]]) -> str:
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def prepare_candidates(
@@ -47,14 +47,24 @@ def prepare_candidates(
     headless: bool = True,
     with_suggestions: bool = True,
 ) -> dict[str, Any]:
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, previous_memory = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_keys=seen_keys,
+        scan_date=scan_date,
     )
-    deduped_assignments = cross_platform_dedupe(raw_assignments)
+    successful_sources = {
+        result.platform for result in platform_results if result.status == "ok"
+    }
+    successful_assignments = [
+        assignment
+        for assignment in raw_assignments
+        if assignment.source_key in successful_sources
+    ]
+    deduped_assignments = cross_platform_dedupe(successful_assignments)
     new_assignments = [
         assignment
         for assignment in deduped_assignments
@@ -84,14 +94,36 @@ def prepare_candidates(
     ]
 
     memory_update = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=successful_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        previous_memory=previous_memory,
     )
 
     suggested_report = [
         item for item in suggestions if item.get("suggested_section") is not None
     ]
+    source_stats: dict[str, dict[str, Any]] = {}
+    for result in platform_results:
+        source_assignments = [
+            assignment
+            for assignment in successful_assignments
+            if assignment.source_key == result.platform
+        ]
+        unique_ids = {assignment.source_id for assignment in source_assignments}
+        new_ids = [
+            source_id
+            for source_id in sorted(unique_ids)
+            if f"{result.platform}:{source_id}" not in seen_keys
+        ]
+        source_stats[result.platform] = {
+            "status": result.status,
+            "total_visible": result.count,
+            "total_unique_visible": len(unique_ids) if result.status == "ok" else 0,
+            "new_ids": new_ids,
+            "new_count": len(new_ids),
+            "message": result.message,
+        }
 
     return {
         "source": "assignment-fetch",
@@ -100,6 +132,7 @@ def prepare_candidates(
         "platforms": [result.platform for result in platform_results],
         "platform_results": platform_payload,
         "platform_summary": build_platform_summary(platform_payload),
+        "source_stats": source_stats,
         "consultants": export_consultant_summaries(profiles),
         "stats": {
             "total_visible": len(raw_assignments),
