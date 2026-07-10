@@ -212,6 +212,9 @@ def is_active_assignment(assignment: AssignmentRecord, scan_date: date) -> bool:
 
 def is_remote(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
+    percentage_remote = re.search(r"\b(\d{1,3})\s*%\s*remote\b", fields)
+    if percentage_remote and int(percentage_remote.group(1)) < 100:
+        fields = fields.replace(percentage_remote.group(0), "")
     return any(term in fields for term in ("remote", "distans", "fjarrarbete", "fjärrarbete"))
 
 

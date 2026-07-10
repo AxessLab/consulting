@@ -76,6 +76,19 @@ def normalize_text(value: str) -> str:
     return value.casefold()
 
 
+def _normalize_work_mode(work_mode: str, description: str = "") -> str:
+    description_text = normalize_text(description)
+    remote_percent = re.search(r"distansarbete\s*(\d{1,3})\s*%", description_text)
+    if remote_percent:
+        percent = int(remote_percent.group(1))
+        if percent == 100:
+            return "remote"
+        if percent == 0:
+            return "on-site"
+        return f"{percent}% remote"
+    return work_mode
+
+
 def _allakonsult_session() -> requests.Session:
     session = requests.Session()
     session.headers.update(
@@ -126,7 +139,10 @@ def scan_allakonsultuppdrag(
                     start_date=row.get("startDate"),
                     end_date=row.get("endDate"),
                     duration=row.get("duration") or "",
-                    work_mode=row.get("workMode") or "",
+                    work_mode=_normalize_work_mode(
+                        row.get("workMode") or "",
+                        row.get("description") or "",
+                    ),
                     location=row.get("location") or "",
                     source_url=row.get("sourceUrl") or f"{ALLAKONSULT_BASE}/",
                     broker=row.get("broker") or "",
@@ -167,6 +183,14 @@ def _verama_work_mode(remoteness: Any, *extra_fields: str) -> str:
     if remoteness == 0:
         return "on-site"
     return ""
+
+
+def _work_mode_is_fully_remote(work_mode: str) -> bool:
+    normalized = normalize_text(work_mode)
+    percentage_remote = re.search(r"\b(\d{1,3})\s*%\s*remote\b", normalized)
+    if percentage_remote:
+        return int(percentage_remote.group(1)) >= 100
+    return bool(re.search(r"\b(remote|distans|fjärrarbete|fjarrarbete)\b", normalized))
 
 
 def _first_string(payload: dict[str, Any], keys: tuple[str, ...]) -> str:
@@ -255,7 +279,7 @@ def _title_clearly_outside_target(title: str) -> bool:
 def _verama_location_precheck_fails(record: AssignmentRecord) -> bool:
     location = normalize_text(record.location)
     work_mode = normalize_text(record.work_mode)
-    if "remote" in work_mode or "distans" in work_mode or "fjärrarbete" in work_mode:
+    if _work_mode_is_fully_remote(work_mode):
         return False
     if any(
         place in location
