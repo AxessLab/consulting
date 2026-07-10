@@ -95,9 +95,21 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    platform_results = candidates.get("platform_results", [])
+    visible_by_source = {
+        result.get("platform"): result.get("count", 0)
+        for result in platform_results
+        if isinstance(result, dict)
+    }
+    new_by_source = stats.get("new_ids_by_source") or {}
+    source_stats = ", ".join(
+        f"{source}: visible {visible_by_source.get(source, 0)}, new {new_by_source.get(source, 0)}"
+        for source in candidates.get("platforms", [])
+    )
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
+        f"Source counts: {source_stats}" if source_stats else "Source counts: (unknown)",
         (
             "Visible assignments: "
             f"{stats.get('total_visible', 0)} "

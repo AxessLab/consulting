@@ -179,6 +179,8 @@ def skill_names(assignment: AssignmentRecord) -> list[str]:
     for skill in assignment.skills:
         if isinstance(skill, dict) and skill.get("name"):
             names.append(normalize_text(str(skill["name"])))
+        elif isinstance(skill, str):
+            names.append(normalize_text(skill))
     return names
 
 
@@ -445,12 +447,12 @@ def match_consultants_for_assignment(
     return section, matched
 
 
-UNKNOWN_HOURS_LABEL = "not stated (probably full time)"
+UNKNOWN_HOURS_LABEL = ""
 UNKNOWN_CLIENT_LABEL = "not stated"
 
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
-    text = f"{assignment.description} {assignment.duration}"
+    text = f"{assignment.description} {assignment.duration} {assignment.start_date or ''} {assignment.end_date or ''}"
     scope_match = re.search(
         r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
         text,
@@ -459,10 +461,16 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if scope_match:
         return f"{scope_match.group(2)}%"
 
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    if re.search(r"\b(part[- ]?time|deltid)\b", text, re.I):
+        return "Part time"
+    hours_match = re.search(
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^\n]{0,50}"
+        r"(\d{1,3})\s*(?:h|hours|timmar)\b",
+        text,
+        re.I,
+    )
+    if hours_match:
+        return f"{hours_match.group(2)}h"
     return UNKNOWN_HOURS_LABEL
 
 
@@ -470,7 +478,6 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
     for pattern in (
         r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
     ):
         match = re.search(pattern, description, re.I)
         if match:
@@ -482,6 +489,9 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
+    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö&\s]+)$", assignment.title)
+    if title_match:
+        return title_match.group(1).strip(" .")
     return UNKNOWN_CLIENT_LABEL
 
 
@@ -511,22 +521,23 @@ def slack_title_link(url: str, title: str) -> str:
 
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
-    location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
     ]
-    if match.hours_label != UNKNOWN_HOURS_LABEL:
+    if assignment.location:
+        segments.append(assignment.location)
+    if assignment.work_mode:
+        segments.append(assignment.work_mode)
+    if match.hours_label:
         segments.append(match.hours_label)
     if match.client_label != UNKNOWN_CLIENT_LABEL:
         segments.append(f"Client: {match.client_label}")
-    segments.extend(
-        [
-            assignment.broker,
-            posted_date_label(assignment, scan_date),
-            f"Match: {consultants}",
-        ]
-    )
+    if assignment.broker:
+        segments.append(assignment.broker)
+    segments.append(f"Match: {consultants}")
     return " | ".join(segments)
 
 
