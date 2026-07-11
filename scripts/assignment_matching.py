@@ -306,6 +306,7 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
 
     text = combined_text(assignment)
     skills = skill_names(assignment)
+    title_text = normalize_text(assignment.title)
     title_summary = normalize_text(
         f"{assignment.title} {assignment.description_summary}"
     )
@@ -321,7 +322,7 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
     frontend_title_signal = re.search(
         r"\b(frontend|front-end|react(?:\.js)?|next(?:\.js)?|reactutvecklare|"
         r"frontendutvecklare)\b",
-        title_summary,
+        title_text,
     )
     frontend_text_signal = re.search(r"\b(frontend|front-end)\b", text)
     react_or_next = re.search(r"\b(react|react\.js|next\.js|nextjs)\b", text) or any(
@@ -379,7 +380,7 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
     ):
         categories.add("ux")
 
-    if matches_pm(text):
+    if matches_pm(title_summary, text):
         categories.add("pm")
 
     if phrase_match(r"\b(arkitekt|architect)\b", text) and not PM_TITLES.search(text):
@@ -388,12 +389,14 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
     return categories
 
 
-def matches_pm(text: str) -> bool:
-    if not PM_TITLES.search(text):
+def matches_pm(title_summary: str, text: str) -> bool:
+    if not PM_TITLES.search(title_summary):
         return False
     if NON_IT_PM_CONTEXT.search(text) and not IT_PM_CONTEXT.search(text):
         return False
-    if phrase_match(r"\btechnical project manager\b", text) and not IT_PM_CONTEXT.search(text):
+    if phrase_match(r"\btechnical project manager\b", title_summary) and not (
+        IT_PM_CONTEXT.search(text)
+    ):
         return False
     return IT_PM_CONTEXT.search(text) is not None
 
