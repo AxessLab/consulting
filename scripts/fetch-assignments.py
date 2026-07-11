@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch assignments from all platforms, apply dedupe, emit candidates for AI curation."""
+"""Fetch assignments from all sources, apply dedupe, emit candidates for curation."""
 
 from __future__ import annotations
 
@@ -22,20 +22,31 @@ from assignment_matching import (
     suggestion_to_dict,
 )
 from assignment_platforms import DEFAULT_PLATFORMS, AssignmentRecord, scan_platforms
-from listing_memory import DEFAULT_MEMORY_PATH, build_memory_payload, load_memory
+from listing_memory import (
+    DEFAULT_MEMORY_PATH,
+    build_memory_payload,
+    load_memory,
+    seen_ids_by_source,
+)
 
 
-def build_platform_summary(platform_results: list[dict[str, Any]]) -> str:
+def build_source_summary(source_results: list[dict[str, Any]]) -> str:
     parts: list[str] = []
-    for result in platform_results:
-        label = result["platform"]
+    for result in source_results:
+        label = result["source_key"]
         if result["status"] == "ok":
             parts.append(f"{label} ({result['count']})")
         elif result["status"] == "skipped":
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
+
+
+def assignment_payload(record: AssignmentRecord) -> dict[str, Any]:
+    payload = record.to_dict()
+    payload["dedupe_key"] = record.dedupe_key
+    return payload
 
 
 def prepare_candidates(
@@ -47,10 +58,13 @@ def prepare_candidates(
     headless: bool = True,
     with_suggestions: bool = True,
 ) -> dict[str, Any]:
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, memory_data = load_memory(memory_path)
+    seen_by_source = seen_ids_by_source(memory_data)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
+        seen_ids_by_source=seen_by_source,
+        scan_date=scan_date,
         max_pages=max_pages,
         headless=headless,
     )
@@ -58,7 +72,7 @@ def prepare_candidates(
     new_assignments = [
         assignment
         for assignment in deduped_assignments
-        if assignment.dedupe_key not in seen_keys
+        if assignment.source_id not in seen_by_source.get(assignment.source_key, set())
     ]
 
     profiles = load_consultant_profiles()
@@ -73,9 +87,9 @@ def prepare_candidates(
         suggestions = [suggestion_to_dict(item) for item in active_suggestions]
         expired = [suggestion_to_dict(item) for item in expired_suggestions]
 
-    platform_payload = [
+    source_payload = [
         {
-            "platform": result.platform,
+            "source_key": result.source_key,
             "status": result.status,
             "count": result.count,
             "message": result.message,
@@ -84,9 +98,10 @@ def prepare_candidates(
     ]
 
     memory_update = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        previous_memory=memory_data,
     )
 
     suggested_report = [
@@ -97,20 +112,32 @@ def prepare_candidates(
         "source": "assignment-fetch",
         "scan_date": scan_date.isoformat(),
         "memory_path": str(memory_path),
-        "platforms": [result.platform for result in platform_results],
-        "platform_results": platform_payload,
-        "platform_summary": build_platform_summary(platform_payload),
+        "sources": [result.source_key for result in platform_results],
+        "source_results": source_payload,
+        "platforms": [result.source_key for result in platform_results],
+        "platform_results": source_payload,
+        "source_summary": build_source_summary(source_payload),
+        "platform_summary": build_source_summary(source_payload),
         "consultants": export_consultant_summaries(profiles),
         "stats": {
             "total_visible": len(raw_assignments),
             "total_unique_visible": len(deduped_assignments),
             "previously_seen": len(seen_keys),
             "new_ids": len(new_assignments),
+            "new_ids_by_source": {
+                source_key: sum(
+                    1
+                    for assignment in raw_assignments
+                    if assignment.source_key == source_key
+                    and assignment.source_id not in seen_by_source.get(source_key, set())
+                )
+                for source_key in {result.source_key for result in platform_results}
+            },
             "expired_new_ids": len(expired),
             "script_suggestions": len(suggested_report),
             "active_consultants": len(profiles),
         },
-        "assignments": [record.to_dict() for record in deduped_assignments],
+        "assignments": [assignment_payload(record) for record in deduped_assignments],
         "new_dedupe_keys": [assignment.dedupe_key for assignment in new_assignments],
         "suggestions": suggestions,
         "expired": expired,
@@ -143,7 +170,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="append",
         dest="platforms",
         choices=DEFAULT_PLATFORMS,
-        help="Platform to scan (default: all registered platforms)",
+        help="Source to scan (default: all registered sources)",
     )
     parser.add_argument(
         "--scan-date",

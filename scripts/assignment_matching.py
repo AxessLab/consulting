@@ -177,6 +177,9 @@ def load_consultant_profiles() -> list[ConsultantProfile]:
 def skill_names(assignment: AssignmentRecord) -> list[str]:
     names: list[str] = []
     for skill in assignment.skills:
+        if isinstance(skill, str):
+            names.append(normalize_text(skill))
+            continue
         if isinstance(skill, dict) and skill.get("name"):
             names.append(normalize_text(str(skill["name"])))
     return names
@@ -210,7 +213,15 @@ def is_active_assignment(assignment: AssignmentRecord, scan_date: date) -> bool:
 
 def is_remote(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
-    return any(term in fields for term in ("remote", "distans", "fjarrarbete", "fjärrarbete"))
+    if re.search(r"\b100\s*%\s*remote\b", fields):
+        return True
+    # Verama exposes partial remote work as "hybrid (25% remote)"; that is not
+    # enough to pass the shared remote-anywhere location rule.
+    fields_without_partial_remote = re.sub(r"\b[1-9]\d?\s*%\s*remote\b", "", fields)
+    return any(
+        term in fields_without_partial_remote
+        for term in ("remote", "distans", "fjarrarbete", "fjärrarbete")
+    )
 
 
 def is_hybrid(work_mode: str, location: str) -> bool:
@@ -295,39 +306,65 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
 
     text = combined_text(assignment)
     skills = skill_names(assignment)
+    title_text = normalize_text(assignment.title)
+    title_summary = normalize_text(
+        f"{assignment.title} {assignment.description_summary}"
+    )
     categories: set[str] = set()
 
-    if re.search(
+    non_frontend_primary = re.search(
         r"\b(python|\.net|php|vue|c#|embedded|fpga|data engineer|mobile|ios|android|"
-        r"solution architect|platform architect)\b",
+        r"solution architect|platform architect|infrastrukturarkitekt|"
+        r"microsoft 365|m365|sharepoint|power platform|power apps|teams|"
+        r"cloud engineer|devops|infrastructure)\b",
         text,
-    ):
-        if re.search(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text):
-            categories.add("react_frontend")
-    elif phrase_match(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text) or (
-        any(s in skills for s in ("react", "nextjs", "frontend"))
-        and phrase_match(r"\b(frontend|front-end|react)\b", text)
-    ):
+    )
+    frontend_title_signal = re.search(
+        r"\b(frontend|front-end|react(?:\.js)?|next(?:\.js)?|reactutvecklare|"
+        r"frontendutvecklare)\b",
+        title_text,
+    )
+    frontend_text_signal = re.search(r"\b(frontend|front-end)\b", text)
+    react_or_next = re.search(r"\b(react|react\.js|next\.js|nextjs)\b", text) or any(
+        s in skills for s in ("react", "nextjs")
+    )
+    if react_or_next and frontend_title_signal:
+        categories.add("react_frontend")
+    elif react_or_next and frontend_text_signal and not non_frontend_primary:
         categories.add("react_frontend")
 
-    if phrase_match(r"\b(angular|wordpress)\b", text) or any(
-        s in skills for s in ("angular", "wordpress")
+    if not non_frontend_primary and (
+        phrase_match(r"\b(angular|wordpress)\b", title_summary)
+        or (
+            phrase_match(r"\b(frontend|front-end)\b", title_summary)
+            and (phrase_match(r"\b(angular|wordpress)\b", text))
+        )
     ):
         if "angular" in text or "angular" in skills:
             categories.add("angular")
         if "wordpress" in text or "wordpress" in skills:
             categories.add("wordpress")
 
-    if re.search(r"\b(\.net|php|vue)\b", text):
+    java_primary_signal = re.search(
+        r"\b(java|spring|backend|back-end|systemutvecklare|javautvecklare)\b",
+        title_summary,
+    )
+    java_exclusion = re.search(
+        r"\b(\.net|php|vue|c#|python|embedded|fpga|data engineer|"
+        r"infrastrukturarkitekt|infrastructure architect|microsoft 365|m365|"
+        r"sharepoint|power platform|power apps|teams|devops|cloud)\b",
+        text,
+    )
+    if java_exclusion:
         pass
-    elif phrase_match(r"\b(fullstack|full-stack|full stack)\b", text):
+    elif phrase_match(r"\b(fullstack|full-stack|full stack)\b", title_summary):
         if phrase_match(r"\bjava\b", text) or "java" in skills:
             if phrase_match(r"\b(react|angular)\b", text) or any(
                 s in skills for s in ("react", "angular")
             ):
                 categories.add("fullstack_java")
     elif phrase_match(r"\bjava\b", text) or "java" in skills:
-        if not re.search(r"\b(python|\.net|php|vue|c#|embedded|fpga|data engineer)\b", text):
+        if java_primary_signal:
             categories.add("java")
 
     if re.search(r"\b(ui artist|game art|graphic artist)\b", text):
@@ -343,7 +380,7 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
     ):
         categories.add("ux")
 
-    if matches_pm(text):
+    if matches_pm(title_summary, text):
         categories.add("pm")
 
     if phrase_match(r"\b(arkitekt|architect)\b", text) and not PM_TITLES.search(text):
@@ -352,12 +389,14 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
     return categories
 
 
-def matches_pm(text: str) -> bool:
-    if not PM_TITLES.search(text):
+def matches_pm(title_summary: str, text: str) -> bool:
+    if not PM_TITLES.search(title_summary):
         return False
     if NON_IT_PM_CONTEXT.search(text) and not IT_PM_CONTEXT.search(text):
         return False
-    if phrase_match(r"\btechnical project manager\b", text) and not IT_PM_CONTEXT.search(text):
+    if phrase_match(r"\btechnical project manager\b", title_summary) and not (
+        IT_PM_CONTEXT.search(text)
+    ):
         return False
     return IT_PM_CONTEXT.search(text) is not None
 
@@ -445,8 +484,8 @@ def match_consultants_for_assignment(
     return section, matched
 
 
-UNKNOWN_HOURS_LABEL = "not stated (probably full time)"
-UNKNOWN_CLIENT_LABEL = "not stated"
+UNKNOWN_HOURS_LABEL = ""
+UNKNOWN_CLIENT_LABEL = ""
 
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
@@ -457,12 +496,20 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         re.I,
     )
     if scope_match:
-        return f"{scope_match.group(2)}%"
+        percent = int(scope_match.group(2))
+        if 0 < percent <= 100:
+            return f"{percent}%"
 
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    if re.search(r"\b(part[- ]?time|deltid)\b", text, re.I):
+        return "Part time"
+    hours_match = re.search(
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)"
+        r"[^.\n]{0,60}\b(\d{1,3})\s*(?:h|hours|timmar)\b",
+        text,
+        re.I,
+    )
+    if hours_match:
+        return f"{hours_match.group(2)}h"
     return UNKNOWN_HOURS_LABEL
 
 
@@ -470,7 +517,6 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
     for pattern in (
         r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
     ):
         match = re.search(pattern, description, re.I)
         if match:
@@ -482,6 +528,12 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
+    title_match = re.search(
+        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&.\- ]{3,})\s*$",
+        assignment.title,
+    )
+    if title_match:
+        return title_match.group(1).strip(" .")
     return UNKNOWN_CLIENT_LABEL
 
 
@@ -514,26 +566,26 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
     ]
-    if match.hours_label != UNKNOWN_HOURS_LABEL:
+    if location:
+        segments.append(location)
+    if match.hours_label:
         segments.append(match.hours_label)
-    if match.client_label != UNKNOWN_CLIENT_LABEL:
+    if match.client_label:
         segments.append(f"Client: {match.client_label}")
-    segments.extend(
-        [
-            assignment.broker,
-            posted_date_label(assignment, scan_date),
-            f"Match: {consultants}",
-        ]
-    )
+    if assignment.broker:
+        segments.append(assignment.broker)
+    segments.append(f"Match: {consultants}")
     return " | ".join(segments)
 
 
 def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[AssignmentRecord]:
     """Prefer verama.com when the same role appears on multiple platforms."""
     by_fingerprint: dict[str, AssignmentRecord] = {}
-    platform_rank = {"verama.com": 0, "allakonsultuppdrag.se": 1}
+    source_rank = {"verama.com": 0, "allakonsultuppdrag.se": 1}
 
     for assignment in assignments:
         fingerprint = normalize_text(
@@ -543,8 +595,8 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
         if existing is None:
             by_fingerprint[fingerprint] = assignment
             continue
-        if platform_rank.get(assignment.platform, 99) < platform_rank.get(
-            existing.platform, 99
+        if source_rank.get(assignment.source_key, 99) < source_rank.get(
+            existing.source_key, 99
         ):
             by_fingerprint[fingerprint] = assignment
 
@@ -628,7 +680,7 @@ def suggestion_to_dict(suggestion: AssignmentSuggestion) -> dict[str, Any]:
     return {
         "dedupe_key": assignment.dedupe_key,
         "listing_id": assignment.listing_id,
-        "platform": assignment.platform,
+        "source_key": assignment.source_key,
         "title": assignment.title,
         "location": assignment.location,
         "work_mode": assignment.work_mode,
@@ -687,7 +739,7 @@ def process_assignments(
             debug_rejects.append(
                 {
                     "id": assignment.listing_id,
-                    "platform": assignment.platform,
+                    "source_key": assignment.source_key,
                     "title": assignment.title,
                     "reason": "expired application date",
                 }
@@ -700,7 +752,7 @@ def process_assignments(
             debug_rejects.append(
                 {
                     "id": assignment.listing_id,
-                    "platform": assignment.platform,
+                    "source_key": assignment.source_key,
                     "title": assignment.title,
                     "reason": reason,
                     "would_match": consultants,
@@ -720,7 +772,7 @@ def process_assignments(
             debug_rejects.append(
                 {
                     "id": assignment.listing_id,
-                    "platform": assignment.platform,
+                    "source_key": assignment.source_key,
                     "title": assignment.title,
                     "reason": issue,
                 }

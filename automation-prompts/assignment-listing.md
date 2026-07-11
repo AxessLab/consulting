@@ -4,13 +4,12 @@ Use this guidance when producing Slack assignment lists for consultant matching.
 
 ## Goal
 
-Post new IT consulting assignments from **all configured platforms** in three
+Post new IT consulting assignments from **all configured sources** in three
 sections, with a debug thread reply.
 
-**Python handles mechanical work** (platform fetch, dedupe, memory, Slack line
-formatting). **You handle judgment** (role/location matching, false-positive
-removal, missed matches, validation). Iterate until the curated list is good
-before posting.
+**Python handles the deterministic pipeline** (source fetch, normalization,
+per-source memory, cross-source reporting dedupe, filtering, matching, Slack
+line formatting). Review the output for the guardrails below before posting.
 
 ## Run flow
 
@@ -36,91 +35,37 @@ empty dedupe set.
 Local-only runs can skip this step when `assignment-listing-seen.json` already
 exists on disk from a previous `--commit-memory`.
 
-### 1. Fetch candidates
+### 1. Run deterministic listing
 
 ```bash
-python3 scripts/fetch-assignments.py -o listing-candidates.json
+python3 scripts/list-assignments.py -o listing-output.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
-`assignment-listing-seen.json`, and writes:
+This scans every active source in `scripts/assignment_platforms.py`, normalizes
+each source into the canonical record shape, applies per-source newness and
+cross-source reporting dedupe, then writes:
 
-- `assignments` — all currently visible unique records (for lookup)
-- `new_dedupe_keys` — ids not posted before
-- `consultants` — active profiles from `consultants.yaml`
-- `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
-  wrong, do not post verbatim
+- `slack_main` — the one channel message
+- `slack_debug` — the one threaded debug reply
+- `matches` — reported records for validation
 - `memory_update` — draft memory (do not commit until after Slack post)
-- `platform_summary` — for the debug thread
+- `source_results` / `stats.new_ids_by_source` — debug counts
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
 
-### 2. Curate matches (your main job)
+### 2. Validate output before Slack
 
-Read `listing-candidates.json`. For each **new** assignment (`new_dedupe_keys`):
+Read `listing-output.json`. Review `slack_main`, `slack_debug`, and `matches`
+against the guardrails below. If the deterministic output is suspicious, fix the
+shared code locally and re-run the deterministic listing before posting.
 
-1. Apply the filtering and matching rules below.
-2. Use `suggestions` as a starting point — accept, adjust, or reject each one.
-3. Add matches the script missed.
-4. Run a final sanity check (see Pre-Slack validation).
-
-If patterns are systematically wrong, you may edit `scripts/assignment_matching.py`
-and re-fetch with suggestions, or fix the curated list directly. Prefer fixing
-the curated list for one-off errors; edit the script when the same mistake repeats.
-
-Write `curated-listing.json`:
-
-```json
-{
-  "reported": [
-    {
-      "dedupe_key": "allakonsultuppdrag.se:6236",
-      "section": "other",
-      "consultants": ["Joel Holmberg"]
-    },
-    {
-      "dedupe_key": "verama.com:81387",
-      "section": "other_a11y_mentions",
-      "consultants": ["Soma Azad"]
-    }
-  ],
-  "debug_rejects": [
-    {
-      "listing_id": "6830",
-      "platform": "allakonsultuppdrag.se",
-      "title": "GIS Consultant - Project Manager",
-      "reason": "location",
-      "would_match": ["Erik Gustafsson Spagnoli", "Karin Skog"]
-    }
-  ],
-  "review_notes": "Optional short notes for the debug thread."
-}
-```
-
-`section` must be one of:
-
-- `accessibility_specialist`
-- `other_a11y_mentions`
-- `other`
-
-Use canonical consultant names from `consultants.yaml` (`canonicalName`).
-
-### 3. Finalize Slack output
-
-```bash
-python3 scripts/finalize-listing.py listing-candidates.json curated-listing.json -o listing-output.json
-```
-
-Review `slack_main` in `listing-output.json`. If it looks wrong, fix
-`curated-listing.json` and re-run finalize — do not post until satisfied.
-
-### 4. Post Slack
+### 3. Post Slack
 
 - Post `slack_main` as the channel message.
 - Reply in that thread with `slack_debug`.
 - Do not add CV weaknesses, availability, or internal notes.
 
-### 5. Persist dedupe memory (after Slack)
+### 4. Persist dedupe memory (after Slack)
 
 The local file alone is **not** enough for the next cloud run. After posting:
 
@@ -136,15 +81,15 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: a top-level `sources` object. Each source stores its
+listing prefix, bare native `seen_ids`, and visible counts.
 
 ## Filtering rules
 
 Apply to **new** assignments only.
 
 1. Exclude assignments whose `lastApplicationDate` is before the scan date
-   (already flagged in `expired` from fetch).
+   (already handled by the deterministic listing).
 2. Match role against consultants in `consultants.yaml` (`mainRoles`, active
    `cvs[].roles`, `locations`). Use `consultants` in the fetch output as a
    shortcut.
@@ -272,22 +217,23 @@ generate v81387 Soma english
 
 | Concern | Location |
 |---------|----------|
-| Platform scanners | `scripts/assignment_platforms.py` |
-| Fetch + dedupe | `scripts/fetch-assignments.py` |
+| Source scanners | `scripts/assignment_platforms.py` |
+| Deterministic listing | `scripts/list-assignments.py` |
+| Fetch + candidate debugging | `scripts/fetch-assignments.py` |
 | Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
 | Slack formatting + memory | `scripts/finalize-listing.py` |
 | Consultant names, roles, locations | `consultants.yaml` |
 
-When adding a new platform, register a scanner in `assignment_platforms.py`.
+When adding a new source, register a scanner and prefix in `assignment_platforms.py`.
 
-## Debug / script-only mode
+## Debug / candidate mode
 
 ```bash
-python3 scripts/list-assignments.py --deterministic -o listing-output.json
+python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-Heuristic matches only — useful for tuning `assignment_matching.py`, not for
-production Slack posting.
+Candidate JSON is useful for tuning `assignment_matching.py`; production Slack
+posting uses `scripts/list-assignments.py`.
 
 `scripts/scan-assignments.py` — raw unfiltered fetch for ingestion debugging.
