@@ -306,39 +306,64 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
 
     text = combined_text(assignment)
     skills = skill_names(assignment)
+    title_summary = normalize_text(
+        f"{assignment.title} {assignment.description_summary}"
+    )
     categories: set[str] = set()
 
-    if re.search(
+    non_frontend_primary = re.search(
         r"\b(python|\.net|php|vue|c#|embedded|fpga|data engineer|mobile|ios|android|"
-        r"solution architect|platform architect)\b",
+        r"solution architect|platform architect|infrastrukturarkitekt|"
+        r"microsoft 365|m365|sharepoint|power platform|power apps|teams|"
+        r"cloud engineer|devops|infrastructure)\b",
         text,
-    ):
-        if re.search(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text):
-            categories.add("react_frontend")
-    elif phrase_match(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text) or (
-        any(s in skills for s in ("react", "nextjs", "frontend"))
-        and phrase_match(r"\b(frontend|front-end|react)\b", text)
-    ):
+    )
+    frontend_title_signal = re.search(
+        r"\b(frontend|front-end|react(?:\.js)?|next(?:\.js)?|reactutvecklare|"
+        r"frontendutvecklare)\b",
+        title_summary,
+    )
+    frontend_text_signal = re.search(r"\b(frontend|front-end)\b", text)
+    react_or_next = re.search(r"\b(react|react\.js|next\.js|nextjs)\b", text) or any(
+        s in skills for s in ("react", "nextjs")
+    )
+    if react_or_next and frontend_title_signal:
+        categories.add("react_frontend")
+    elif react_or_next and frontend_text_signal and not non_frontend_primary:
         categories.add("react_frontend")
 
-    if phrase_match(r"\b(angular|wordpress)\b", text) or any(
-        s in skills for s in ("angular", "wordpress")
+    if not non_frontend_primary and (
+        phrase_match(r"\b(angular|wordpress)\b", title_summary)
+        or (
+            phrase_match(r"\b(frontend|front-end)\b", title_summary)
+            and (phrase_match(r"\b(angular|wordpress)\b", text))
+        )
     ):
         if "angular" in text or "angular" in skills:
             categories.add("angular")
         if "wordpress" in text or "wordpress" in skills:
             categories.add("wordpress")
 
-    if re.search(r"\b(\.net|php|vue)\b", text):
+    java_primary_signal = re.search(
+        r"\b(java|spring|backend|back-end|systemutvecklare|javautvecklare)\b",
+        title_summary,
+    )
+    java_exclusion = re.search(
+        r"\b(\.net|php|vue|c#|python|embedded|fpga|data engineer|"
+        r"infrastrukturarkitekt|infrastructure architect|microsoft 365|m365|"
+        r"sharepoint|power platform|power apps|teams|devops|cloud)\b",
+        text,
+    )
+    if java_exclusion:
         pass
-    elif phrase_match(r"\b(fullstack|full-stack|full stack)\b", text):
+    elif phrase_match(r"\b(fullstack|full-stack|full stack)\b", title_summary):
         if phrase_match(r"\bjava\b", text) or "java" in skills:
             if phrase_match(r"\b(react|angular)\b", text) or any(
                 s in skills for s in ("react", "angular")
             ):
                 categories.add("fullstack_java")
     elif phrase_match(r"\bjava\b", text) or "java" in skills:
-        if not re.search(r"\b(python|\.net|php|vue|c#|embedded|fpga|data engineer)\b", text):
+        if java_primary_signal:
             categories.add("java")
 
     if re.search(r"\b(ui artist|game art|graphic artist)\b", text):
@@ -468,7 +493,9 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         re.I,
     )
     if scope_match:
-        return f"{scope_match.group(2)}%"
+        percent = int(scope_match.group(2))
+        if 0 < percent <= 100:
+            return f"{percent}%"
 
     if re.search(r"\b(part[- ]?time|deltid)\b", text, re.I):
         return "Part time"
