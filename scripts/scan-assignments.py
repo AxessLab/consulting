@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Raw multi-platform assignment fetch (no filtering). Prefer list-assignments.py."""
+"""Raw multi-source assignment fetch (no filtering). Prefer list-assignments.py."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import sys
-from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -21,14 +20,14 @@ from assignment_platforms import DEFAULT_PLATFORMS, scan_platforms
 def build_slack_debug_summary(platform_results: list[dict[str, Any]]) -> str:
     parts: list[str] = []
     for result in platform_results:
-        label = result["platform"]
+        label = result.get("source_key") or result.get("platform")
         if result["status"] == "ok":
             parts.append(f"{label} ({result['count']})")
         elif result["status"] == "skipped":
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -38,7 +37,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="append",
         dest="platforms",
         choices=DEFAULT_PLATFORMS,
-        help="Platform to scan (default: all registered platforms)",
+        help="Source to scan (default: all registered sources)",
     )
     parser.add_argument(
         "--max-pages",
@@ -54,14 +53,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--debug-summary",
         action="store_true",
-        help="Print a Slack-ready platform summary line to stderr",
+        help="Print a Slack-ready source summary line to stderr",
     )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
-    import os
-
     try:
         from dotenv import load_dotenv
 
@@ -80,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
 
     payload = {
         "scannedAt": datetime.now(UTC).isoformat(),
-        "platforms": [asdict(result) for result in results],
+        "sources": [result.to_dict() for result in results],
         "assignments": [record.to_dict() for record in assignments],
     }
 
@@ -88,9 +85,9 @@ def main(argv: list[str] | None = None) -> int:
     sys.stdout.write("\n")
 
     if args.debug_summary:
-        print(build_slack_debug_summary(payload["platforms"]), file=sys.stderr)
+        print(build_slack_debug_summary(payload["sources"]), file=sys.stderr)
 
-    failed = [p for p in payload["platforms"] if p["status"] == "error"]
+    failed = [p for p in payload["sources"] if p["status"] == "error"]
     return 1 if failed and not payload["assignments"] else 0
 
 

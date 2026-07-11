@@ -15,24 +15,23 @@ Verama raw scanning also uses Playwright when enabled.
 ## List assignments (Slack listing)
 
 ```bash
-python scripts/fetch-assignments.py -o listing-candidates.json
-python scripts/finalize-listing.py listing-candidates.json curated-listing.json -o listing-output.json
+python scripts/list-assignments.py -o listing-output.json
 python scripts/finalize-listing.py --commit-memory listing-output.json --print-memory
 ```
 
 Cloud automations must also sync via automation Memory — see
-`automation-prompts/assignment-listing.md` steps 0 and 5.
+`automation-prompts/assignment-listing.md` steps 0 and 4.
 
-Fetches from all registered platforms; the automation agent curates matches before
-finalize formats three-tier Slack text. See `automation-prompts/assignment-listing.md`.
+Fetches from all registered sources, applies deterministic shared filtering, and
+formats three-tier Slack text. See `automation-prompts/assignment-listing.md`.
 
-Heuristic-only testing:
+Candidate/debug mode:
 
 ```bash
-python scripts/list-assignments.py --deterministic -o listing-output.json
+python scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-## Raw multi-platform fetch (optional)
+## Raw multi-source fetch (optional)
 
 ```bash
 export VERAMA_EMAIL=...

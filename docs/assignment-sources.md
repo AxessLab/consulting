@@ -1,43 +1,42 @@
 # Assignment sources
 
-## Listing (Slack) — hybrid workflow
+## Listing (Slack) — deterministic workflow
 
 ```bash
-python scripts/fetch-assignments.py -o listing-candidates.json
-# agent curates → curated-listing.json
-python scripts/finalize-listing.py listing-candidates.json curated-listing.json -o listing-output.json
+python scripts/list-assignments.py -o listing-output.json
 # post slack_main + slack_debug
 python scripts/finalize-listing.py --commit-memory listing-output.json
 ```
 
-Python fetches and dedupes; the automation agent applies filtering rules and
-writes `curated-listing.json`. Dedupe memory: `assignment-listing-seen.json`
-locally, synced via automation Memory entry **`assignment-listing-seen.json`**
-on cloud runs (see `automation-prompts/assignment-listing.md` step 0 and 5).
+Python fetches, normalizes, dedupes, filters, matches, and formats Slack output.
+Dedupe memory: `assignment-listing-seen.json` locally, synced via automation
+Memory entry **`assignment-listing-seen.json`** on cloud runs (see
+`automation-prompts/assignment-listing.md` steps 0 and 4).
 
-## Registered platforms
+## Registered sources
 
-Defined in `scripts/assignment_platforms.py` → `PLATFORM_SCANNERS`:
+Defined in `scripts/assignment_platforms.py` → `SOURCE_REGISTRY` and
+`PLATFORM_SCANNERS`:
 
-| Platform | Auth | Notes |
-|----------|------|-------|
-| `allakonsultuppdrag.se` | None | JSON API only |
-| `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
+| Source | Prefix | Auth | Notes |
+|--------|--------|------|-------|
+| `allakonsultuppdrag.se` | `a` | None | JSON API only |
+| `verama.com` | `v` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
 
-Add new platforms by implementing `scan_<name>()` and registering it in
+Add new sources by choosing an unused lowercase prefix, implementing
+`scan_<name>()`, and registering it in `SOURCE_REGISTRY` and
 `PLATFORM_SCANNERS`.
 
 ## Matching
 
 `consultants.yaml` is the consultant source of truth. `assignment_matching.py`
-provides heuristic suggestions only; the automation prompt defines final
-filtering and matching rules.
+implements the shared deterministic filtering and matching rules.
 
 ## Raw / debug
 
 ```bash
 python scripts/scan-assignments.py --debug-summary
-python scripts/list-assignments.py --deterministic -o listing-output.json
+python scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
 ## Secrets
