@@ -545,9 +545,7 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
     platform_rank = {"verama.com": 0, "allakonsultuppdrag.se": 1}
 
     for assignment in assignments:
-        fingerprint = normalize_text(
-            f"{assignment.title}|{assignment.broker}|{assignment.location}"
-        )
+        fingerprint = assignment_fingerprint(assignment)
         existing = by_fingerprint.get(fingerprint)
         if existing is None:
             by_fingerprint[fingerprint] = assignment
@@ -558,6 +556,18 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
             by_fingerprint[fingerprint] = assignment
 
     return list(by_fingerprint.values())
+
+
+def assignment_fingerprint(assignment: AssignmentRecord) -> str:
+    """Group obvious duplicate ads without using source-specific fields downstream."""
+    verama_url_match = re.search(r"app\.verama\.com/(?:app/)?job-requests/(\d+)", assignment.source_url)
+    if verama_url_match:
+        return f"verama-url:{verama_url_match.group(1)}"
+
+    normalized_location = normalize_text(assignment.location)
+    normalized_location = re.sub(r"\b(se|sweden|sverige)\b", " ", normalized_location)
+    normalized_location = re.sub(r"[^a-z0-9åäö]+", " ", normalized_location).strip()
+    return normalize_text(f"{assignment.title}|{assignment.broker}|{normalized_location}")
 
 
 def export_consultant_summaries(
