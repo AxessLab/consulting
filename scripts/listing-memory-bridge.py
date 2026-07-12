@@ -32,9 +32,10 @@ def cmd_seed(args: argparse.Namespace) -> int:
         raise SystemExit(f"{MEMORY_ENTRY_NAME} must be a JSON object.")
 
     write_memory_file(args.memory_path, payload)
-    seen_keys, _ = load_memory(args.memory_path)
+    seen_by_source, _ = load_memory(args.memory_path)
+    seen_count = sum(len(source_ids) for source_ids in seen_by_source.values())
     print(
-        f"Seeded {args.memory_path.name} with {len(seen_keys)} seen key(s).",
+        f"Seeded {args.memory_path.name} with {seen_count} seen id(s).",
         file=sys.stderr,
     )
     return 0
@@ -48,8 +49,19 @@ def cmd_print(args: argparse.Namespace) -> int:
 
 
 def cmd_stats(args: argparse.Namespace) -> int:
-    seen_keys, _ = load_memory(args.memory_path)
-    print(json.dumps({"previously_seen": len(seen_keys), "memory_path": str(args.memory_path)}))
+    seen_by_source, _ = load_memory(args.memory_path)
+    print(
+        json.dumps(
+            {
+                "previously_seen": sum(len(source_ids) for source_ids in seen_by_source.values()),
+                "by_source": {
+                    source_key: len(source_ids)
+                    for source_key, source_ids in sorted(seen_by_source.items())
+                },
+                "memory_path": str(args.memory_path),
+            }
+        )
+    )
     return 0
 
 

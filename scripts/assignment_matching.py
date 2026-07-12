@@ -179,6 +179,8 @@ def skill_names(assignment: AssignmentRecord) -> list[str]:
     for skill in assignment.skills:
         if isinstance(skill, dict) and skill.get("name"):
             names.append(normalize_text(str(skill["name"])))
+        elif isinstance(skill, str):
+            names.append(normalize_text(skill))
     return names
 
 
@@ -445,33 +447,38 @@ def match_consultants_for_assignment(
     return section, matched
 
 
-UNKNOWN_HOURS_LABEL = "not stated (probably full time)"
-UNKNOWN_CLIENT_LABEL = "not stated"
+UNKNOWN_HOURS_LABEL = ""
+UNKNOWN_CLIENT_LABEL = ""
 
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
-    text = f"{assignment.description} {assignment.duration}"
+    text = f"{assignment.description} {assignment.duration} {assignment.start_date or ''} {assignment.end_date or ''}"
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)"
+        r"[^%\n]{0,80}?(\d{1,3})\s*%",
         text,
         re.I,
     )
     if scope_match:
         return f"{scope_match.group(2)}%"
 
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    if re.search(r"\b(part[- ]?time|deltid)\b", text, re.I):
+        return "Part time"
+
+    hours_match = re.search(
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)"
+        r"[^\n]{0,80}?(\d{1,3})\s*(h|hours|timmar|tim)/?(week|vecka|v)?",
+        text,
+        re.I,
+    )
+    if hours_match:
+        return f"{hours_match.group(2)} h/week"
     return UNKNOWN_HOURS_LABEL
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
-    for pattern in (
-        r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
-    ):
+    for pattern in (r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",):
         match = re.search(pattern, description, re.I)
         if match:
             client = match.group(1).strip(" .")
@@ -482,6 +489,9 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
+    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö&\-\s]{3,60})$", assignment.title)
+    if title_match:
+        return title_match.group(1).strip(" .")
     return UNKNOWN_CLIENT_LABEL
 
 
@@ -514,41 +524,50 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
+        location,
     ]
-    if match.hours_label != UNKNOWN_HOURS_LABEL:
+    if match.hours_label:
         segments.append(match.hours_label)
-    if match.client_label != UNKNOWN_CLIENT_LABEL:
+    if match.client_label:
         segments.append(f"Client: {match.client_label}")
-    segments.extend(
-        [
-            assignment.broker,
-            posted_date_label(assignment, scan_date),
-            f"Match: {consultants}",
-        ]
-    )
+    if assignment.broker:
+        segments.append(assignment.broker)
+    segments.append(f"Match: {consultants}")
     return " | ".join(segments)
 
 
 def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[AssignmentRecord]:
-    """Prefer verama.com when the same role appears on multiple platforms."""
+    """Prefer Verama when the same role appears on multiple sources."""
     by_fingerprint: dict[str, AssignmentRecord] = {}
     platform_rank = {"verama.com": 0, "allakonsultuppdrag.se": 1}
 
     for assignment in assignments:
-        fingerprint = normalize_text(
-            f"{assignment.title}|{assignment.broker}|{assignment.location}"
-        )
+        fingerprint = assignment_fingerprint(assignment)
         existing = by_fingerprint.get(fingerprint)
         if existing is None:
             by_fingerprint[fingerprint] = assignment
             continue
-        if platform_rank.get(assignment.platform, 99) < platform_rank.get(
-            existing.platform, 99
+        if platform_rank.get(assignment.source_key, 99) < platform_rank.get(
+            existing.source_key, 99
         ):
             by_fingerprint[fingerprint] = assignment
 
     return list(by_fingerprint.values())
+
+
+def assignment_fingerprint(assignment: AssignmentRecord) -> str:
+    """Group obvious duplicate ads without using source-specific fields downstream."""
+    verama_url_match = re.search(r"app\.verama\.com/(?:app/)?job-requests/(\d+)", assignment.source_url)
+    if verama_url_match:
+        return f"verama-url:{verama_url_match.group(1)}"
+
+    normalized_location = normalize_text(assignment.location)
+    normalized_location = re.sub(r"\b(se|sweden|sverige)\b", " ", normalized_location)
+    normalized_location = re.sub(r"[^a-z0-9åäö]+", " ", normalized_location).strip()
+    return normalize_text(f"{assignment.title}|{assignment.broker}|{normalized_location}")
 
 
 def export_consultant_summaries(
@@ -672,16 +691,22 @@ def suggest_assignments(
 def process_assignments(
     assignments: list[AssignmentRecord],
     *,
-    seen_keys: set[str],
+    seen_keys: set[str] | None = None,
     scan_date: date,
     profiles: list[ConsultantProfile] | None = None,
+    seen_ids_by_source: dict[str, set[str]] | None = None,
 ) -> tuple[list[MatchedAssignment], list[dict[str, Any]]]:
     profiles = profiles or load_consultant_profiles()
+    seen_keys = seen_keys or set()
+    seen_ids_by_source = seen_ids_by_source or {}
     reported: list[MatchedAssignment] = []
     debug_rejects: list[dict[str, Any]] = []
 
     for assignment in assignments:
-        if assignment.dedupe_key in seen_keys:
+        if assignment.dedupe_key in seen_keys or assignment.source_id in seen_ids_by_source.get(
+            assignment.source_key,
+            set(),
+        ):
             continue
         if not is_active_assignment(assignment, scan_date):
             debug_rejects.append(

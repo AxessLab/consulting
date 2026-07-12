@@ -26,12 +26,13 @@ Practical implications for agents working here:
   guidance in `automation-prompts/cv-generation.md` and
   `automation-prompts/assignment-listing.md`.
 - **Assignment listing** runs `python scripts/fetch-assignments.py` to scan all
-  platforms in `scripts/assignment_platforms.py`, then the automation agent
+ sources in `scripts/assignment_platforms.py`, then the automation agent
   curates matches and runs `scripts/finalize-listing.py` for three-tier Slack
   output. Heuristic hints live in `scripts/assignment_matching.py`; matching
-  uses `consultants.yaml`. Dedupe memory: `assignment-listing-seen.json` on disk
-  plus automation Memory entry **`assignment-listing-seen.json`** for cloud
-  persistence (`scripts/listing-memory-bridge.py`).
+ uses `consultants.yaml`. Dedupe memory is a unified per-source
+ `assignment-listing-seen.json` on disk plus automation Memory entry
+ **`assignment-listing-seen.json`** for cloud persistence
+ (`scripts/listing-memory-bridge.py`).
 
 ## Cursor Automations
 

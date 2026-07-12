@@ -42,11 +42,14 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+This scans every source in `scripts/assignment_platforms.py`, dedupes against
 `assignment-listing-seen.json`, and writes:
 
-- `assignments` — all currently visible unique records (for lookup)
-- `new_dedupe_keys` — ids not posted before
+- `assignments` — all currently visible unique records after cross-source dedupe
+  (for lookup)
+- `canonical_assignments` — the same records using the Slack pipeline's
+  canonical field names
+- `new_dedupe_keys` — source ids not seen before for their source
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
@@ -86,7 +89,7 @@ Write `curated-listing.json`:
   ],
   "debug_rejects": [
     {
-      "listing_id": "6830",
+      "listing_id": "a6830",
       "platform": "allakonsultuppdrag.se",
       "title": "GIS Consultant - Project Manager",
       "reason": "location",
@@ -136,8 +139,9 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: a top-level `sources` object. Each source stores its
+prefix, bare native `seen_ids`, `total_visible`, and `total_unique_visible`.
+Failed or skipped sources preserve their previous memory state for that run.
 
 ## Filtering rules
 
@@ -272,14 +276,15 @@ generate v81387 Soma english
 
 | Concern | Location |
 |---------|----------|
-| Platform scanners | `scripts/assignment_platforms.py` |
+| Source scanners | `scripts/assignment_platforms.py` |
 | Fetch + dedupe | `scripts/fetch-assignments.py` |
 | Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
 | Slack formatting + memory | `scripts/finalize-listing.py` |
 | Consultant names, roles, locations | `consultants.yaml` |
 
-When adding a new platform, register a scanner in `assignment_platforms.py`.
+When adding a new source, register it with an unused lowercase prefix in
+`assignment_platforms.py`.
 
 ## Debug / script-only mode
 
