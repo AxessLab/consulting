@@ -95,15 +95,28 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    visible_by_source = stats.get("visible_by_source") or {}
+    unique_visible_by_source = stats.get("unique_visible_by_source") or {}
+    new_by_source = stats.get("new_ids_by_source") or {}
+    per_source_bits = []
+    for result in candidates.get("platform_results", []):
+        source_key = result.get("platform")
+        visible = visible_by_source.get(source_key, result.get("count", 0))
+        unique_visible = unique_visible_by_source.get(source_key, visible)
+        new_count = new_by_source.get(source_key, 0)
+        per_source_bits.append(
+            f"{source_key}: visible {visible}, unique {unique_visible}, new {new_count}"
+        )
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
         (
-            "Visible assignments: "
+            "Total visible assignments: "
             f"{stats.get('total_visible', 0)} "
             f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
         ),
-        f"New ids: {stats.get('new_ids', 0)}",
+        "Per-source counts: " + "; ".join(per_source_bits),
+        f"New ids after cross-source dedupe: {stats.get('new_ids', 0)}",
         f"Reported matches: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
         "",
@@ -118,10 +131,8 @@ def build_slack_debug(
             consultants = item.get("would_match") or []
             suffix = f" | would match: {', '.join(consultants)}" if consultants else ""
             listing_id = item.get("listing_id", item.get("id", "?"))
-            platform = item.get("platform", "")
-            platform_suffix = f" [{platform}]" if platform else ""
             lines.append(
-                f"- {listing_id}{platform_suffix} | {item.get('title', '?')} | "
+                f"- {listing_id} | {item.get('title', '?')} | "
                 f"{item.get('reason', 'rejected')}{suffix}"
             )
         if len(rejects) > 25:
@@ -173,6 +184,7 @@ def finalize_listing(
         "source": "curated-listing",
         "scan_date": candidates["scan_date"],
         "memory_path": candidates.get("memory_path"),
+        "sources": candidates.get("sources", candidates.get("platforms", [])),
         "platforms": candidates.get("platforms", []),
         "platform_results": candidates.get("platform_results", []),
         "stats": {
@@ -185,7 +197,7 @@ def finalize_listing(
         "matches": [
             {
                 "listing_id": match.assignment.listing_id,
-                "platform": match.assignment.platform,
+                "source_key": match.assignment.source_key,
                 "section": match.section,
                 "title": match.assignment.title,
                 "consultants": match.consultants,
