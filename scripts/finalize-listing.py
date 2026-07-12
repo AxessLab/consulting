@@ -113,7 +113,7 @@ def build_slack_debug(
         (
             "Total visible assignments: "
             f"{stats.get('total_visible', 0)} "
-            f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
+            f"(unique after cross-source dedupe: {stats.get('total_unique_visible', 0)})"
         ),
         "Per-source counts: " + "; ".join(per_source_bits),
         f"New ids after cross-source dedupe: {stats.get('new_ids', 0)}",
