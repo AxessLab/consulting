@@ -38,9 +38,12 @@ def load_curated(path: Path) -> dict[str, Any]:
 def assignment_index(candidates: dict[str, Any]) -> dict[str, AssignmentRecord]:
     index: dict[str, AssignmentRecord] = {}
     for row in candidates.get("assignments", []):
+        if "source_key" not in row and "platform" in row:
+            row = {**row, "source_key": row["platform"]}
+        row.pop("platform", None)
         record = AssignmentRecord(**row)
         index[record.dedupe_key] = record
-        index[f"{record.platform}:{record.listing_id}"] = record
+        index[f"{record.source_key}:{record.listing_id}"] = record
         index[record.listing_id] = record
     return index
 
@@ -54,9 +57,9 @@ def resolve_assignment(
         return index[dedupe_key]
 
     listing_id = item.get("listing_id")
-    platform = item.get("platform")
-    if listing_id and platform:
-        key = f"{platform}:{listing_id}"
+    source_key = item.get("source_key") or item.get("platform")
+    if listing_id and source_key:
+        key = f"{source_key}:{listing_id}"
         if key in index:
             return index[key]
     if listing_id and listing_id in index:
@@ -95,16 +98,25 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    visible_by_source = stats.get("total_visible_by_source") or {}
+    new_by_source = stats.get("new_ids_by_source") or {}
+    visible_parts = [
+        f"{source}: {count}" for source, count in visible_by_source.items()
+    ]
+    new_parts = [f"{source}: {count}" for source, count in new_by_source.items()]
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
+        "Total visible per source: " + (", ".join(visible_parts) if visible_parts else "unknown"),
+        "New ids per source after per-source dedupe: "
+        + (", ".join(new_parts) if new_parts else str(stats.get("new_ids", 0))),
         (
-            "Visible assignments: "
-            f"{stats.get('total_visible', 0)} "
-            f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
+            "Unique visible: "
+            f"{stats.get('total_unique_visible', 0)} per-source; "
+            f"{stats.get('total_reporting_unique_visible', stats.get('total_unique_visible', 0))} "
+            "after cross-source reporting dedupe"
         ),
-        f"New ids: {stats.get('new_ids', 0)}",
-        f"Reported matches: {reported_count}",
+        f"Reported matches after cross-source dedupe: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
         "",
         "Close non-matches (sample):",
@@ -118,10 +130,10 @@ def build_slack_debug(
             consultants = item.get("would_match") or []
             suffix = f" | would match: {', '.join(consultants)}" if consultants else ""
             listing_id = item.get("listing_id", item.get("id", "?"))
-            platform = item.get("platform", "")
-            platform_suffix = f" [{platform}]" if platform else ""
+            source_key = item.get("source_key") or item.get("platform", "")
+            source_suffix = f" [{source_key}]" if source_key else ""
             lines.append(
-                f"- {listing_id}{platform_suffix} | {item.get('title', '?')} | "
+                f"- {listing_id}{source_suffix} | {item.get('title', '?')} | "
                 f"{item.get('reason', 'rejected')}{suffix}"
             )
         if len(rejects) > 25:
@@ -173,6 +185,7 @@ def finalize_listing(
         "source": "curated-listing",
         "scan_date": candidates["scan_date"],
         "memory_path": candidates.get("memory_path"),
+        "sources": candidates.get("sources", candidates.get("platforms", [])),
         "platforms": candidates.get("platforms", []),
         "platform_results": candidates.get("platform_results", []),
         "stats": {
@@ -185,7 +198,8 @@ def finalize_listing(
         "matches": [
             {
                 "listing_id": match.assignment.listing_id,
-                "platform": match.assignment.platform,
+                "source_key": match.assignment.source_key,
+                "platform": match.assignment.source_key,
                 "section": match.section,
                 "title": match.assignment.title,
                 "consultants": match.consultants,

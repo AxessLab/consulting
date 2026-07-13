@@ -4,7 +4,7 @@ Use this guidance when producing Slack assignment lists for consultant matching.
 
 ## Goal
 
-Post new IT consulting assignments from **all configured platforms** in three
+Post new IT consulting assignments from **all configured sources** in three
 sections, with a debug thread reply.
 
 **Python handles mechanical work** (platform fetch, dedupe, memory, Slack line
@@ -42,11 +42,12 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+This scans every source in `scripts/assignment_platforms.py`, dedupes against
 `assignment-listing-seen.json`, and writes:
 
-- `assignments` — all currently visible unique records (for lookup)
-- `new_dedupe_keys` — ids not posted before
+- `assignments` — all currently visible records after per-source dedupe (for lookup)
+- `reporting_assignments` — the cross-source deduped pool used for reporting
+- `new_dedupe_keys` — cross-source reporting ids not seen before in their source
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
@@ -86,8 +87,8 @@ Write `curated-listing.json`:
   ],
   "debug_rejects": [
     {
-      "listing_id": "6830",
-      "platform": "allakonsultuppdrag.se",
+      "listing_id": "a6830",
+      "source_key": "allakonsultuppdrag.se",
       "title": "GIS Consultant - Project Manager",
       "reason": "location",
       "would_match": ["Erik Gustafsson Spagnoli", "Karin Skog"]
@@ -136,8 +137,9 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: unified `sources` object. Each source stores its
+listing prefix, bare native `seen_ids`, `total_visible`, and
+`total_unique_visible`. Do not write prefixed ids into memory.
 
 ## Filtering rules
 

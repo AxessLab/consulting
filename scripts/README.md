@@ -23,7 +23,7 @@ python scripts/finalize-listing.py --commit-memory listing-output.json --print-m
 Cloud automations must also sync via automation Memory — see
 `automation-prompts/assignment-listing.md` steps 0 and 5.
 
-Fetches from all registered platforms; the automation agent curates matches before
+Fetches from all registered sources; the automation agent curates matches before
 finalize formats three-tier Slack text. See `automation-prompts/assignment-listing.md`.
 
 Heuristic-only testing:
@@ -32,7 +32,7 @@ Heuristic-only testing:
 python scripts/list-assignments.py --deterministic -o listing-output.json
 ```
 
-## Raw multi-platform fetch (optional)
+## Raw multi-source fetch (optional)
 
 ```bash
 export VERAMA_EMAIL=...
