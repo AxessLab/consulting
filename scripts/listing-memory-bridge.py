@@ -26,7 +26,11 @@ def cmd_seed(args: argparse.Namespace) -> int:
     try:
         payload = json.loads(raw)
     except json.JSONDecodeError as exc:
-        raise SystemExit(f"Invalid JSON for {MEMORY_ENTRY_NAME}: {exc}") from exc
+        print(
+            f"Invalid JSON for {MEMORY_ENTRY_NAME}; starting with empty dedupe state: {exc}",
+            file=sys.stderr,
+        )
+        return 0
 
     if not isinstance(payload, dict):
         raise SystemExit(f"{MEMORY_ENTRY_NAME} must be a JSON object.")
