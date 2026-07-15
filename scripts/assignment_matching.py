@@ -179,6 +179,8 @@ def skill_names(assignment: AssignmentRecord) -> list[str]:
     for skill in assignment.skills:
         if isinstance(skill, dict) and skill.get("name"):
             names.append(normalize_text(str(skill["name"])))
+        elif isinstance(skill, str) and skill.strip():
+            names.append(normalize_text(skill))
     return names
 
 
@@ -210,6 +212,11 @@ def is_active_assignment(assignment: AssignmentRecord, scan_date: date) -> bool:
 
 def is_remote(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
+    percent_match = re.search(r"\b(\d{1,3})\s*%\s*remote\b", fields)
+    if percent_match and int(percent_match.group(1)) < 100:
+        return False
+    if "hybrid" in fields and not percent_match:
+        return False
     return any(term in fields for term in ("remote", "distans", "fjarrarbete", "fjärrarbete"))
 
 
@@ -445,12 +452,12 @@ def match_consultants_for_assignment(
     return section, matched
 
 
-UNKNOWN_HOURS_LABEL = "not stated (probably full time)"
+UNKNOWN_HOURS_LABEL = ""
 UNKNOWN_CLIENT_LABEL = "not stated"
 
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
-    text = f"{assignment.description} {assignment.duration}"
+    text = f"{assignment.description} {assignment.duration} {assignment.start_date or ''} {assignment.end_date or ''}"
     scope_match = re.search(
         r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
         text,
@@ -459,19 +466,24 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if scope_match:
         return f"{scope_match.group(2)}%"
 
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    hours_match = re.search(
+        r"(\d{1,3})\s*(?:h|hours|timmar)\s*(?:/|per)\s*(?:week|vecka|v)",
+        text,
+        re.I,
+    )
+    if hours_match:
+        return f"{hours_match.group(1)} h/week"
+
+    if re.search(r"\b(part[- ]time|deltid)\b", text, re.I):
+        return "Part time"
+    if re.search(r"\b(full[- ]time|heltid)\b", text, re.I):
+        return "Full time"
     return UNKNOWN_HOURS_LABEL
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
-    for pattern in (
-        r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
-    ):
+    for pattern in (r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",):
         match = re.search(pattern, description, re.I)
         if match:
             client = match.group(1).strip(" .")
@@ -482,6 +494,9 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
+    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö&.\s-]{3,60})", assignment.title)
+    if title_match:
+        return title_match.group(1).strip(" .-")
     return UNKNOWN_CLIENT_LABEL
 
 
@@ -511,11 +526,18 @@ def slack_title_link(url: str, title: str) -> str:
 
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
-    location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
+    location = assignment.location.strip()
+    work_mode = assignment.work_mode.strip()
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
     ]
+    if location:
+        segments.append(location)
+    if work_mode:
+        segments.append(work_mode)
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
     if match.client_label != UNKNOWN_CLIENT_LABEL:
@@ -523,17 +545,16 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     segments.extend(
         [
             assignment.broker,
-            posted_date_label(assignment, scan_date),
             f"Match: {consultants}",
         ]
     )
-    return " | ".join(segments)
+    return " | ".join(segment for segment in segments if segment)
 
 
 def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[AssignmentRecord]:
-    """Prefer verama.com when the same role appears on multiple platforms."""
+    """Prefer Verama when the same role appears on multiple sources."""
     by_fingerprint: dict[str, AssignmentRecord] = {}
-    platform_rank = {"verama.com": 0, "allakonsultuppdrag.se": 1}
+    source_rank = {"verama.com": 0, "allakonsultuppdrag.se": 1}
 
     for assignment in assignments:
         fingerprint = normalize_text(
@@ -543,8 +564,8 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
         if existing is None:
             by_fingerprint[fingerprint] = assignment
             continue
-        if platform_rank.get(assignment.platform, 99) < platform_rank.get(
-            existing.platform, 99
+        if source_rank.get(assignment.source_key, 99) < source_rank.get(
+            existing.source_key, 99
         ):
             by_fingerprint[fingerprint] = assignment
 
@@ -628,7 +649,7 @@ def suggestion_to_dict(suggestion: AssignmentSuggestion) -> dict[str, Any]:
     return {
         "dedupe_key": assignment.dedupe_key,
         "listing_id": assignment.listing_id,
-        "platform": assignment.platform,
+        "source_key": assignment.source_key,
         "title": assignment.title,
         "location": assignment.location,
         "work_mode": assignment.work_mode,
@@ -687,7 +708,7 @@ def process_assignments(
             debug_rejects.append(
                 {
                     "id": assignment.listing_id,
-                    "platform": assignment.platform,
+                    "source_key": assignment.source_key,
                     "title": assignment.title,
                     "reason": "expired application date",
                 }
@@ -700,7 +721,7 @@ def process_assignments(
             debug_rejects.append(
                 {
                     "id": assignment.listing_id,
-                    "platform": assignment.platform,
+                    "source_key": assignment.source_key,
                     "title": assignment.title,
                     "reason": reason,
                     "would_match": consultants,
@@ -720,7 +741,7 @@ def process_assignments(
             debug_rejects.append(
                 {
                     "id": assignment.listing_id,
-                    "platform": assignment.platform,
+                    "source_key": assignment.source_key,
                     "title": assignment.title,
                     "reason": issue,
                 }

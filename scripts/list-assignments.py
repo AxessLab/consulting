@@ -50,12 +50,12 @@ def build_platform_summary(platform_results: list[PlatformScanResult]) -> str:
     parts: list[str] = []
     for result in platform_results:
         if result.status == "ok":
-            parts.append(f"{result.platform} ({result.count})")
+            parts.append(f"{result.source_key} ({result.count})")
         elif result.status == "skipped":
-            parts.append(f"{result.platform} (skipped)")
+            parts.append(f"{result.source_key} (skipped)")
         else:
-            parts.append(f"{result.platform} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+            parts.append(f"{result.source_key} (error)")
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def build_slack_debug(
@@ -106,12 +106,19 @@ def prepare_listing(
     headless: bool = True,
 ) -> dict[str, Any]:
     scan_date = scan_date or date.today()
-    seen_keys, _ = load_memory(memory_path)
+    seen_ids_by_source, previous_memory = load_memory(memory_path)
+    seen_keys = {
+        f"{source_key}:{source_id}"
+        for source_key, source_ids in seen_ids_by_source.items()
+        for source_id in source_ids
+    }
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_ids_by_source=seen_ids_by_source,
+        scan_date=scan_date,
     )
     deduped_assignments = cross_platform_dedupe(raw_assignments)
     new_assignments = [
@@ -127,25 +134,19 @@ def prepare_listing(
     )
 
     memory_payload = build_memory_payload(
-        assignments=deduped_assignments,
-        platform_results=platform_results,
+        assignments=raw_assignments,
+        source_results=platform_results,
         scan_date=scan_date,
+        previous_memory=previous_memory,
     )
 
     return {
         "source": "deterministic-listing",
         "scan_date": scan_date.isoformat(),
         "memory_path": str(memory_path),
-        "platforms": [result.platform for result in platform_results],
-        "platform_results": [
-            {
-                "platform": result.platform,
-                "status": result.status,
-                "count": result.count,
-                "message": result.message,
-            }
-            for result in platform_results
-        ],
+        "sources": [result.source_key for result in platform_results],
+        "platforms": [result.source_key for result in platform_results],
+        "platform_results": [result.to_dict() for result in platform_results],
         "stats": {
             "total_visible": len(raw_assignments),
             "total_unique_visible": len(deduped_assignments),
@@ -169,7 +170,7 @@ def prepare_listing(
         "matches": [
             {
                 "listing_id": match.assignment.listing_id,
-                "platform": match.assignment.platform,
+                "source_key": match.assignment.source_key,
                 "section": match.section,
                 "title": match.assignment.title,
                 "consultants": match.consultants,
