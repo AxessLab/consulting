@@ -1,4 +1,4 @@
-"""Persistent dedupe memory for assignment listing runs."""
+"""Persistent per-source dedupe memory for assignment listing runs."""
 
 from __future__ import annotations
 
@@ -7,98 +7,192 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-from assignment_platforms import AssignmentRecord, PlatformScanResult
+from assignment_platforms import (
+    SOURCE_REGISTRY,
+    AssignmentRecord,
+    PlatformScanResult,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MEMORY_PATH = REPO_ROOT / "assignment-listing-seen.json"
+LEGACY_MEMORY_PATHS = {
+    "allakonsultuppdrag.se": REPO_ROOT / "allakonsultuppdrag-seen.json",
+    "verama.com": REPO_ROOT / "verama-seen.json",
+}
+
+
+def empty_memory_payload() -> dict[str, Any]:
+    return {
+        "last_scan_at": None,
+        "scan_date": None,
+        "sources": {
+            source.key: {
+                "prefix": source.prefix,
+                "seen_ids": [],
+                "total_visible": 0,
+                "total_unique_visible": 0,
+            }
+            for source in SOURCE_REGISTRY
+        },
+    }
+
+
+def _source_prefix(source_key: str) -> str:
+    for source in SOURCE_REGISTRY:
+        if source.key == source_key:
+            return source.prefix
+    return ""
+
+
+def _ids_from_legacy_file(path: Path) -> list[str]:
+    if not path.is_file() or path.stat().st_size == 0:
+        return []
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return []
+    if isinstance(payload, list):
+        return [str(item) for item in payload]
+    if isinstance(payload, dict):
+        for key in ("seen_ids", "seenIds", "ids"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [str(item) for item in value]
+    return []
+
+
+def collect_seen_ids_by_source(data: dict[str, Any]) -> dict[str, set[str]]:
+    """Read bare source ids from current and legacy memory shapes."""
+    seen: dict[str, set[str]] = {}
+
+    sources = data.get("sources")
+    if isinstance(sources, dict):
+        for source_key, state in sources.items():
+            if isinstance(state, dict) and isinstance(state.get("seen_ids"), list):
+                seen[source_key] = {str(item) for item in state["seen_ids"]}
+
+    # Older automation memory used platforms + seen_keys/platform:source_id.
+    platforms = data.get("platforms")
+    if isinstance(platforms, dict):
+        for source_key, state in platforms.items():
+            if isinstance(state, dict) and isinstance(state.get("seen_ids"), list):
+                seen.setdefault(source_key, set()).update(str(item) for item in state["seen_ids"])
+
+    if isinstance(data.get("seen_keys"), list):
+        for key in data["seen_keys"]:
+            if not isinstance(key, str) or ":" not in key:
+                continue
+            source_key, source_id = key.split(":", 1)
+            if source_id:
+                seen.setdefault(source_key, set()).add(source_id)
+
+    # Legacy single-source allakonsult shape.
+    if isinstance(data.get("seen_ids"), list):
+        seen.setdefault("allakonsultuppdrag.se", set()).update(
+            str(item) for item in data["seen_ids"]
+        )
+
+    return seen
 
 
 def collect_seen_keys(data: dict[str, Any]) -> set[str]:
-    """Read seen dedupe keys from current or legacy memory shapes."""
-    seen_keys: set[str] = set()
-    if isinstance(data.get("seen_keys"), list):
-        seen_keys.update(str(item) for item in data["seen_keys"])
+    return {
+        f"{source_key}:{source_id}"
+        for source_key, source_ids in collect_seen_ids_by_source(data).items()
+        for source_id in source_ids
+    }
 
-    platforms = data.get("platforms")
-    if isinstance(platforms, dict):
-        for platform_id, state in platforms.items():
-            if isinstance(state, dict) and isinstance(state.get("seen_ids"), list):
-                for source_id in state["seen_ids"]:
-                    seen_keys.add(f"{platform_id}:{source_id}")
 
-    legacy_seen = data.get("seen_ids")
-    if isinstance(legacy_seen, list):
-        for source_id in legacy_seen:
-            seen_keys.add(f"allakonsultuppdrag.se:{source_id}")
-
-    return seen_keys
+def _load_json_memory(path: Path) -> dict[str, Any]:
+    if not path.is_file() or path.stat().st_size == 0:
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 def normalize_memory_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    """Keep dedupe ids only in seen_keys; retain per-platform scan metadata."""
-    seen_keys = collect_seen_keys(payload)
-    platforms: dict[str, Any] = {}
-    raw_platforms = payload.get("platforms")
-    if isinstance(raw_platforms, dict):
-        for platform_id, state in raw_platforms.items():
-            if not isinstance(state, dict):
-                continue
-            entry: dict[str, Any] = {
-                "status": state.get("status"),
-                "total_visible": state.get("total_visible"),
-            }
-            if state.get("message"):
-                entry["message"] = state["message"]
-            platforms[platform_id] = entry
+    """Normalize any supported shape to the unified sources object."""
+    normalized = empty_memory_payload()
+    normalized["last_scan_at"] = payload.get("last_scan_at")
+    normalized["scan_date"] = payload.get("scan_date")
 
-    normalized: dict[str, Any] = {
-        "source": payload.get("source", "multi-platform assignment listing"),
-        "last_scan_at": payload.get("last_scan_at"),
-        "scan_date": payload.get("scan_date"),
-        "platforms": platforms,
-        "seen_keys": sorted(seen_keys),
-        "total_visible": payload.get("total_visible", len(seen_keys)),
-        "total_unique_visible": payload.get("total_unique_visible", len(seen_keys)),
-    }
+    seen_by_source = collect_seen_ids_by_source(payload)
+    raw_sources = payload.get("sources") if isinstance(payload.get("sources"), dict) else {}
+    for source in SOURCE_REGISTRY:
+        raw_state = raw_sources.get(source.key, {}) if isinstance(raw_sources, dict) else {}
+        seen_ids = sorted(seen_by_source.get(source.key, set()))
+        normalized["sources"][source.key] = {
+            "prefix": source.prefix,
+            "seen_ids": seen_ids,
+            "total_visible": raw_state.get("total_visible", len(seen_ids))
+            if isinstance(raw_state, dict)
+            else len(seen_ids),
+            "total_unique_visible": raw_state.get("total_unique_visible", len(seen_ids))
+            if isinstance(raw_state, dict)
+            else len(seen_ids),
+        }
+
     return normalized
 
 
-def load_memory(path: Path) -> tuple[set[str], dict[str, Any]]:
-    if not path.is_file() or path.stat().st_size == 0:
-        return set(), {}
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return set(), {}
+def load_memory(path: Path) -> tuple[dict[str, set[str]], dict[str, Any]]:
+    payload = _load_json_memory(path)
 
-    return collect_seen_keys(data), data
+    if not payload:
+        legacy_sources = {
+            source_key: set(_ids_from_legacy_file(legacy_path))
+            for source_key, legacy_path in LEGACY_MEMORY_PATHS.items()
+        }
+        legacy_sources = {key: ids for key, ids in legacy_sources.items() if ids}
+        if legacy_sources:
+            payload = empty_memory_payload()
+            for source_key, source_ids in legacy_sources.items():
+                payload["sources"][source_key] = {
+                    "prefix": _source_prefix(source_key),
+                    "seen_ids": sorted(source_ids),
+                    "total_visible": len(source_ids),
+                    "total_unique_visible": len(source_ids),
+                }
+        else:
+            return {}, {}
+
+    normalized = normalize_memory_payload(payload)
+    return collect_seen_ids_by_source(normalized), normalized
 
 
 def build_memory_payload(
     *,
     assignments: list[AssignmentRecord],
-    platform_results: list[PlatformScanResult],
+    source_results: list[PlatformScanResult],
     scan_date: date,
+    previous_memory: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """Save visible ids for successful sources while preserving failed sources."""
     now = datetime.now(UTC).isoformat()
-    platforms: dict[str, Any] = {}
-    for result in platform_results:
-        platforms[result.platform] = {
-            "status": result.status,
-            "total_visible": result.count,
-        }
-        if result.message:
-            platforms[result.platform]["message"] = result.message
+    payload = normalize_memory_payload(previous_memory or empty_memory_payload())
+    payload["last_scan_at"] = now
+    payload["scan_date"] = scan_date.isoformat()
 
-    return {
-        "source": "multi-platform assignment listing",
-        "last_scan_at": now,
-        "scan_date": scan_date.isoformat(),
-        "platforms": platforms,
-        "seen_keys": sorted({assignment.dedupe_key for assignment in assignments}),
-        "total_visible": len(assignments),
-        "total_unique_visible": len({assignment.dedupe_key for assignment in assignments}),
-    }
+    ids_by_source: dict[str, set[str]] = {}
+    for assignment in assignments:
+        ids_by_source.setdefault(assignment.source_key, set()).add(assignment.source_id)
+
+    for result in source_results:
+        if result.status != "ok":
+            continue
+        prefix = _source_prefix(result.source_key)
+        source_ids = sorted(ids_by_source.get(result.source_key, set()))
+        payload["sources"][result.source_key] = {
+            "prefix": prefix,
+            "seen_ids": source_ids,
+            "total_visible": result.count,
+            "total_unique_visible": len(source_ids),
+        }
+
+    return payload
 
 
 def write_memory_file(memory_path: Path, payload: dict[str, Any]) -> None:
