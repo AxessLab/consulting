@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Raw multi-platform assignment fetch (no filtering). Prefer list-assignments.py."""
+"""Raw multi-source assignment fetch (no filtering). Prefer list-assignments.py."""
 
 from __future__ import annotations
 
@@ -21,14 +21,14 @@ from assignment_platforms import DEFAULT_PLATFORMS, scan_platforms
 def build_slack_debug_summary(platform_results: list[dict[str, Any]]) -> str:
     parts: list[str] = []
     for result in platform_results:
-        label = result["platform"]
+        label = result["source_key"]
         if result["status"] == "ok":
             parts.append(f"{label} ({result['count']})")
         elif result["status"] == "skipped":
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

@@ -15,17 +15,18 @@ writes `curated-listing.json`. Dedupe memory: `assignment-listing-seen.json`
 locally, synced via automation Memory entry **`assignment-listing-seen.json`**
 on cloud runs (see `automation-prompts/assignment-listing.md` step 0 and 5).
 
-## Registered platforms
+## Registered sources
 
-Defined in `scripts/assignment_platforms.py` → `PLATFORM_SCANNERS`:
+Defined in `scripts/assignment_platforms.py` → `SOURCE_REGISTRY` and
+`PLATFORM_SCANNERS`:
 
-| Platform | Auth | Notes |
-|----------|------|-------|
-| `allakonsultuppdrag.se` | None | JSON API only |
-| `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
+| Source | Prefix | Auth | Notes |
+|--------|--------|------|-------|
+| `allakonsultuppdrag.se` | `a` | None | JSON API only |
+| `verama.com` | `v` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
 
-Add new platforms by implementing `scan_<name>()` and registering it in
-`PLATFORM_SCANNERS`.
+Add new sources by selecting an unused prefix, implementing `scan_<name>()`, and
+registering it in both `SOURCE_REGISTRY` and `PLATFORM_SCANNERS`.
 
 ## Matching
 
