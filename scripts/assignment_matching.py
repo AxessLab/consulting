@@ -470,7 +470,7 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         return f"{scope_match.group(2)}%"
 
     full_time = re.search(
-        r"\b(omfattning|scope|utilization|beläggning|belaggning|engagemang)\s*[:\-]?\s*(heltid|full[ -]?time)\b",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang)\s*[:\-]?\s*(heltid|full[ -]?time)\b",
         text,
         re.I,
     )
@@ -537,7 +537,12 @@ def slack_title_link(url: str, title: str) -> str:
 
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
-    location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
+    location_parts = []
+    if assignment.location and normalize_text(assignment.location) != "unknown":
+        location_parts.append(assignment.location)
+    if assignment.work_mode and normalize_text(assignment.work_mode) != "unknown":
+        location_parts.append(assignment.work_mode)
+    location = " | ".join(location_parts)
     consultants = ", ".join(match.consultants)
     segments = [
         assignment.listing_id,
