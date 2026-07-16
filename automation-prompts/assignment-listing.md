@@ -42,7 +42,7 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+This scans every source in `scripts/assignment_platforms.py`, dedupes against
 `assignment-listing-seen.json`, and writes:
 
 - `assignments` — all currently visible unique records (for lookup)
@@ -136,8 +136,9 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: unified `sources` object. Each source stores its
+listing prefix, bare native `seen_ids`, `total_visible`, and
+`total_unique_visible`. Cloud runs sync the same JSON through automation Memory.
 
 ## Filtering rules
 
