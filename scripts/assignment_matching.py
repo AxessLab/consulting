@@ -469,6 +469,14 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if scope_match:
         return f"{scope_match.group(2)}%"
 
+    full_time = re.search(
+        r"\b(omfattning|scope|utilization|beläggning|belaggning|engagemang)\s*[:\-]?\s*(heltid|full[ -]?time)\b",
+        text,
+        re.I,
+    )
+    if full_time:
+        return "Full time"
+
     part_time = re.search(r"\b(part[ -]?time|deltid)\b", text, re.I)
     if part_time:
         return "Part time"
