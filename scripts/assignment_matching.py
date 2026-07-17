@@ -452,7 +452,8 @@ UNKNOWN_CLIENT_LABEL = ""
 def parse_hours_label(assignment: AssignmentRecord) -> str:
     text = f"{assignment.description} {assignment.duration} {assignment.start_date or ''} {assignment.end_date or ''}"
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)"
+        r"[^%\n]{0,40}?\b(100|[1-9]\d?)\s*%",
         text,
         re.I,
     )
