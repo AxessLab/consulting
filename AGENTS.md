@@ -31,7 +31,8 @@ Practical implications for agents working here:
   output. Heuristic hints live in `scripts/assignment_matching.py`; matching
   uses `consultants.yaml`. Dedupe memory: `assignment-listing-seen.json` on disk
   plus automation Memory entry **`assignment-listing-seen.json`** for cloud
-  persistence (`scripts/listing-memory-bridge.py`).
+  persistence (`scripts/listing-memory-bridge.py`); memory is keyed by source
+  with bare native `seen_ids` and source-specific listing prefixes.
 
 ## Cursor Automations
 
