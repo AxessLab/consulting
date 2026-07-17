@@ -14,8 +14,8 @@ fit <name>                   # pasted ad text (new)
 Examples:
 
 ```text
-fit 12345 Joel
-fit 12345 Joel Andersson
+fit a6236 Joel
+fit a6236 Joel Andersson
 fit v81387 Soma
 fit Karin Toft
 ```
@@ -24,9 +24,9 @@ fit Karin Toft
 
 1. Parse the thread reply as `fit …`.
 2. If the first remaining token is a listed assignment id, use **listed
-   assignment mode**. Listed ids are all digits (`6236`) or Verama ids with a
-   `v` prefix (`v81387`). The assignment id is that token; the consultant name is
-   the rest of the tokens joined with spaces.
+   assignment mode**. Listed ids are letter-prefixed (`a6236`, `v81387`). The
+   assignment id is that token; the consultant name is the rest of the tokens
+   joined with spaces.
 3. Otherwise use **pasted ad mode**. The consultant name is all remaining
    tokens joined with spaces. There is no assignment id in the command.
 
@@ -39,7 +39,7 @@ Do not require an assignment id when the parent message is pasted ad text.
 The Slack parent message comes from the assignment-listing automation. It
 contains:
 
-- `[assignment-id]` in square brackets
+- a letter-prefixed listing id (`a…`, `v…`, ...)
 - assignment title and summary
 - a link to the full online ad
 

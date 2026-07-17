@@ -14,15 +14,17 @@ Python fetches and dedupes; the automation agent applies filtering rules and
 writes `curated-listing.json`. Dedupe memory: `assignment-listing-seen.json`
 locally, synced via automation Memory entry **`assignment-listing-seen.json`**
 on cloud runs (see `automation-prompts/assignment-listing.md` step 0 and 5).
+The memory file uses a `sources` object keyed by source name; each source stores
+bare native `seen_ids` plus its Slack listing prefix.
 
 ## Registered platforms
 
 Defined in `scripts/assignment_platforms.py` → `PLATFORM_SCANNERS`:
 
-| Platform | Auth | Notes |
-|----------|------|-------|
-| `allakonsultuppdrag.se` | None | JSON API only |
-| `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
+| Prefix | Platform | Auth | Notes |
+|--------|----------|------|-------|
+| `a` | `allakonsultuppdrag.se` | None | JSON API only |
+| `v` | `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API with conditional detail fetch |
 
 Add new platforms by implementing `scan_<name>()` and registering it in
 `PLATFORM_SCANNERS`.

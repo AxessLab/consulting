@@ -136,8 +136,10 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: a `sources` object keyed by source name. Each source
+stores its listing prefix, bare native `seen_ids`, `total_visible`, and
+`total_unique_visible`. Older `seen_keys` / `platforms` memory is accepted only
+for migration.
 
 ## Filtering rules
 

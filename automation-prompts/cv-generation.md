@@ -14,9 +14,9 @@ generate <name> [language]                     # pasted ad text (new)
 Examples:
 
 ```text
-generate 12345 Joel
-generate 12345 Joel Holmberg english
-generate 12345 Joel Holmberg sv
+generate a6236 Joel
+generate a6236 Joel Holmberg english
+generate a6236 Joel Holmberg sv
 generate v81387 Soma english
 generate Karin Toft
 generate Karin Toft english
@@ -29,9 +29,9 @@ generate Karin Toft sv
 2. Treat the optional final token as a requested language only when it is one of
    `en`, `english`, `sv`, or `swedish`. Remove it from the remaining tokens.
 3. If the first remaining token is a listed assignment id, use **listed
-   assignment mode**. Listed ids are all digits (`6236`) or Verama ids with a
-   `v` prefix (`v81387`). The assignment id is that token; the consultant name is
-   the rest of the tokens joined with spaces.
+   assignment mode**. Listed ids are letter-prefixed (`a6236`, `v81387`). The
+   assignment id is that token; the consultant name is the rest of the tokens
+   joined with spaces.
 4. Otherwise use **pasted ad mode**. The consultant name is all remaining
    tokens joined with spaces. There is no assignment id in the command.
 
@@ -44,7 +44,7 @@ Do not require an assignment id when the parent message is pasted ad text.
 The Slack parent message comes from the assignment-listing automation. It
 contains:
 
-- `[assignment-id]` in square brackets
+- a letter-prefixed listing id (`a…`, `v…`, ...)
 - assignment title and summary
 - a link to the full online ad
 
