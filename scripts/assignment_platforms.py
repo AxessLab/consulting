@@ -601,11 +601,49 @@ def _extract_chas_konsult_ids(markup: str) -> set[str]:
 def _label_value(text: str, labels: tuple[str, ...]) -> str:
     label_pattern = "|".join(re.escape(label) for label in labels)
     match = re.search(
-        rf"(?:{label_pattern})\s*:?\s*([^\n|]+)",
+        rf"(?:^|\n)\s*(?:{label_pattern})\s*:?\s*([^\n|]+)",
         text,
         flags=re.I,
     )
     return match.group(1).strip(" :") if match else ""
+
+
+def _chas_class_attr(class_name: str) -> str:
+    return rf"class=['\"](?:[^'\"]*\s)?{re.escape(class_name)}(?:\s[^'\"]*)?['\"]"
+
+
+def _extract_chas_class_block(markup: str, class_name: str) -> str:
+    match = re.search(
+        rf"<div\b[^>]*{_chas_class_attr(class_name)}[^>]*>(.*?)</div>",
+        markup,
+        flags=re.I | re.S,
+    )
+    return match.group(1) if match else ""
+
+
+def _clean_chas_field(value: str) -> str:
+    text = " ".join(_strip_html(value).split())
+    return "" if text == "-" else text
+
+
+def _extract_chas_card(markup: str) -> str:
+    match = re.search(
+        rf"<div\b[^>]*{_chas_class_attr('call-off-listitem')}[^>]*>.*?"
+        rf"(?=<div\b[^>]*{_chas_class_attr('call-off-content-container')})",
+        markup,
+        flags=re.I | re.S,
+    )
+    return match.group(0) if match else ""
+
+
+def _extract_chas_content(markup: str) -> str:
+    match = re.search(
+        rf"<div\b[^>]*{_chas_class_attr('call-off-content')}[^>]*>(.*?)"
+        rf"(?:<div\b[^>]*{_chas_class_attr('backlink')}|</main>)",
+        markup,
+        flags=re.I | re.S,
+    )
+    return match.group(1) if match else ""
 
 
 def _extract_chas_org(markup: str, text: str) -> str:
@@ -641,23 +679,33 @@ def _extract_chas_description(text: str, org: str) -> str:
 
 def _parse_chas_detail(markup: str) -> dict[str, str]:
     text = _strip_html(markup)
-    org = _extract_chas_org(markup, text)
+    card_markup = _extract_chas_card(markup)
+    content_markup = _extract_chas_content(markup)
+    card_text = _strip_html(card_markup)
+    content_text = _strip_html(content_markup) if content_markup else text
+    scoped_text = "\n".join(part for part in (card_text, content_text) if part)
+    org = _extract_chas_org(card_markup, card_text) or _extract_chas_org(markup, scoped_text)
     deadline_match = re.search(
         r"(?:Deadline|Sista(?:\s+anbudsdag|\s+ansökningsdag|\s+ansokningsdag)?)\s*:?\s*(\d{4}-\d{2}-\d{2})",
-        text,
+        scoped_text,
         flags=re.I,
     )
     interval_match = re.search(
         r"(\d{4}-\d{2}-\d{2})\s*(?:-|–|—|till)\s*(\d{4}-\d{2}-\d{2})",
-        text,
+        card_text or scoped_text,
         flags=re.I,
     )
-    extent = _label_value(text, ("Omfattning", "Extent", "Beläggning", "Belaggning"))
+    extent = _clean_chas_field(_extract_chas_class_block(card_markup, "extent"))
     if not extent:
-        percent = re.search(r"\b(\d{1,3})\s*%", text)
+        extent = _label_value(content_text, ("Omfattning", "Extent", "Beläggning", "Belaggning"))
+    if not extent:
+        percent = re.search(r"\b(\d{1,3}(?:,\d+)?)\s*%", scoped_text)
         extent = f"{percent.group(1)} %" if percent else ""
-    work_type = _label_value(text, ("Arbetssätt", "Arbetssatt", "Distans", "Worktype"))
-    work_text = _normalize_text(text)
+    work_type = _clean_chas_field(_extract_chas_class_block(card_markup, "worktype"))
+    if not work_type:
+        work_type = _label_value(content_text, ("Arbetssätt", "Arbetssatt", "Worktype"))
+    location = _clean_chas_field(_extract_chas_class_block(card_markup, "location"))
+    work_text = _normalize_text(scoped_text)
     if not work_type:
         if "ej distans" in work_text:
             work_type = "Ej distans"
@@ -665,17 +713,18 @@ def _parse_chas_detail(markup: str) -> dict[str, str]:
             work_type = "Hybrid"
         elif "distans" in work_text or "fjärrarbete" in work_text or "fjarrarbete" in work_text:
             work_type = "Distans"
-    location = _label_value(text, ("Placeringsort", "Ort", "Location"))
+    if not location:
+        location = _label_value(content_text, ("Placeringsort", "Ort", "Location"))
     if not location:
         city_match = re.search(
             r"\b(Stockholm|Solna|Göteborg|Goteborg|Malmö|Malmo|Uppsala|Linköping|Linkoping)\b",
-            text,
+            scoped_text,
         )
         location = city_match.group(1) if city_match else ""
 
-    return {
+    detail = {
         "org": org,
-        "description": _extract_chas_description(text, org),
+        "description": _extract_chas_description(content_text, org),
         "lastApplicationDate": deadline_match.group(1) if deadline_match else "",
         "startDate": interval_match.group(1) if interval_match else "",
         "endDate": interval_match.group(2) if interval_match else "",
@@ -685,6 +734,7 @@ def _parse_chas_detail(markup: str) -> dict[str, str]:
         "workMode": work_type,
         "location": location,
     }
+    return detail
 
 
 def scan_chaspartnernetwork(
