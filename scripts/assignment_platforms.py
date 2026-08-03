@@ -305,7 +305,13 @@ def _verama_location_precheck_passes(record: AssignmentRecord) -> bool:
     if any(place in fields for place in near_stockholm):
         return True
     title = _normalize_text(record.title)
-    return bool(re.search(r"\b(accessibility|tillgänglighet|tillganglighet|wcag)\b", title))
+    return bool(
+        re.search(
+            r"\b(accessibility|tillgänglighet|tillganglighet|tilgjengelig|"
+            r"universell utforming|wcag)\b",
+            title,
+        )
+    )
 
 
 def _first_value(payload: dict[str, Any], names: tuple[str, ...]) -> Any:
@@ -388,18 +394,19 @@ def _verama_should_fetch_detail(
     if _verama_title_is_clearly_outside(record.title):
         return False
 
-    if not _verama_location_precheck_passes(record):
-        return False
-
     if not record.lastApplicationDate:
         return True
+
+    if not _verama_location_precheck_passes(record):
+        return False
 
     title = _normalize_text(record.title)
     targetish = re.compile(
         r"\b(accessibility|tillgänglighet|tillganglighet|wcag|react|next|frontend|"
-        r"front-end|angular|wordpress|java|spring|fullstack|ux|ui|designer|"
-        r"projektledare|project manager|scrum master|agile coach|koordinator|"
-        r"consultant|konsult|developer|utvecklare|project lead)\b"
+        r"tilgjengelig|universell utforming|front-end|angular|wordpress|java|"
+        r"spring|fullstack|ux|ui|designer|projektledare|project manager|"
+        r"scrum master|agile coach|koordinator|consultant|konsult|developer|"
+        r"utvecklare|project lead)\b"
     )
     return bool(targetish.search(title))
 

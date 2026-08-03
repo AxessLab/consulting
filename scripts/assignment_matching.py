@@ -63,6 +63,9 @@ A11Y_STRONG_TERMS = [
     r"dokumenttillganglighet",
     r"webbtillgänglighetsspecialist",
     r"webbtillganglighetsspecialist",
+    r"tilgjengelighetsgranskning",
+    r"tilgjengelighetsgranskare",
+    r"tilgjengelighetsspecialist",
 ]
 
 A11Y_WEAK_CONTEXT = re.compile(
@@ -179,6 +182,10 @@ def skill_names(assignment: AssignmentRecord) -> list[str]:
     for skill in assignment.skills:
         if isinstance(skill, dict) and skill.get("name"):
             names.append(normalize_text(str(skill["name"])))
+        elif isinstance(skill, dict) and isinstance(skill.get("skill"), dict):
+            nested_name = skill["skill"].get("name")
+            if nested_name:
+                names.append(normalize_text(str(nested_name)))
         elif isinstance(skill, str):
             names.append(normalize_text(skill))
     return names
