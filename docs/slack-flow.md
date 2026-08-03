@@ -37,11 +37,13 @@ Examples:
 fit 12345 Joel
 fit 12345 Joel Andersson
 fit v81387 Soma
+fit c19622 Joel
 fit Karin Toft
 ```
 
-When the first token after `fit` is a listed assignment id (all digits, or `v`
-followed by digits for Verama), the automation uses **listed assignment mode**
+When the first token after `fit` is a listed assignment id (all digits, `v`
+followed by digits for Verama, or `c` followed by digits for Chas Partner
+Network), the automation uses **listed assignment mode**
 and reads the id and ad link from the parent message. When it is not a listed
 id, the automation uses **pasted ad mode** and reads the assignment requirements
 from the parent message text instead of fetching an online ad.
@@ -62,6 +64,7 @@ generate 12345 Joel
 generate 12345 Joel Holmberg english
 generate 12345 Joel Holmberg sv
 generate v81387 Soma english
+generate c19622 Joel english
 generate Karin Toft
 generate Karin Toft english
 generate Karin Toft sv
@@ -70,11 +73,12 @@ generate Karin Toft sv
 The optional language token must be the final token. Supported values are
 `english`, `swedish`, `en`, and `sv`.
 
-When the first token after `generate` is a listed assignment id (all digits, or
-`v` followed by digits for Verama), the automation uses **listed assignment
-mode** and reads the id and ad link from the parent message. When it is not a
-listed id, the automation uses **pasted ad mode** and reads the assignment
-requirements from the parent message text instead of fetching an online ad.
+When the first token after `generate` is a listed assignment id (all digits, `v`
+followed by digits for Verama, or `c` followed by digits for Chas Partner
+Network), the automation uses **listed assignment mode** and reads the id and ad
+link from the parent message. When it is not a listed id, the automation uses
+**pasted ad mode** and reads the assignment requirements from the parent message
+text instead of fetching an online ad.
 
 ## Pasted ad flow
 

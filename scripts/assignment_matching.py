@@ -533,7 +533,11 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
 def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[AssignmentRecord]:
     """Prefer verama.com when the same role appears on multiple platforms."""
     by_fingerprint: dict[str, AssignmentRecord] = {}
-    platform_rank = {"verama.com": 0, "allakonsultuppdrag.se": 1}
+    platform_rank = {
+        "verama.com": 0,
+        "allakonsultuppdrag.se": 1,
+        "chaspartnernetwork.se": 2,
+    }
 
     for assignment in assignments:
         fingerprint = normalize_text(

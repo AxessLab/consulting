@@ -17,6 +17,7 @@ Examples:
 fit 12345 Joel
 fit 12345 Joel Andersson
 fit v81387 Soma
+fit c19622 Joel
 fit Karin Toft
 ```
 
@@ -24,8 +25,9 @@ fit Karin Toft
 
 1. Parse the thread reply as `fit …`.
 2. If the first remaining token is a listed assignment id, use **listed
-   assignment mode**. Listed ids are all digits (`6236`) or Verama ids with a
-   `v` prefix (`v81387`). The assignment id is that token; the consultant name is
+   assignment mode**. Listed ids are all digits (`6236`), Verama ids with a
+   `v` prefix (`v81387`), or Chas Partner Network ids with a `c` prefix
+   (`c19622`). The assignment id is that token; the consultant name is
    the rest of the tokens joined with spaces.
 3. Otherwise use **pasted ad mode**. The consultant name is all remaining
    tokens joined with spaces. There is no assignment id in the command.

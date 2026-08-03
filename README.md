@@ -105,10 +105,12 @@ Examples:
 - `fit 12345 Joel`
 - `fit 12345 Joel Andersson`
 - `fit v81387 Soma`
+- `fit c19622 Joel`
 - `fit Karin Toft`
 
-When the first token after `fit` is a listed assignment id (all digits, or `v`
-followed by digits for Verama), the automation reads the Slack parent message,
+When the first token after `fit` is a listed assignment id (all digits, `v`
+followed by digits for Verama, or `c` followed by digits for Chas Partner
+Network), the automation reads the Slack parent message,
 finds the assignment id, resolves the assignment ad link, and fetches the online
 ad page.
 
@@ -139,14 +141,16 @@ Examples:
 - `generate 12345 Joel Holmberg english`
 - `generate 12345 Joel Holmberg sv`
 - `generate v81387 Soma english`
+- `generate c19622 Joel english`
 - `generate Karin Toft`
 - `generate Karin Toft english`
 
 The optional language token must be the final token. Supported language values
 are `english`, `swedish`, `en`, and `sv`.
 
-When the first token after `generate` is a listed assignment id (all digits, or
-`v` followed by digits for Verama), the automation reads the Slack parent
+When the first token after `generate` is a listed assignment id (all digits, `v`
+followed by digits for Verama, or `c` followed by digits for Chas Partner
+Network), the automation reads the Slack parent
 message, finds the assignment id, resolves the assignment ad link, and fetches
 the online ad page.
 

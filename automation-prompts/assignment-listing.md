@@ -245,8 +245,9 @@ Three sections (built by `finalize-listing.py`). Section titles are **bold** in 
 2. Other roles mentioning accessibility related terms
 3. Other roles where accessibility is not mentioned
 
-Pipe-separated lines. Verama ids use `v` prefix. Platform is implied by the
-assignment link. Title is a Slack link (`<url|title>`). Omit client and hours/scope when unknown.
+Pipe-separated lines. Verama ids use a `v` prefix; Chas Partner Network ids use a
+`c` prefix. Platform is implied by the assignment link. Title is a Slack link
+(`<url|title>`). Omit client and hours/scope when unknown.
 
 ```text
 *1. Accessibility specialist related roles*
@@ -256,6 +257,8 @@ No new matches.
 a6236 | 2026-06-01 | <https://...|Software Developer Java> | Stockholm | A Society | Match: Joel Holmberg
 
 v81387 | 2026-06-01 | <https://...|Experience UX & UI Designer> | Stockholm (SE) | 50% | Client: Acme | Ework | Match: Soma Azad
+
+c19622 | 2026-08-03 | <https://chaspartnernetwork.se/avrop/...|Dataingenjör plattform> | Uppsala | Hybrid | Chas Partner Network | Match: Joel Holmberg
 ```
 
 If a section has no matches, it shows `No new matches.`
@@ -265,7 +268,9 @@ If a section has no matches, it shows `No new matches.`
 ```text
 fit a6236 Joel
 fit v81387 Soma
+fit c19622 Joel
 generate v81387 Soma english
+generate c19622 Joel english
 ```
 
 ## Source of truth

@@ -18,6 +18,7 @@ generate 12345 Joel
 generate 12345 Joel Holmberg english
 generate 12345 Joel Holmberg sv
 generate v81387 Soma english
+generate c19622 Joel english
 generate Karin Toft
 generate Karin Toft english
 generate Karin Toft sv
@@ -29,8 +30,9 @@ generate Karin Toft sv
 2. Treat the optional final token as a requested language only when it is one of
    `en`, `english`, `sv`, or `swedish`. Remove it from the remaining tokens.
 3. If the first remaining token is a listed assignment id, use **listed
-   assignment mode**. Listed ids are all digits (`6236`) or Verama ids with a
-   `v` prefix (`v81387`). The assignment id is that token; the consultant name is
+   assignment mode**. Listed ids are all digits (`6236`), Verama ids with a
+   `v` prefix (`v81387`), or Chas Partner Network ids with a `c` prefix
+   (`c19622`). The assignment id is that token; the consultant name is
    the rest of the tokens joined with spaces.
 4. Otherwise use **pasted ad mode**. The consultant name is all remaining
    tokens joined with spaces. There is no assignment id in the command.

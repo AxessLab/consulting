@@ -29,10 +29,11 @@ Each source has a single-letter **listing prefix**. The Slack/fit/generate id is
 |--------|------------|-------------------|--------|
 | `a` | `allakonsultuppdrag.se` | bare numeric id | active |
 | `v` | `verama.com` | bare numeric id | active |
+| `c` | `chaspartnernetwork.se` | bare numeric id | active |
 
 When adding a source: pick an unused lowercase letter, add a row here, add a `## Source: …` section below, and extend memory `sources` on first run.
 
-**Cross-source duplicate preference** (when title + broker + location clearly match): prefer, in order, `v` (Verama), then `a` (allakonsultuppdrag), then other sources by registry order. Still persist every visible `source_id` per source in memory.
+**Cross-source duplicate preference** (when title + broker + location clearly match): prefer, in order, `v` (Verama), then `a` (allakonsultuppdrag), then `c` (Chas Partner Network), then other sources by registry order. Still persist every visible `source_id` per source in memory.
 
 ## Canonical assignment record
 
@@ -84,7 +85,8 @@ Top-level fields:
   "scan_date": "2026-06-25",
   "sources": {
     "allakonsultuppdrag.se": { "prefix": "a", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 },
-    "verama.com": { "prefix": "v", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 }
+    "verama.com": { "prefix": "v", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 },
+    "chaspartnernetwork.se": { "prefix": "c", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 }
   }
 }
 ```
@@ -227,6 +229,68 @@ After detail, merge description, skills, dates, and duration into the canonical 
 
 ---
 
+## Source: chaspartnernetwork.se (`c`)
+
+Public — no login. WordPress CPT `call_off`. REST list rows lack description and ACF metadata, so detail HTML is required for matching.
+
+**Scope:** Konsult assignments only (exclude Produkt and Åtagande).
+
+### Index
+
+`GET https://chaspartnernetwork.se/wp-json/wp/v2/call_off`
+
+Params: `per_page=100`, `page` (1-based), `orderby=date`, `order=desc`.
+
+Headers: `User-Agent: Mozilla/5.0 (compatible; AxessLabAssignmentScanner/1.0)`, `Accept: application/json`.
+
+Paginate using `X-WP-TotalPages`. Use list rows for `id`, `title.rendered`, `link`, and `date` (published).
+
+### Konsult filter
+
+`GET https://chaspartnernetwork.se/wp-admin/admin-ajax.php`
+
+Params: `action=cpn_filter_call_offs`, `anbudstyp=Konsult`, other filter params empty (`sort`, `avtal_placeringsort`, `fritext`, `distance`).
+
+Parse HTML for `call-off-listitem` ids. Keep only call_offs whose id appears in this set.
+
+### Detail (for every Konsult listing kept after filter)
+
+`GET {link}` from the REST row (e.g. `https://chaspartnernetwork.se/avrop/{slug}/`).
+
+Parse the detail HTML for:
+
+- location / worktype / extent / date interval / deadline from the list-item style header
+- org name from commented markup containing `call-off-organization` when present
+- description from the `Uppdragsbeskrivning` section (include skall/börkrav text when useful)
+
+REST `content` and `acf` are empty — do not expect JSON detail.
+
+### Field mapping
+
+| Canonical | Native |
+|-----------|--------|
+| `listing_id` | `c` + `id` |
+| `source_id` | `id` (string) |
+| `title` | REST `title.rendered` (HTML-unescaped) |
+| `description` | detail Uppdragsbeskrivning (+ optional `Client: {org}` prefix) |
+| `descriptionSummary` | `Client: {org}` when org known; else empty |
+| `publishedDate` | REST `date` (date part) |
+| `lastApplicationDate` | detail `Deadline: YYYY-MM-DD` |
+| `startDate` / `endDate` | detail interval `YYYY-MM-DD - YYYY-MM-DD` |
+| `duration` | detail extent (e.g. `100 %`) or interval text |
+| `workMode` | detail worktype (`Hybrid`, `Distans`, `Ej distans`, …) |
+| `location` | detail location |
+| `sourceUrl` | REST `link` |
+| `broker` | `Chas Partner Network` |
+| `skills` | empty unless clearly extractable from skall/börkrav |
+
+### Chas-specific notes
+
+- Treat `Distans` / `fjärrarbete` in `workMode` as remote; `Hybrid` as hybrid; `Ej distans` as on-site.
+- Prefer Python `scripts/fetch-assignments.py` / `assignment_platforms.scan_chaspartnernetwork` when available in the repo checkout; otherwise follow this section manually.
+
+---
+
 ## Source: (template for new sources)
 
 ```markdown
@@ -337,7 +401,6 @@ If the first pass produces suspicious matches, refine locally before Slack. Post
 - Joel Holmberg, 14 years, backend Java, fullstack Java + React, frontend React
 - Nicko Syropoulis, 10 years, UX
 - Karin Toft, 10 years, front-end Angular, WordPress, React
-- Anders Söderström, 9 years, front-end React
 - Max Rautenberg, 4 years, front-end React
 - Soma Azad, 10 years, UX
 - Erik GS, 15 years, Project Manager, Scrum Master, Project coordinator
@@ -350,7 +413,6 @@ If the first pass produces suspicious matches, refine locally before Slack. Post
 - Amin Amini, 3 years, Accessibility specialist
 - Nathalie Pentler, 4 years, Accessibility specialist, Physical accessibility specialist
 - Emilia Michanek, 7 years, Front-end react, angular
-- Ahmed Abdi, 7 years, Front-end react
 - Inhouse accessibility team, 5-20 years, accessibility projects of any kind requiring more than 1 person
 
 ## Slack output
@@ -391,6 +453,8 @@ No new matches.
 a6236 | 2026-06-01 | <https://www.asocietygroup.com/sv/uppdrag/software-developer-java-16055|Software Developer Java> | Stockholm | A Society | Match: Joel Holmberg
 
 v81387 | 2026-06-01 | <https://app.verama.com/app/job-requests/81387|Experience UX & UI Designer> | Stockholm (SE) | 25% remote | 50% | Client: Acme AB | Ework | Match: Soma Azad
+
+c19622 | 2026-08-03 | <https://chaspartnernetwork.se/avrop/dataingenjor-plattform-minst-niva-4/|Dataingenjör plattform, Minst nivå 4> | Uppsala | Hybrid | 100% | Client: Uppsala Kommun | Chas Partner Network | Match: Joel Holmberg
 ```
 
 Do not add source names or platform labels to main message lines — the listing id prefix and link identify the source.
@@ -400,14 +464,16 @@ Do not add source names or platform labels to main message lines — the listing
 ```text
 fit a6236 Joel
 fit v81387 Soma
+fit c19622 Joel
 generate v81387 Soma english
+generate c19622 Joel english
 ```
 
 ## Debug thread
 
 Reply to the main message with:
 
-1. `Scanned sources: allakonsultuppdrag.se (N), verama.com (M), …` — per active registry entry; use `(error)` or `(skipped)` on failure.
+1. `Scanned sources: allakonsultuppdrag.se (N), verama.com (M), chaspartnernetwork.se (K), …` — per active registry entry; use `(error)` or `(skipped)` on failure.
 2. Scan date; total visible per source; new ids per source after per-source dedupe; reported match count after cross-source dedupe.
 3. Close non-matches (especially role matches rejected by location). Prefix debug lines with `listing_id` when helpful.
 
