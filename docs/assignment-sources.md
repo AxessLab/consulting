@@ -10,22 +10,25 @@ python scripts/finalize-listing.py listing-candidates.json curated-listing.json 
 python scripts/finalize-listing.py --commit-memory listing-output.json
 ```
 
-Python fetches and dedupes; the automation agent applies filtering rules and
-writes `curated-listing.json`. Dedupe memory: `assignment-listing-seen.json`
-locally, synced via automation Memory entry **`assignment-listing-seen.json`**
-on cloud runs (see `automation-prompts/assignment-listing.md` step 0 and 5).
+Python fetches, normalizes, and dedupes; the automation agent applies filtering
+rules and writes `curated-listing.json`. Dedupe memory:
+`assignment-listing-seen.json` locally, synced via automation Memory entry
+**`assignment-listing-seen.json`** on cloud runs (see
+`automation-prompts/assignment-listing.md` step 0 and 5). The memory file uses a
+top-level `sources` object keyed by source key, with bare native `seen_ids`.
 
-## Registered platforms
+## Registered sources
 
 Defined in `scripts/assignment_platforms.py` → `PLATFORM_SCANNERS`:
 
-| Platform | Auth | Notes |
-|----------|------|-------|
-| `allakonsultuppdrag.se` | None | JSON API only |
-| `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
+| Prefix | Source | Auth | Notes |
+|--------|--------|------|-------|
+| `a` | `allakonsultuppdrag.se` | None | Public JSON API only |
+| `v` | `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API; detail fetch only for plausible new listings |
+| `c` | `chaspartnernetwork.se` | None | WordPress REST index + Konsult AJAX filter + detail HTML |
 
-Add new platforms by implementing `scan_<name>()` and registering it in
-`PLATFORM_SCANNERS`.
+Add new sources by picking an unused lowercase prefix, implementing
+`scan_<name>()`, and registering it in `PLATFORM_SCANNERS`.
 
 ## Matching
 
