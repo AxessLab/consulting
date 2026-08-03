@@ -470,11 +470,13 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         re.I,
     )
     if scope_match:
-        return f"{scope_match.group(2)}%"
+        scope = int(scope_match.group(2))
+        return f"{scope}%" if scope > 0 else UNKNOWN_HOURS_LABEL
 
     duration_match = re.fullmatch(r"\s*(\d{1,3})\s*%?\s*", assignment.duration or "")
     if duration_match:
-        return f"{duration_match.group(1)}%"
+        duration = int(duration_match.group(1))
+        return f"{duration}%" if duration > 0 else UNKNOWN_HOURS_LABEL
     return UNKNOWN_HOURS_LABEL
 
 
