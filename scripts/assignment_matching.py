@@ -79,13 +79,21 @@ PM_TITLES = re.compile(
 NON_IT_PM_CONTEXT = re.compile(
     r"\b(socialförvaltning|socialforvaltning|social services|rail|transport|"
     r"automotive|vehicle|marketing|value proposition|sales enablement|"
-    r"organizational change|field support|mechatronic|seat belt)\b",
+    r"organizational change|field support|mechatronic|seat belt|"
+    r"företagshälsovård|foretagshalsovard|hälsovård|halsovard|healthcare|"
+    r"occupational health|upphandling|procurement)\b",
     re.I,
 )
 
 IT_PM_CONTEXT = re.compile(
     r"\b(it|digital|software|system|web|app|platform|erp|iam|payment|"
     r"digital workplace|intranät|intranet|e-service|e-tjänst|devops|cloud)\b",
+    re.I,
+)
+
+HARD_NON_IT_PM_CONTEXT = re.compile(
+    r"\b(företagshälsovård|foretagshalsovard|hälsovård|halsovard|healthcare|"
+    r"occupational health|upphandling|procurement)\b",
     re.I,
 )
 
@@ -120,6 +128,12 @@ ROLE_CATEGORY_TAGS: dict[str, set[str]] = {
     "ux": {"ux", "ui", "product-design", "user-research", "design"},
     "pm": {"project-manager", "scrum-master", "agile-coach"},
 }
+
+NON_TARGET_DEVELOPER_STACK = re.compile(
+    r"\b(\.net|c#|php|vue|svelte|python|embedded|fpga|data engineer|"
+    r"dataingenjör|dataingenjor|mobile|ios|android|cloud|devops)\b",
+    re.I,
+)
 
 
 @dataclass
@@ -179,6 +193,8 @@ def skill_names(assignment: AssignmentRecord) -> list[str]:
     for skill in assignment.skills:
         if isinstance(skill, dict) and skill.get("name"):
             names.append(normalize_text(str(skill["name"])))
+        elif isinstance(skill, str):
+            names.append(normalize_text(skill))
     return names
 
 
@@ -210,12 +226,13 @@ def is_active_assignment(assignment: AssignmentRecord, scan_date: date) -> bool:
 
 def is_remote(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
+    fields = re.sub(r"\b(?:[1-9]|[1-9]\d)\s*%\s*remote\b", "", fields)
     return any(term in fields for term in ("remote", "distans", "fjarrarbete", "fjärrarbete"))
 
 
 def is_hybrid(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
-    return "hybrid" in fields
+    return "hybrid" in fields or re.search(r"\b(?:[1-9]|[1-9]\d)\s*%\s*remote\b", fields) is not None
 
 
 def location_tokens(location: str) -> set[str]:
@@ -297,28 +314,29 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
     skills = skill_names(assignment)
     categories: set[str] = set()
 
-    if re.search(
-        r"\b(python|\.net|php|vue|c#|embedded|fpga|data engineer|mobile|ios|android|"
-        r"solution architect|platform architect)\b",
-        text,
-    ):
-        if re.search(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text):
-            categories.add("react_frontend")
-    elif phrase_match(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text) or (
-        any(s in skills for s in ("react", "nextjs", "frontend"))
-        and phrase_match(r"\b(frontend|front-end|react)\b", text)
-    ):
+    title_text = normalize_text(assignment.title)
+    has_react_or_next = phrase_match(r"\b(react|next\.js|nextjs)\b", text) or any(
+        s in skills for s in ("react", "nextjs")
+    )
+    frontend_title = phrase_match(r"\b(frontend|front-end)\b", title_text)
+    if has_react_or_next and (frontend_title or not NON_TARGET_DEVELOPER_STACK.search(text)):
         categories.add("react_frontend")
 
-    if phrase_match(r"\b(angular|wordpress)\b", text) or any(
-        s in skills for s in ("angular", "wordpress")
-    ):
-        if "angular" in text or "angular" in skills:
+    if phrase_match(r"\b(angular|wordpress)\b", text) or any(s in skills for s in ("angular", "wordpress")):
+        angular_primary = (
+            "angular" in title_text
+            or frontend_title
+            or phrase_match(r"\bangular\s+(developer|utvecklare|frontend|enablement)\b", text)
+        )
+        wordpress_primary = "wordpress" in title_text or phrase_match(
+            r"\bwordpress\s+(developer|utvecklare|frontend)\b", text
+        )
+        if ("angular" in text or "angular" in skills) and angular_primary:
             categories.add("angular")
-        if "wordpress" in text or "wordpress" in skills:
+        if ("wordpress" in text or "wordpress" in skills) and wordpress_primary:
             categories.add("wordpress")
 
-    if re.search(r"\b(\.net|php|vue)\b", text):
+    if re.search(r"\b(\.net|php|vue|svelte|c#)\b", text):
         pass
     elif phrase_match(r"\b(fullstack|full-stack|full stack)\b", text):
         if phrase_match(r"\bjava\b", text) or "java" in skills:
@@ -330,17 +348,16 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
         if not re.search(r"\b(python|\.net|php|vue|c#|embedded|fpga|data engineer)\b", text):
             categories.add("java")
 
+    ux_skill = any(s in skills for s in ("ux", "ui", "product-design", "user-research"))
+    ux_title = re.search(
+        r"\b(ux|ui|product designer|ux designer|ui designer|interaction design|"
+        r"interaktionsdesign|tjanstedesign|tjänstedesign)\b",
+        title_text,
+        re.I,
+    )
     if re.search(r"\b(ui artist|game art|graphic artist)\b", text):
         pass
-    elif re.search(r"\b(ios|android|mobile developer|software developer)\b", text):
-        if re.search(r"\b(ux|ui designer|product designer|user experience)\b", text, re.I):
-            categories.add("ux")
-    elif re.search(
-        r"\b(ux|ui|product designer|user experience|interaction design|"
-        r"interaktionsdesign|tjanstedesign|tjänstedesign)\b",
-        text,
-        re.I,
-    ):
+    elif ux_title or ux_skill:
         categories.add("ux")
 
     if matches_pm(text):
@@ -354,6 +371,8 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
 
 def matches_pm(text: str) -> bool:
     if not PM_TITLES.search(text):
+        return False
+    if HARD_NON_IT_PM_CONTEXT.search(text):
         return False
     if NON_IT_PM_CONTEXT.search(text) and not IT_PM_CONTEXT.search(text):
         return False
@@ -445,8 +464,8 @@ def match_consultants_for_assignment(
     return section, matched
 
 
-UNKNOWN_HOURS_LABEL = "not stated (probably full time)"
-UNKNOWN_CLIENT_LABEL = "not stated"
+UNKNOWN_HOURS_LABEL = ""
+UNKNOWN_CLIENT_LABEL = ""
 
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
@@ -459,19 +478,17 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if scope_match:
         return f"{scope_match.group(2)}%"
 
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    duration = assignment.duration.strip()
+    if re.fullmatch(r"\d{1,3}\s*%", duration):
+        return re.sub(r"\s+", "", duration)
+    if re.search(r"\b(part[-\s]?time|deltid)\b", text, re.I):
+        return "Part time"
     return UNKNOWN_HOURS_LABEL
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
-    for pattern in (
-        r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
-    ):
+    for pattern in (r"(?:Kund|End client|Slutkund|Client)\s*:\s*([^\n|]+)",):
         match = re.search(pattern, description, re.I)
         if match:
             client = match.group(1).strip(" .")
@@ -482,6 +499,10 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
+
+    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö]+(?:\s+[A-ZÅÄÖ][A-Za-zÅÄÖåäö]+){0,3})\b", assignment.title)
+    if title_match:
+        return title_match.group(1).strip(" .")
     return UNKNOWN_CLIENT_LABEL
 
 
@@ -511,22 +532,23 @@ def slack_title_link(url: str, title: str) -> str:
 
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
-    location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
     ]
+    if assignment.location:
+        segments.append(assignment.location)
+    if assignment.work_mode:
+        segments.append(assignment.work_mode)
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
     if match.client_label != UNKNOWN_CLIENT_LABEL:
         segments.append(f"Client: {match.client_label}")
-    segments.extend(
-        [
-            assignment.broker,
-            posted_date_label(assignment, scan_date),
-            f"Match: {consultants}",
-        ]
-    )
+    if assignment.broker:
+        segments.append(assignment.broker)
+    segments.append(f"Match: {consultants}")
     return " | ".join(segments)
 
 
