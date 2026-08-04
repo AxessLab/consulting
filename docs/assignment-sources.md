@@ -24,6 +24,7 @@ Defined in `scripts/assignment_platforms.py` → `PLATFORM_SCANNERS`:
 | `allakonsultuppdrag.se` | None | JSON API only |
 | `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
 | `chaspartnernetwork.se` | None | WP REST index + admin-ajax Konsult filter + detail HTML scrape |
+| `magnit-source.magnitglobal.com` | None | Public Azure jobsearch API; Open + IT + Sweden; detail fetch required |
 
 Add new platforms by implementing `scan_<name>()` and registering it in
 `PLATFORM_SCANNERS`.

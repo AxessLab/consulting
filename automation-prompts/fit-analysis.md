@@ -26,8 +26,9 @@ fit Karin Toft
 1. Parse the thread reply as `fit …`.
 2. If the first remaining token is a listed assignment id, use **listed
    assignment mode**. Listed ids are all digits (`6236`), Verama ids with a
-   `v` prefix (`v81387`), or Chas Partner Network ids with a `c` prefix
-   (`c19622`). The assignment id is that token; the consultant name is
+   `v` prefix (`v81387`), Chas Partner Network ids with a `c` prefix
+   (`c19622`), or Magnit Source ids with an `m` prefix
+   (`mcbbe63d1-d81a-bff3-1f3f-95e1a814e812`). The assignment id is that token; the consultant name is
    the rest of the tokens joined with spaces.
 3. Otherwise use **pasted ad mode**. The consultant name is all remaining
    tokens joined with spaces. There is no assignment id in the command.

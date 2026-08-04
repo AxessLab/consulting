@@ -14,6 +14,8 @@ import requests
 ALLAKONSULT_BASE = "https://allakonsultuppdrag.se"
 VERAMA_BASE = "https://app.verama.com"
 CHAS_BASE = "https://chaspartnernetwork.se"
+MAGNIT_BROWSE_BASE = "https://magnit-source.magnitglobal.com"
+MAGNIT_API_BASE = "https://app-openmarketgateway-prod.azurewebsites.net"
 ALLAKONSULT_USER_AGENT = "Mozilla/5.0 (compatible; AssignmentScanner/1.0)"
 SCAN_USER_AGENT = "Mozilla/5.0 (compatible; AxessLabAssignmentScanner/1.0)"
 _TAG_RE = re.compile(r"<[^>]+>")
@@ -31,6 +33,7 @@ _INFO_FIELD_RE = re.compile(
     r"(?:<[^>]+>\s*)*<span>(.*?)</span>",
     re.I | re.S,
 )
+_LI_ITEM_RE = re.compile(r"<li\b[^>]*>(.*?)</li>", re.I | re.S)
 
 
 @dataclass
@@ -484,12 +487,216 @@ def scan_chaspartnernetwork(
         )
 
 
+def _magnit_session() -> requests.Session:
+    session = requests.Session()
+    session.headers.update(
+        {
+            "User-Agent": SCAN_USER_AGENT,
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Origin": MAGNIT_BROWSE_BASE,
+        }
+    )
+    return session
+
+
+def _magnit_strip_html(value: str) -> str:
+    text = _TAG_RE.sub(" ", html.unescape(value or ""))
+    return _WHITESPACE_RE.sub(" ", text).strip()
+
+
+def _magnit_date(value: Any) -> str | None:
+    if not value:
+        return None
+    text = str(value).strip()
+    return text[:10] if text else None
+
+
+def _magnit_is_sweden(location: str) -> bool:
+    loc = (location or "").upper()
+    return "SWE" in loc or loc.endswith(", SE") or loc == "SE"
+
+
+def _magnit_parse_skills_html(skills_html: str) -> list[dict[str, Any]]:
+    skills: list[dict[str, Any]] = []
+    for raw in _LI_ITEM_RE.findall(skills_html or ""):
+        name = _magnit_strip_html(raw)
+        if name:
+            skills.append({"name": name})
+    return skills
+
+
+def scan_magnitsource(
+    *,
+    page_size: int = 20,
+    max_pages: int | None = None,
+) -> tuple[list[AssignmentRecord], PlatformScanResult]:
+    """Scan Magnit Source open IT jobs in Sweden via the public jobsearch API."""
+    platform = "magnit-source.magnitglobal.com"
+    session = _magnit_session()
+    records: list[AssignmentRecord] = []
+    by_key: dict[str, AssignmentRecord] = {}
+
+    try:
+        continuation_token: Any = None
+        page = 1
+        while True:
+            if max_pages is not None and page > max_pages:
+                break
+
+            payload: dict[str, Any] = {
+                "searchTerm": "",
+                "selectedCategories": ["11"],
+                "selectedhoursPerWeeks": [],
+                "selectedLocationTypes": [],
+                "selectedExperiences": [],
+                "selectedStartDates": [],
+                "selectedContractDurations": [],
+                "selectedLocations": [],
+                "selectedStatuses": ["4"],
+                "tenant": None,
+                "pageSize": page_size,
+                "sortOption": {"orderBy": "PublishedDate", "direction": "Desc"},
+                "continuationToken": continuation_token,
+            }
+            response = session.post(
+                f"{MAGNIT_API_BASE}/api/jobsearch",
+                json=payload,
+                timeout=60,
+            )
+            response.raise_for_status()
+            body = response.json() or {}
+            jobs = body.get("jobs") or []
+
+            for row in jobs:
+                location = row.get("location") or ""
+                if not _magnit_is_sweden(location):
+                    continue
+
+                source_id = str(row.get("id") or "").strip()
+                if not source_id:
+                    continue
+
+                title = row.get("title") or ""
+                company = (row.get("company") or "").strip()
+                source_url = f"{MAGNIT_BROWSE_BASE}/browse/job/{source_id}"
+                work_mode = row.get("workLocationType") or ""
+                start_date = _magnit_date(row.get("startDate"))
+                last_application_date = _magnit_date(row.get("submissionDeadline"))
+                published_date = None
+                end_date = None
+                duration = ""
+                description = ""
+                description_summary = f"Client: {company}" if company else ""
+                skills: list[dict[str, Any]] = []
+
+                try:
+                    detail_resp = session.get(
+                        f"{MAGNIT_API_BASE}/api/jobsearch/{source_id}/details",
+                        timeout=60,
+                    )
+                    detail_resp.raise_for_status()
+                    detail = detail_resp.json() or {}
+                    request_details = detail.get("requestDetails") or {}
+                    candidate_reqs = detail.get("candidateRequirements") or {}
+                    technical = detail.get("technicalDetails") or {}
+
+                    if not title:
+                        title = detail.get("title") or title
+                    if not company:
+                        company = (detail.get("company") or "").strip()
+                        if company:
+                            description_summary = f"Client: {company}"
+
+                    location = (
+                        request_details.get("location")
+                        or detail.get("location")
+                        or location
+                    )
+                    work_mode = (
+                        candidate_reqs.get("workLocationType")
+                        or detail.get("workLocationType")
+                        or work_mode
+                        or ""
+                    )
+                    start_date = _magnit_date(
+                        request_details.get("startDate")
+                    ) or start_date
+                    end_date = _magnit_date(request_details.get("endDate"))
+                    last_application_date = _magnit_date(
+                        request_details.get("submissionDeadline")
+                    ) or last_application_date
+                    published_date = _magnit_date(
+                        technical.get("dateFirstPublished")
+                    )
+                    hours = request_details.get("hoursPerWeek")
+                    if hours is not None and str(hours).strip():
+                        duration = f"{hours} h/week"
+
+                    skills_html = detail.get("jobSkills") or ""
+                    desc_html = detail.get("jobDescription") or ""
+                    skills = _magnit_parse_skills_html(skills_html)
+                    skills_text = _magnit_strip_html(skills_html)
+                    desc_text = _magnit_strip_html(desc_html)
+                    parts: list[str] = []
+                    if description_summary:
+                        parts.append(description_summary)
+                    if skills_text:
+                        parts.append(skills_text)
+                    if desc_text:
+                        parts.append(desc_text)
+                    description = "\n\n".join(parts)
+                except Exception:  # noqa: BLE001
+                    # Keep the list stub so the listing still sees the assignment.
+                    if description_summary:
+                        description = description_summary
+
+                record = AssignmentRecord(
+                    platform=platform,
+                    source_id=source_id,
+                    listing_id=f"m{source_id}",
+                    title=title,
+                    description=description,
+                    description_summary=description_summary,
+                    published_date=published_date,
+                    last_application_date=last_application_date,
+                    start_date=start_date,
+                    end_date=end_date,
+                    duration=duration,
+                    work_mode=work_mode if isinstance(work_mode, str) else "",
+                    location=location,
+                    source_url=source_url,
+                    broker="Magnit Source",
+                    skills=skills,
+                )
+                by_key[record.dedupe_key] = record
+
+            continuation_token = body.get("continuationToken")
+            if not continuation_token or not jobs:
+                break
+            page += 1
+
+        records = list(by_key.values())
+        return records, PlatformScanResult(
+            platform=platform, status="ok", count=len(records)
+        )
+    except Exception as exc:  # noqa: BLE001
+        records = list(by_key.values())
+        return records, PlatformScanResult(
+            platform=platform,
+            status="error",
+            count=len(records),
+            message=str(exc),
+        )
+
+
 PlatformScanner = Callable[..., tuple[list[AssignmentRecord], PlatformScanResult]]
 
 PLATFORM_SCANNERS: dict[str, PlatformScanner] = {
     "allakonsultuppdrag.se": scan_allakonsultuppdrag,
     "verama.com": scan_verama,
     "chaspartnernetwork.se": scan_chaspartnernetwork,
+    "magnit-source.magnitglobal.com": scan_magnitsource,
 }
 
 DEFAULT_PLATFORMS = list(PLATFORM_SCANNERS.keys())
