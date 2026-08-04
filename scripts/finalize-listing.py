@@ -95,8 +95,18 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    source_stats = stats.get("sources") or {}
+    source_lines: list[str] = []
+    for source_key, values in source_stats.items():
+        if not isinstance(values, dict):
+            continue
+        source_lines.append(
+            f"{source_key}: visible {values.get('total_visible', 0)}, "
+            f"unique {values.get('total_unique_visible', 0)}, "
+            f"new {values.get('new_ids', 0)}"
+        )
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
         (
             "Visible assignments: "
@@ -106,9 +116,10 @@ def build_slack_debug(
         f"New ids: {stats.get('new_ids', 0)}",
         f"Reported matches: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
-        "",
-        "Close non-matches (sample):",
     ]
+    if source_lines:
+        lines.extend(["", "Per-source counts:", *[f"- {line}" for line in source_lines]])
+    lines.extend(["", "Close non-matches (sample):"])
 
     rejects = curated.get("debug_rejects") or []
     if not rejects:

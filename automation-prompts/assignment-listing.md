@@ -86,7 +86,7 @@ Write `curated-listing.json`:
   ],
   "debug_rejects": [
     {
-      "listing_id": "6830",
+      "listing_id": "a6830",
       "platform": "allakonsultuppdrag.se",
       "title": "GIS Consultant - Project Manager",
       "reason": "location",
@@ -136,8 +136,10 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: unified `sources` object. Each source stores its
+letter prefix, bare native `seen_ids`, `total_visible`, and
+`total_unique_visible`. Legacy `seen_keys` / `platforms` memory is migrated on
+read, but new writes must use `sources`.
 
 ## Filtering rules
 
