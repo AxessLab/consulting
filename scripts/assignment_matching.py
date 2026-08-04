@@ -79,7 +79,9 @@ PM_TITLES = re.compile(
 NON_IT_PM_CONTEXT = re.compile(
     r"\b(socialförvaltning|socialforvaltning|social services|rail|transport|"
     r"automotive|vehicle|marketing|value proposition|sales enablement|"
-    r"organizational change|field support|mechatronic|seat belt)\b",
+    r"organizational change|field support|mechatronic|seat belt|"
+    r"företagshälsovård|foretagshalsovard|hälsovård|halsovard|healthcare|"
+    r"occupational health|upphandling|procurement)\b",
     re.I,
 )
 
@@ -340,17 +342,16 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
         if not re.search(r"\b(python|\.net|php|vue|c#|embedded|fpga|data engineer)\b", text):
             categories.add("java")
 
+    ux_skill = any(s in skills for s in ("ux", "ui", "product-design", "user-research"))
+    ux_title = re.search(
+        r"\b(ux|ui|product designer|ux designer|ui designer|interaction design|"
+        r"interaktionsdesign|tjanstedesign|tjänstedesign)\b",
+        title_text,
+        re.I,
+    )
     if re.search(r"\b(ui artist|game art|graphic artist)\b", text):
         pass
-    elif re.search(r"\b(ios|android|mobile developer|software developer)\b", text):
-        if re.search(r"\b(ux|ui designer|product designer|user experience)\b", text, re.I):
-            categories.add("ux")
-    elif re.search(
-        r"\b(ux|ui|product designer|user experience|interaction design|"
-        r"interaktionsdesign|tjanstedesign|tjänstedesign)\b",
-        text,
-        re.I,
-    ):
+    elif ux_title or ux_skill:
         categories.add("ux")
 
     if matches_pm(text):
