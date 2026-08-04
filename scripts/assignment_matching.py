@@ -91,6 +91,12 @@ IT_PM_CONTEXT = re.compile(
     re.I,
 )
 
+HARD_NON_IT_PM_CONTEXT = re.compile(
+    r"\b(företagshälsovård|foretagshalsovard|hälsovård|halsovard|healthcare|"
+    r"occupational health|upphandling|procurement)\b",
+    re.I,
+)
+
 EMPLOYMENT_AD = re.compile(
     r"\b(anställning|anstallning|permanent employment|rekrytering till fast)\b",
     re.I,
@@ -365,6 +371,8 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
 
 def matches_pm(text: str) -> bool:
     if not PM_TITLES.search(text):
+        return False
+    if HARD_NON_IT_PM_CONTEXT.search(text):
         return False
     if NON_IT_PM_CONTEXT.search(text) and not IT_PM_CONTEXT.search(text):
         return False
