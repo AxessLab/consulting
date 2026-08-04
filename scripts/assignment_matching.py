@@ -121,6 +121,12 @@ ROLE_CATEGORY_TAGS: dict[str, set[str]] = {
     "pm": {"project-manager", "scrum-master", "agile-coach"},
 }
 
+NON_TARGET_DEVELOPER_STACK = re.compile(
+    r"\b(\.net|c#|php|vue|svelte|python|embedded|fpga|data engineer|"
+    r"dataingenjör|dataingenjor|mobile|ios|android|cloud|devops)\b",
+    re.I,
+)
+
 
 @dataclass
 class ConsultantProfile:
@@ -300,28 +306,29 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
     skills = skill_names(assignment)
     categories: set[str] = set()
 
-    if re.search(
-        r"\b(python|\.net|php|vue|c#|embedded|fpga|data engineer|mobile|ios|android|"
-        r"solution architect|platform architect)\b",
-        text,
-    ):
-        if re.search(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text):
-            categories.add("react_frontend")
-    elif phrase_match(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text) or (
-        any(s in skills for s in ("react", "nextjs", "frontend"))
-        and phrase_match(r"\b(frontend|front-end|react)\b", text)
-    ):
+    title_text = normalize_text(assignment.title)
+    has_react_or_next = phrase_match(r"\b(react|next\.js|nextjs)\b", text) or any(
+        s in skills for s in ("react", "nextjs")
+    )
+    frontend_title = phrase_match(r"\b(frontend|front-end)\b", title_text)
+    if has_react_or_next and (frontend_title or not NON_TARGET_DEVELOPER_STACK.search(text)):
         categories.add("react_frontend")
 
-    if phrase_match(r"\b(angular|wordpress)\b", text) or any(
-        s in skills for s in ("angular", "wordpress")
-    ):
-        if "angular" in text or "angular" in skills:
+    if phrase_match(r"\b(angular|wordpress)\b", text) or any(s in skills for s in ("angular", "wordpress")):
+        angular_primary = (
+            "angular" in title_text
+            or frontend_title
+            or phrase_match(r"\bangular\s+(developer|utvecklare|frontend|enablement)\b", text)
+        )
+        wordpress_primary = "wordpress" in title_text or phrase_match(
+            r"\bwordpress\s+(developer|utvecklare|frontend)\b", text
+        )
+        if ("angular" in text or "angular" in skills) and angular_primary:
             categories.add("angular")
-        if "wordpress" in text or "wordpress" in skills:
+        if ("wordpress" in text or "wordpress" in skills) and wordpress_primary:
             categories.add("wordpress")
 
-    if re.search(r"\b(\.net|php|vue)\b", text):
+    if re.search(r"\b(\.net|php|vue|svelte|c#)\b", text):
         pass
     elif phrase_match(r"\b(fullstack|full-stack|full stack)\b", text):
         if phrase_match(r"\bjava\b", text) or "java" in skills:
