@@ -179,6 +179,12 @@ def skill_names(assignment: AssignmentRecord) -> list[str]:
     for skill in assignment.skills:
         if isinstance(skill, dict) and skill.get("name"):
             names.append(normalize_text(str(skill["name"])))
+        elif isinstance(skill, dict) and isinstance(skill.get("skill"), dict):
+            nested_name = skill["skill"].get("name")
+            if nested_name:
+                names.append(normalize_text(str(nested_name)))
+        elif isinstance(skill, str):
+            names.append(normalize_text(skill))
     return names
 
 
@@ -210,11 +216,17 @@ def is_active_assignment(assignment: AssignmentRecord, scan_date: date) -> bool:
 
 def is_remote(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
+    percent_remote = re.search(r"\b(\d{1,3})\s*%\s*remote\b", fields)
+    if percent_remote:
+        return int(percent_remote.group(1)) >= 100
     return any(term in fields for term in ("remote", "distans", "fjarrarbete", "fjärrarbete"))
 
 
 def is_hybrid(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
+    percent_remote = re.search(r"\b(\d{1,3})\s*%\s*remote\b", fields)
+    if percent_remote:
+        return 0 < int(percent_remote.group(1)) < 100
     return "hybrid" in fields
 
 
@@ -295,23 +307,25 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
 
     text = combined_text(assignment)
     skills = skill_names(assignment)
+    title = normalize_text(assignment.title)
     categories: set[str] = set()
-
-    if re.search(
+    excluded_dev_stack = re.search(
         r"\b(python|\.net|php|vue|c#|embedded|fpga|data engineer|mobile|ios|android|"
         r"solution architect|platform architect)\b",
         text,
-    ):
-        if re.search(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text):
-            categories.add("react_frontend")
-    elif phrase_match(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text) or (
-        any(s in skills for s in ("react", "nextjs", "frontend"))
-        and phrase_match(r"\b(frontend|front-end|react)\b", text)
+    )
+
+    has_react_or_next = phrase_match(r"\b(react|next\.js|nextjs)\b", text) or any(
+        s in skills for s in ("react", "nextjs")
+    )
+    if not excluded_dev_stack and has_react_or_next and phrase_match(
+        r"\b(react|next\.js|nextjs|frontend|front-end)\b", title
     ):
         categories.add("react_frontend")
 
-    if phrase_match(r"\b(angular|wordpress)\b", text) or any(
-        s in skills for s in ("angular", "wordpress")
+    if not excluded_dev_stack and (
+        phrase_match(r"\b(angular|wordpress)\b", title)
+        or any(s in skills for s in ("angular", "wordpress"))
     ):
         if "angular" in text or "angular" in skills:
             categories.add("angular")
@@ -336,10 +350,13 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
         if re.search(r"\b(ux|ui designer|product designer|user experience)\b", text, re.I):
             categories.add("ux")
     elif re.search(
-        r"\b(ux|ui|product designer|user experience|interaction design|"
+        r"\b(ux|ui|product designer|ux designer|ui designer|interaction design|"
         r"interaktionsdesign|tjanstedesign|tjänstedesign)\b",
-        text,
+        title,
         re.I,
+    ) or (
+        re.search(r"\b(designer|tjänstedesigner|tjanstedesigner)\b", title, re.I)
+        and any(s in skills for s in ("figma", "design", "design thinking", "designtankande"))
     ):
         categories.add("ux")
 
@@ -459,29 +476,33 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if scope_match:
         return f"{scope_match.group(2)}%"
 
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    duration = assignment.duration or ""
+    duration_percent = re.search(r"^\s*(\d{1,3})\s*%\s*$", duration)
+    if duration_percent:
+        return f"{duration_percent.group(1)}%"
+    if re.search(r"\b(part[- ]time|deltid)\b", duration, re.I):
+        return "Part time"
     return UNKNOWN_HOURS_LABEL
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
-    for pattern in (
-        r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
-    ):
-        match = re.search(pattern, description, re.I)
-        if match:
-            client = match.group(1).strip(" .")
-            if len(client) > 3 and normalize_text(client) not in {
-                "detta",
-                "denna",
-                "kunden",
-                "client",
-            }:
-                return client
+    match = re.search(r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)", description, re.I)
+    if match:
+        client = match.group(1).strip(" .")
+        if len(client) > 3 and normalize_text(client) not in {
+            "detta",
+            "denna",
+            "kunden",
+            "client",
+        }:
+            return client
+
+    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&.\- ]+)$", assignment.title)
+    if title_match:
+        client = title_match.group(1).strip(" .")
+        if len(client) > 3:
+            return client
     return UNKNOWN_CLIENT_LABEL
 
 
@@ -511,22 +532,23 @@ def slack_title_link(url: str, title: str) -> str:
 
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
-    location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
     ]
+    if assignment.location:
+        segments.append(assignment.location)
+    if assignment.work_mode:
+        segments.append(assignment.work_mode)
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
     if match.client_label != UNKNOWN_CLIENT_LABEL:
         segments.append(f"Client: {match.client_label}")
-    segments.extend(
-        [
-            assignment.broker,
-            posted_date_label(assignment, scan_date),
-            f"Match: {consultants}",
-        ]
-    )
+    if assignment.broker:
+        segments.append(assignment.broker)
+    segments.append(f"Match: {consultants}")
     return " | ".join(segments)
 
 
