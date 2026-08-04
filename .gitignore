@@ -17,3 +17,5 @@ curated-listing.json
 listing-output.json
 __pycache__/
 *.pyc
+.tmp-*
+.tmp/
