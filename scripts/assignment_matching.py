@@ -121,6 +121,8 @@ ROLE_CATEGORY_TAGS: dict[str, set[str]] = {
     "pm": {"project-manager", "scrum-master", "agile-coach"},
 }
 
+ANGULAR_CONSULTANTS = {"Karin Toft", "Emilia Michanek"}
+
 
 @dataclass
 class ConsultantProfile:
@@ -394,7 +396,7 @@ def consultant_matches_category(profile: ConsultantProfile, category: str) -> bo
     if category == "react_frontend":
         return bool(overlap) and ("react" in profile.role_tags or "frontend" in profile.role_tags)
     if category == "angular":
-        return "angular" in profile.role_tags
+        return "angular" in profile.role_tags or profile.name in ANGULAR_CONSULTANTS
     if category == "wordpress":
         return "wordpress" in profile.role_tags
     if category == "java":
@@ -557,9 +559,33 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
         "magnit-source.magnitglobal.com": 3,
     }
 
+    def normalized_title(value: str) -> str:
+        text = normalize_text(value)
+        text = re.sub(r"\b(niva|nivå|level)\s*\d+\b", " ", text)
+        text = re.sub(r"[^a-z0-9åäö]+", " ", text)
+        return re.sub(r"\s+", " ", text).strip()
+
+    def normalized_broker(value: str) -> str:
+        text = normalize_text(value)
+        if "ework" in text:
+            return "ework"
+        if "chas" in text:
+            return "chas"
+        return re.sub(r"[^a-z0-9åäö]+", " ", text).strip()
+
+    def normalized_location(value: str) -> str:
+        text = normalize_text(value)
+        text = re.sub(r"\((swe|se|dnk|dk|pol|pl)\)", " ", text)
+        text = re.sub(r"[^a-z0-9åäö]+", " ", text)
+        return re.sub(r"\s+", " ", text).strip()
+
     for assignment in assignments:
-        fingerprint = normalize_text(
-            f"{assignment.title}|{assignment.broker}|{assignment.location}"
+        fingerprint = "|".join(
+            (
+                normalized_title(assignment.title),
+                normalized_broker(assignment.broker),
+                normalized_location(assignment.location),
+            )
         )
         existing = by_fingerprint.get(fingerprint)
         if existing is None:
