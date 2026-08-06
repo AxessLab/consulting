@@ -95,8 +95,22 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    per_source = stats.get("per_source") or {}
+    source_lines: list[str] = []
+    for source_key, source_stats in per_source.items():
+        status = source_stats.get("status")
+        if status == "ok":
+            source_lines.append(
+                f"- {source_key}: visible {source_stats.get('total_visible', 0)}, "
+                f"unique {source_stats.get('total_unique_visible', 0)}, "
+                f"new {source_stats.get('new_ids', 0)}"
+            )
+        else:
+            message = source_stats.get("message")
+            suffix = f" ({message})" if message else ""
+            source_lines.append(f"- {source_key}: {status or 'unknown'}{suffix}")
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
         (
             "Visible assignments: "
@@ -106,6 +120,9 @@ def build_slack_debug(
         f"New ids: {stats.get('new_ids', 0)}",
         f"Reported matches: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
+        "",
+        "Per-source totals:",
+        *(source_lines or ["- none"]),
         "",
         "Close non-matches (sample):",
     ]
