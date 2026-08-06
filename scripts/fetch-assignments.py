@@ -35,7 +35,35 @@ def build_platform_summary(platform_results: list[dict[str, Any]]) -> str:
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
+
+
+def source_stats(
+    assignments: list[AssignmentRecord],
+    *,
+    seen_keys: set[str],
+    platform_results: list[Any],
+) -> dict[str, dict[str, Any]]:
+    by_source: dict[str, dict[str, AssignmentRecord]] = {}
+    for assignment in assignments:
+        by_source.setdefault(assignment.source_key, {})[assignment.source_id] = assignment
+
+    stats: dict[str, dict[str, Any]] = {}
+    for result in platform_results:
+        source_assignments = by_source.get(result.platform, {})
+        new_ids = [
+            source_id
+            for source_id in source_assignments
+            if f"{result.platform}:{source_id}" not in seen_keys
+        ]
+        stats[result.platform] = {
+            "status": result.status,
+            "total_visible": result.count,
+            "total_unique_visible": len(source_assignments),
+            "new_ids": len(new_ids),
+            "message": result.message,
+        }
+    return stats
 
 
 def prepare_candidates(
@@ -53,6 +81,8 @@ def prepare_candidates(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_keys=seen_keys,
+        scan_date=scan_date,
     )
     deduped_assignments = cross_platform_dedupe(raw_assignments)
     new_assignments = [
@@ -84,9 +114,14 @@ def prepare_candidates(
     ]
 
     memory_update = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+    )
+    per_source_stats = source_stats(
+        raw_assignments,
+        seen_keys=seen_keys,
+        platform_results=platform_results,
     )
 
     suggested_report = [
@@ -106,6 +141,11 @@ def prepare_candidates(
             "total_unique_visible": len(deduped_assignments),
             "previously_seen": len(seen_keys),
             "new_ids": len(new_assignments),
+            "new_ids_by_source": {
+                source_key: stats["new_ids"]
+                for source_key, stats in per_source_stats.items()
+            },
+            "per_source": per_source_stats,
             "expired_new_ids": len(expired),
             "script_suggestions": len(suggested_report),
             "active_consultants": len(profiles),

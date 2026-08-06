@@ -55,7 +55,7 @@ def build_platform_summary(platform_results: list[PlatformScanResult]) -> str:
             parts.append(f"{result.platform} (skipped)")
         else:
             parts.append(f"{result.platform} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def build_slack_debug(
@@ -112,6 +112,8 @@ def prepare_listing(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_keys=seen_keys,
+        scan_date=scan_date,
     )
     deduped_assignments = cross_platform_dedupe(raw_assignments)
     new_assignments = [
@@ -127,7 +129,7 @@ def prepare_listing(
     )
 
     memory_payload = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
     )
