@@ -210,6 +210,18 @@ def is_active_assignment(assignment: AssignmentRecord, scan_date: date) -> bool:
 
 def is_remote(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
+    remote_percentages = [
+        int(match.group(1))
+        for match in re.finditer(r"\b(\d{1,3})\s*%\s*remote\b", fields)
+    ]
+    if remote_percentages and max(remote_percentages) < 100:
+        fields_without_fractional_remote = re.sub(
+            r"\b\d{1,3}\s*%\s*remote\b", "", fields
+        )
+        return any(
+            term in fields_without_fractional_remote
+            for term in ("distans", "fjarrarbete", "fjärrarbete")
+        )
     return any(term in fields for term in ("remote", "distans", "fjarrarbete", "fjärrarbete"))
 
 
@@ -445,7 +457,7 @@ def match_consultants_for_assignment(
     return section, matched
 
 
-UNKNOWN_HOURS_LABEL = "not stated (probably full time)"
+UNKNOWN_HOURS_LABEL = ""
 UNKNOWN_CLIENT_LABEL = "not stated"
 
 
@@ -459,10 +471,12 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if scope_match:
         return f"{scope_match.group(2)}%"
 
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    duration = assignment.duration or ""
+    duration_percent = re.fullmatch(r"\s*(\d{1,3})\s*%?\s*", duration)
+    if duration_percent:
+        return f"{duration_percent.group(1)}%"
+    if re.search(r"\b(part[- ]?time|deltid)\b", text, re.I):
+        return "Part time"
     return UNKNOWN_HOURS_LABEL
 
 
@@ -470,7 +484,6 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
     for pattern in (
         r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
     ):
         match = re.search(pattern, description, re.I)
         if match:
@@ -482,6 +495,9 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
+    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö]+(?:\s+[A-ZÅÄÖ][A-Za-zÅÄÖåäö]+){0,3})", assignment.title)
+    if title_match:
+        return title_match.group(1).strip(" .")
     return UNKNOWN_CLIENT_LABEL
 
 
@@ -511,32 +527,35 @@ def slack_title_link(url: str, title: str) -> str:
 
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
-    location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
+    location = assignment.location.strip()
+    work_mode = assignment.work_mode.strip()
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
     ]
-    if match.hours_label != UNKNOWN_HOURS_LABEL:
+    if location:
+        segments.append(location)
+    if work_mode:
+        segments.append(work_mode)
+    if match.hours_label:
         segments.append(match.hours_label)
     if match.client_label != UNKNOWN_CLIENT_LABEL:
         segments.append(f"Client: {match.client_label}")
-    segments.extend(
-        [
-            assignment.broker,
-            posted_date_label(assignment, scan_date),
-            f"Match: {consultants}",
-        ]
-    )
+    if assignment.broker:
+        segments.append(assignment.broker)
+    segments.append(f"Match: {consultants}")
     return " | ".join(segments)
 
 
 def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[AssignmentRecord]:
-    """Prefer verama.com when the same role appears on multiple platforms."""
+    """Prefer sources according to the assignment listing registry order."""
     by_fingerprint: dict[str, AssignmentRecord] = {}
     platform_rank = {
         "verama.com": 0,
-        "allakonsultuppdrag.se": 1,
-        "chaspartnernetwork.se": 2,
+        "chaspartnernetwork.se": 1,
+        "allakonsultuppdrag.se": 2,
         "magnit-source.magnitglobal.com": 3,
     }
 
@@ -633,7 +652,8 @@ def suggestion_to_dict(suggestion: AssignmentSuggestion) -> dict[str, Any]:
     return {
         "dedupe_key": assignment.dedupe_key,
         "listing_id": assignment.listing_id,
-        "platform": assignment.platform,
+        "source_key": assignment.source_key,
+        "platform": assignment.source_key,
         "title": assignment.title,
         "location": assignment.location,
         "work_mode": assignment.work_mode,
