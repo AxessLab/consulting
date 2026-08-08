@@ -457,7 +457,7 @@ UNKNOWN_CLIENT_LABEL = "not stated"
 def parse_hours_label(assignment: AssignmentRecord) -> str:
     text = f"{assignment.description} {assignment.duration}"
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}?(\d{1,3})\s*%",
         text,
         re.I,
     )
@@ -473,6 +473,8 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         return f"{hours_match.group(1)} h/week"
     if re.search(r"\b(part[-\s]?time|deltid)\b", text, re.I):
         return "Part time"
+    if re.search(r"\b(full[-\s]?time|heltid)\b", text, re.I):
+        return "100%"
     return UNKNOWN_HOURS_LABEL
 
 
@@ -489,7 +491,7 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
-    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&.\-\s]+)$", assignment.title)
+    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&().\-\s]+)$", assignment.title)
     if title_match:
         client = title_match.group(1).strip(" .")
         if len(client) > 3:
