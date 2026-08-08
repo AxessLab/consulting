@@ -95,6 +95,16 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    visible_by_source = stats.get("total_visible_by_source") or {}
+    new_by_source = stats.get("new_ids_by_source") or {}
+    source_parts: list[str] = []
+    for result in candidates.get("platform_results", []):
+        source = result.get("platform")
+        if not source:
+            continue
+        visible = visible_by_source.get(source, result.get("count", 0))
+        new_count = new_by_source.get(source, 0)
+        source_parts.append(f"{source}: visible {visible}, new {new_count}")
     lines = [
         candidates.get("platform_summary", "Scanned platforms: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
@@ -104,6 +114,7 @@ def build_slack_debug(
             f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
         ),
         f"New ids: {stats.get('new_ids', 0)}",
+        "Per-source counts: " + "; ".join(source_parts) if source_parts else "Per-source counts: (unknown)",
         f"Reported matches: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
         "",
