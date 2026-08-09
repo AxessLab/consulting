@@ -450,7 +450,12 @@ UNKNOWN_CLIENT_LABEL = "not stated"
 
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
-    text = f"{assignment.description} {assignment.duration}"
+    duration = assignment.duration or ""
+    duration_scope = re.search(r"^\s*(\d{1,3})\s*%\s*$", duration)
+    if duration_scope:
+        return f"{duration_scope.group(1)}%"
+
+    text = f"{assignment.description} {duration}"
     scope_match = re.search(
         r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
         text,
@@ -458,21 +463,19 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     )
     if scope_match:
         return f"{scope_match.group(2)}%"
-
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    fixed_hours = re.search(r"\b(\d{1,2})\s*(?:h/week|hours per week|timmar/vecka)\b", text, re.I)
+    if fixed_hours:
+        return f"{fixed_hours.group(1)} h/week"
     return UNKNOWN_HOURS_LABEL
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
-    for pattern in (
-        r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
+    for pattern, source in (
+        (r"(?:Kund|End client|Slutkund|Client)\s*:\s*([^\n|]+)", description),
+        (r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö]+(?:\s+[A-ZÅÄÖ][A-Za-zÅÄÖåäö]+){0,3})\b", assignment.title),
     ):
-        match = re.search(pattern, description, re.I)
+        match = re.search(pattern, source, re.I)
         if match:
             client = match.group(1).strip(" .")
             if len(client) > 3 and normalize_text(client) not in {
@@ -511,32 +514,33 @@ def slack_title_link(url: str, title: str) -> str:
 
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
-    location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
     ]
+    if assignment.location:
+        segments.append(assignment.location)
+    if assignment.work_mode:
+        segments.append(assignment.work_mode)
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
     if match.client_label != UNKNOWN_CLIENT_LABEL:
         segments.append(f"Client: {match.client_label}")
-    segments.extend(
-        [
-            assignment.broker,
-            posted_date_label(assignment, scan_date),
-            f"Match: {consultants}",
-        ]
-    )
+    if assignment.broker:
+        segments.append(assignment.broker)
+    segments.append(f"Match: {consultants}")
     return " | ".join(segments)
 
 
 def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[AssignmentRecord]:
-    """Prefer verama.com when the same role appears on multiple platforms."""
+    """Prefer registry order when the same role appears on multiple platforms."""
     by_fingerprint: dict[str, AssignmentRecord] = {}
     platform_rank = {
         "verama.com": 0,
-        "allakonsultuppdrag.se": 1,
-        "chaspartnernetwork.se": 2,
+        "chaspartnernetwork.se": 1,
+        "allakonsultuppdrag.se": 2,
         "magnit-source.magnitglobal.com": 3,
     }
 
