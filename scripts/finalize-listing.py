@@ -96,12 +96,12 @@ def build_slack_debug(
 ) -> str:
     stats = candidates.get("stats", {})
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
         (
-            "Visible assignments: "
-            f"{stats.get('total_visible', 0)} "
-            f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
+            "Visible assignments after source scans: "
+            f"{stats.get('total_visible', 0)}; "
+            f"unique after cross-source dedupe: {stats.get('total_unique_visible', 0)}"
         ),
         f"New ids: {stats.get('new_ids', 0)}",
         f"Reported matches: {reported_count}",
