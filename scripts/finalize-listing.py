@@ -38,9 +38,9 @@ def load_curated(path: Path) -> dict[str, Any]:
 def assignment_index(candidates: dict[str, Any]) -> dict[str, AssignmentRecord]:
     index: dict[str, AssignmentRecord] = {}
     for row in candidates.get("assignments", []):
-        record = AssignmentRecord(**row)
+        record = AssignmentRecord.from_dict(row)
         index[record.dedupe_key] = record
-        index[f"{record.platform}:{record.listing_id}"] = record
+        index[f"{record.source_key}:{record.listing_id}"] = record
         index[record.listing_id] = record
     return index
 
@@ -54,9 +54,9 @@ def resolve_assignment(
         return index[dedupe_key]
 
     listing_id = item.get("listing_id")
-    platform = item.get("platform")
-    if listing_id and platform:
-        key = f"{platform}:{listing_id}"
+    source_key = item.get("source_key") or item.get("platform")
+    if listing_id and source_key:
+        key = f"{source_key}:{listing_id}"
         if key in index:
             return index[key]
     if listing_id and listing_id in index:
@@ -95,13 +95,22 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    source_counts = []
+    for result in candidates.get("platform_results", []):
+        label = result.get("platform") or result.get("source_key") or "unknown"
+        if result.get("status") == "ok":
+            new_ids = (stats.get("new_ids_by_source") or {}).get(label, [])
+            source_counts.append(f"{label}: visible {result.get('count', 0)}, new {len(new_ids)}")
+        else:
+            source_counts.append(f"{label}: {result.get('status', 'error')}")
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
+        "Per-source counts: " + "; ".join(source_counts),
         (
             "Visible assignments: "
             f"{stats.get('total_visible', 0)} "
-            f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
+            f"(unique after cross-source dedupe: {stats.get('total_unique_visible', 0)})"
         ),
         f"New ids: {stats.get('new_ids', 0)}",
         f"Reported matches: {reported_count}",
@@ -118,8 +127,8 @@ def build_slack_debug(
             consultants = item.get("would_match") or []
             suffix = f" | would match: {', '.join(consultants)}" if consultants else ""
             listing_id = item.get("listing_id", item.get("id", "?"))
-            platform = item.get("platform", "")
-            platform_suffix = f" [{platform}]" if platform else ""
+            source_key = item.get("source_key") or item.get("platform", "")
+            platform_suffix = f" [{source_key}]" if source_key else ""
             lines.append(
                 f"- {listing_id}{platform_suffix} | {item.get('title', '?')} | "
                 f"{item.get('reason', 'rejected')}{suffix}"
@@ -185,7 +194,7 @@ def finalize_listing(
         "matches": [
             {
                 "listing_id": match.assignment.listing_id,
-                "platform": match.assignment.platform,
+                "source_key": match.assignment.source_key,
                 "section": match.section,
                 "title": match.assignment.title,
                 "consultants": match.consultants,
