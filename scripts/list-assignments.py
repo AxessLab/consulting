@@ -71,7 +71,7 @@ def build_slack_debug(
     lines = [
         build_platform_summary(platform_results),
         f"Scan date: {scan_date.isoformat()}",
-        f"Visible assignments: {total_visible} (unique after cross-platform dedupe: {total_unique_visible})",
+        f"Visible assignments: {total_visible} (unique after cross-source dedupe: {total_unique_visible})",
         f"New ids: {new_count}",
         f"Reported matches: {reported_count}",
         "(deterministic mode — prefer fetch + AI curation for production)",
