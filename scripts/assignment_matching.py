@@ -553,9 +553,24 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
         "magnit-source.magnitglobal.com": 3,
     }
 
+    def normalize_broker(value: str) -> str:
+        broker = normalize_text(value)
+        broker = re.sub(r"\b(group|ab|sp\.?\s*z\s*o\.?o\.?|ltd|limited)\b", "", broker)
+        return re.sub(r"\s+", " ", broker).strip()
+
+    def normalize_location(value: str) -> str:
+        location = normalize_text(value)
+        location = re.sub(r"\((?:se|swe|sweden)\)", "", location)
+        location = location.replace("malmo", "malmö").replace("goteborg", "göteborg")
+        return re.sub(r"[^a-zåäö]+", " ", location).strip()
+
     for assignment in assignments:
-        fingerprint = normalize_text(
-            f"{assignment.title}|{assignment.broker}|{assignment.location}"
+        fingerprint = "|".join(
+            (
+                normalize_text(assignment.title),
+                normalize_broker(assignment.broker),
+                normalize_location(assignment.location),
+            )
         )
         existing = by_fingerprint.get(fingerprint)
         if existing is None:
