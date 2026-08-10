@@ -35,7 +35,7 @@ def build_platform_summary(platform_results: list[dict[str, Any]]) -> str:
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def prepare_candidates(
@@ -47,19 +47,27 @@ def prepare_candidates(
     headless: bool = True,
     with_suggestions: bool = True,
 ) -> dict[str, Any]:
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, memory_data, seen_ids_by_source = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_ids_by_source=seen_ids_by_source,
+        scan_date=scan_date,
     )
     deduped_assignments = cross_platform_dedupe(raw_assignments)
     new_assignments = [
         assignment
         for assignment in deduped_assignments
-        if assignment.dedupe_key not in seen_keys
+        if assignment.source_id not in seen_ids_by_source.get(assignment.source_key, set())
     ]
+    new_ids_by_source: dict[str, list[str]] = {}
+    for assignment in raw_assignments:
+        if assignment.source_id not in seen_ids_by_source.get(assignment.source_key, set()):
+            new_ids_by_source.setdefault(assignment.source_key, []).append(assignment.source_id)
+    for source_key, ids in list(new_ids_by_source.items()):
+        new_ids_by_source[source_key] = sorted(set(ids), key=lambda value: (len(value), value))
 
     profiles = load_consultant_profiles()
     suggestions: list[dict[str, Any]] = []
@@ -84,9 +92,10 @@ def prepare_candidates(
     ]
 
     memory_update = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        existing_memory=memory_data,
     )
 
     suggested_report = [
@@ -106,6 +115,7 @@ def prepare_candidates(
             "total_unique_visible": len(deduped_assignments),
             "previously_seen": len(seen_keys),
             "new_ids": len(new_assignments),
+            "new_ids_by_source": new_ids_by_source,
             "expired_new_ids": len(expired),
             "script_suggestions": len(suggested_report),
             "active_consultants": len(profiles),
