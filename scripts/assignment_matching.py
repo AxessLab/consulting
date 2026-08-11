@@ -457,20 +457,25 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     text = f"{assignment.description} {assignment.duration}"
     duration = assignment.duration.strip()
     duration_percent = re.fullmatch(r"(?:omfattning\s*)?(\d{1,3})\s*%\.?", duration, re.I)
-    if duration_percent:
+    if duration_percent and int(duration_percent.group(1)) > 0:
         return f"{duration_percent.group(1)}%"
     hours_match = re.search(r"\b(\d{1,2})\s*(?:h|hours|timmar)\s*/?\s*(?:week|vecka|v)\b", text, re.I)
     if hours_match:
         return f"{hours_match.group(1)} h/week"
     if re.search(r"\b(part[- ]time|deltid)\b", text, re.I):
         return "Part time"
-    scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+    for scope_match in re.finditer(
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,60}(\d{1,3})\s*%",
         text,
         re.I,
-    )
-    if scope_match:
-        return f"{scope_match.group(2)}%"
+    ):
+        context = scope_match.group(0)
+        percent = int(scope_match.group(2))
+        if percent <= 0:
+            continue
+        if re.search(r"distans|remote|fjärr|fjarr", context, re.I):
+            continue
+        return f"{percent}%"
 
     return UNKNOWN_HOURS_LABEL
 
@@ -479,6 +484,8 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
     description = f"{assignment.description_summary}\n{assignment.description}"
     for pattern in (
         r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
+        r"\bkund\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9& .-]{2,60}?)\s+söker\b",
+        r"\bTill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9& .-]{2,60}?)\s+söker\b",
     ):
         match = re.search(pattern, description, re.I)
         if match:
@@ -493,7 +500,11 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
     title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s&.-]+)$", assignment.title)
     if title_match:
         client = title_match.group(1).strip(" .")
-        if 3 < len(client) <= 60:
+        if 3 < len(client) <= 60 and not re.search(
+            r"\b(BI|Analytics|frontend|backend|utvecklare|developer|designer)\b",
+            client,
+            re.I,
+        ):
             return client
     return UNKNOWN_CLIENT_LABEL
 
