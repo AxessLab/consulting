@@ -465,7 +465,7 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if re.search(r"\b(part[- ]time|deltid)\b", text, re.I):
         return "Part time"
     for scope_match in re.finditer(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,60}(\d{1,3})\s*%",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[\s\S]{0,80}?(\d{1,3})\s*%",
         text,
         re.I,
     ):
