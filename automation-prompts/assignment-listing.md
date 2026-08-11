@@ -4,10 +4,10 @@ Use this guidance when producing Slack assignment lists for consultant matching.
 
 ## Goal
 
-Post new IT consulting assignments from **all configured platforms** in three
+Post new IT consulting assignments from **all active sources** in three
 sections, with a debug thread reply.
 
-**Python handles mechanical work** (platform fetch, dedupe, memory, Slack line
+**Python handles mechanical work** (source fetch, dedupe, memory, Slack line
 formatting). **You handle judgment** (role/location matching, false-positive
 removal, missed matches, validation). Iterate until the curated list is good
 before posting.
@@ -42,19 +42,21 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+This scans every active source in `scripts/assignment_platforms.py`, dedupes against
 `assignment-listing-seen.json`, and writes:
 
 - `assignments` — all currently visible unique records (for lookup)
-- `new_dedupe_keys` — ids not posted before
+- `new_dedupe_keys` / `new_listing_ids` — per-source ids not seen before
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
 - `memory_update` — draft memory (do not commit until after Slack post)
-- `platform_summary` — for the debug thread
+- `source_summary` — for the debug thread
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
-Magnit Source (`magnit-source.magnitglobal.com`) needs no secrets — public Open IT Sweden jobs via the Azure jobsearch API.
+Active sources are Verama (`v`), Chas Partner Network (`c`), and
+allakonsultuppdrag.se (`a`). Inactive ad-hoc scanners must not be included in
+the default Slack listing unless the source registry is deliberately extended.
 
 ### 2. Curate matches (your main job)
 
@@ -137,32 +139,34 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: a top-level `sources` object. Each source key stores
+the source prefix, bare native `seen_ids`, and visible/unique-visible counts.
+Failed or skipped sources keep their previous memory entry for that run.
 
 ## Filtering rules
 
 Apply to **new** assignments only.
 
-1. Exclude assignments whose `lastApplicationDate` is before the scan date
+1. Only report assignments whose bare `source_id` is new for that source.
+2. Exclude assignments whose `lastApplicationDate` is before the scan date
    (already flagged in `expired` from fetch).
-2. Match role against consultants in `consultants.yaml` (`mainRoles`, active
+3. Match role against consultants in `consultants.yaml` (`mainRoles`, active
    `cvs[].roles`, `locations`). Use `consultants` in the fetch output as a
    shortcut.
-3. Location must be remote or Stockholm/Solna/near-Stockholm, except
+4. Location must be remote or Stockholm/Solna/near-Stockholm, except
    accessibility specialist roles (location ignored) and front-end roles (also
    accept Gothenburg).
-4. Treat `remote` / `distans` / `fjärrarbete` as remote only when present in
+5. Treat `remote` / `distans` / `fjärrarbete` as remote only when present in
    API `workMode` or `location`. Do not let incidental description text make a
    hybrid non-Stockholm role pass.
-5. `hybrid` alone is not remote. Hybrid is acceptable only if `location` is
+6. `hybrid` alone is not remote. Hybrid is acceptable only if `location` is
    Stockholm/Solna/near-Stockholm.
-6. Near-Stockholm includes: Stockholm, Solna, Sundbyberg, Kista, Bromma,
+7. Near-Stockholm includes: Stockholm, Solna, Sundbyberg, Kista, Bromma,
    Sollentuna, Danderyd, Täby, Järfälla, Nacka, Huddinge, Lidingö, Älvsjö,
    Årsta, Stockholms län, Botkyrka, Upplands Väsby, Södertälje, Haninge,
    Tyresö, Vällingby, Farsta.
-7. Do not do deep skill scoring. Use basic role/framework matching only.
-8. Roles should be IT related. Do not match project management roles for
+8. Do not do deep skill scoring. Use basic role/framework matching only.
+9. Roles should be IT related. Do not match project management roles for
    non-IT projects.
 
 ## Role matching
@@ -247,7 +251,8 @@ Three sections (built by `finalize-listing.py`). Section titles are **bold** in 
 3. Other roles where accessibility is not mentioned
 
 Pipe-separated lines. Verama ids use a `v` prefix; Chas Partner Network ids use a
-`c` prefix. Platform is implied by the assignment link. Title is a Slack link
+`c` prefix; allakonsultuppdrag.se ids use an `a` prefix. Source is implied by
+the assignment link. Title is a Slack link
 (`<url|title>`). Omit client and hours/scope when unknown.
 
 ```text
@@ -278,7 +283,7 @@ generate c19622 Joel english
 
 | Concern | Location |
 |---------|----------|
-| Platform scanners | `scripts/assignment_platforms.py` |
+| Source scanners | `scripts/assignment_platforms.py` |
 | Fetch + dedupe | `scripts/fetch-assignments.py` |
 | Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
