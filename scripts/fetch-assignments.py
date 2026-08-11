@@ -15,27 +15,46 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from assignment_matching import (
-    cross_platform_dedupe,
+    cross_source_dedupe,
     export_consultant_summaries,
     load_consultant_profiles,
     suggest_assignments,
     suggestion_to_dict,
 )
-from assignment_platforms import DEFAULT_PLATFORMS, AssignmentRecord, scan_platforms
+from assignment_platforms import DEFAULT_PLATFORMS, DEFAULT_SOURCES, AssignmentRecord, scan_platforms
 from listing_memory import DEFAULT_MEMORY_PATH, build_memory_payload, load_memory
 
 
-def build_platform_summary(platform_results: list[dict[str, Any]]) -> str:
+def build_source_summary(source_results: list[dict[str, Any]]) -> str:
     parts: list[str] = []
-    for result in platform_results:
-        label = result["platform"]
+    for result in source_results:
+        label = result["source_key"]
         if result["status"] == "ok":
             parts.append(f"{label} ({result['count']})")
         elif result["status"] == "skipped":
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
+
+
+def source_stats(
+    assignments: list[AssignmentRecord],
+    seen_ids_by_source: dict[str, set[str]],
+) -> dict[str, dict[str, Any]]:
+    stats: dict[str, dict[str, Any]] = {}
+    for source_key in DEFAULT_SOURCES:
+        source_assignments = [item for item in assignments if item.source_key == source_key]
+        unique_ids = sorted({item.source_id for item in source_assignments})
+        seen = seen_ids_by_source.get(source_key, set())
+        new_ids = [source_id for source_id in unique_ids if source_id not in seen]
+        stats[source_key] = {
+            "total_visible": len(source_assignments),
+            "total_unique_visible": len(unique_ids),
+            "new_ids": new_ids,
+            "new_count": len(new_ids),
+        }
+    return stats
 
 
 def prepare_candidates(
@@ -47,18 +66,20 @@ def prepare_candidates(
     headless: bool = True,
     with_suggestions: bool = True,
 ) -> dict[str, Any]:
-    seen_keys, _ = load_memory(memory_path)
+    seen_ids_by_source, memory_data = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_ids_by_source=seen_ids_by_source,
+        scan_date=scan_date,
     )
-    deduped_assignments = cross_platform_dedupe(raw_assignments)
+    report_assignments = cross_source_dedupe(raw_assignments)
     new_assignments = [
         assignment
-        for assignment in deduped_assignments
-        if assignment.dedupe_key not in seen_keys
+        for assignment in report_assignments
+        if assignment.source_id not in seen_ids_by_source.get(assignment.source_key, set())
     ]
 
     profiles = load_consultant_profiles()
@@ -75,7 +96,8 @@ def prepare_candidates(
 
     platform_payload = [
         {
-            "platform": result.platform,
+            "source_key": result.source_key,
+            "platform": result.source_key,
             "status": result.status,
             "count": result.count,
             "message": result.message,
@@ -84,9 +106,10 @@ def prepare_candidates(
     ]
 
     memory_update = build_memory_payload(
-        assignments=deduped_assignments,
-        platform_results=platform_results,
+        assignments=raw_assignments,
+        source_results=platform_results,
         scan_date=scan_date,
+        previous_memory=memory_data,
     )
 
     suggested_report = [
@@ -97,21 +120,26 @@ def prepare_candidates(
         "source": "assignment-fetch",
         "scan_date": scan_date.isoformat(),
         "memory_path": str(memory_path),
-        "platforms": [result.platform for result in platform_results],
+        "sources": [result.source_key for result in platform_results],
+        "platforms": [result.source_key for result in platform_results],
+        "source_results": platform_payload,
         "platform_results": platform_payload,
-        "platform_summary": build_platform_summary(platform_payload),
+        "source_summary": build_source_summary(platform_payload),
+        "platform_summary": build_source_summary(platform_payload),
         "consultants": export_consultant_summaries(profiles),
         "stats": {
             "total_visible": len(raw_assignments),
-            "total_unique_visible": len(deduped_assignments),
-            "previously_seen": len(seen_keys),
+            "total_unique_visible": len(report_assignments),
+            "previously_seen": sum(len(ids) for ids in seen_ids_by_source.values()),
             "new_ids": len(new_assignments),
             "expired_new_ids": len(expired),
             "script_suggestions": len(suggested_report),
             "active_consultants": len(profiles),
         },
-        "assignments": [record.to_dict() for record in deduped_assignments],
+        "source_stats": source_stats(raw_assignments, seen_ids_by_source),
+        "assignments": [record.to_dict() for record in report_assignments],
         "new_dedupe_keys": [assignment.dedupe_key for assignment in new_assignments],
+        "new_listing_ids": [assignment.listing_id for assignment in new_assignments],
         "suggestions": suggestions,
         "expired": expired,
         "memory_update": memory_update,

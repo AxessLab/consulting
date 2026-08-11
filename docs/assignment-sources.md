@@ -15,25 +15,31 @@ writes `curated-listing.json`. Dedupe memory: `assignment-listing-seen.json`
 locally, synced via automation Memory entry **`assignment-listing-seen.json`**
 on cloud runs (see `automation-prompts/assignment-listing.md` step 0 and 5).
 
-## Registered platforms
+## Active source registry
 
-Defined in `scripts/assignment_platforms.py` → `PLATFORM_SCANNERS`:
+Defined in `scripts/assignment_platforms.py` → `SOURCE_REGISTRY`:
 
-| Platform | Auth | Notes |
-|----------|------|-------|
-| `allakonsultuppdrag.se` | None | JSON API only |
-| `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
-| `chaspartnernetwork.se` | None | WP REST index + admin-ajax Konsult filter + detail HTML scrape |
-| `magnit-source.magnitglobal.com` | None | Public Azure jobsearch API; Open + IT + Sweden; detail fetch required |
+| Prefix | Source | Auth | Notes |
+|--------|--------|------|-------|
+| `v` | `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API; conditional detail fetch for plausible new rows |
+| `c` | `chaspartnernetwork.se` | None | WP REST index + admin-ajax Konsult filter + detail HTML scrape |
+| `a` | `allakonsultuppdrag.se` | None | JSON API only |
 
-Add new platforms by implementing `scan_<name>()` and registering it in
-`PLATFORM_SCANNERS`.
+Add new active sources by implementing `scan_<name>()`, registering it in
+`PLATFORM_SCANNERS`, and adding a prefix row to `SOURCE_REGISTRY`. Inactive
+ad-hoc scanners may exist in code but are not part of the default Slack listing.
 
 ## Matching
 
 `consultants.yaml` is the consultant source of truth. `assignment_matching.py`
 provides heuristic suggestions only; the automation prompt defines final
 filtering and matching rules.
+
+## Memory shape
+
+`assignment-listing-seen.json` stores a top-level `sources` object. Each source
+entry stores its prefix, bare native `seen_ids`, and visible/unique-visible
+counts. Cloud runs sync the same file through automation Memory.
 
 ## Raw / debug
 
