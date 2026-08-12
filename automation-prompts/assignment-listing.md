@@ -42,19 +42,21 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
-`assignment-listing-seen.json`, and writes:
+This scans the active source registry in `scripts/assignment_platforms.py`
+(`verama.com`, `chaspartnernetwork.se`, then `allakonsultuppdrag.se`), dedupes
+against `assignment-listing-seen.json`, and writes:
 
-- `assignments` — all currently visible unique records (for lookup)
-- `new_dedupe_keys` — ids not posted before
+- `assignments` — currently visible records after cross-source reporting dedupe
+  (for lookup)
+- `new_dedupe_keys` — source ids not seen before for their source
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
-- `memory_update` — draft memory (do not commit until after Slack post)
-- `platform_summary` — for the debug thread
+- `memory_update` — draft unified per-source memory (do not commit until after
+  Slack post)
+- `platform_summary` / per-source stats — for the debug thread
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
-Magnit Source (`magnit-source.magnitglobal.com`) needs no secrets — public Open IT Sweden jobs via the Azure jobsearch API.
 
 ### 2. Curate matches (your main job)
 
@@ -87,7 +89,7 @@ Write `curated-listing.json`:
   ],
   "debug_rejects": [
     {
-      "listing_id": "6830",
+      "listing_id": "a6830",
       "platform": "allakonsultuppdrag.se",
       "title": "GIS Consultant - Project Manager",
       "reason": "location",
@@ -137,8 +139,9 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: a top-level `sources` object keyed by source. Each
+source stores its listing prefix, bare native `seen_ids`, and visible/unique
+counts. Legacy `seen_keys` / `platforms` memory is migrated on seed.
 
 ## Filtering rules
 
