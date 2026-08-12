@@ -454,8 +454,18 @@ UNKNOWN_CLIENT_LABEL = "not stated"
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
     text = f"{assignment.description} {assignment.duration}"
+    scope_range_match = re.search(
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)"
+        r"[^%\n]{0,60}?(\d{1,3})\s*-\s*(\d{1,3})\s*%",
+        text,
+        re.I,
+    )
+    if scope_range_match:
+        return f"{scope_range_match.group(2)}-{scope_range_match.group(3)}%"
+
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)"
+        r"[^%\n]{0,60}?(\d{1,3})\s*%",
         text,
         re.I,
     )
