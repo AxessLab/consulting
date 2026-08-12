@@ -35,7 +35,7 @@ def build_platform_summary(platform_results: list[dict[str, Any]]) -> str:
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def prepare_candidates(
@@ -47,12 +47,14 @@ def prepare_candidates(
     headless: bool = True,
     with_suggestions: bool = True,
 ) -> dict[str, Any]:
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, memory_data = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_keys=seen_keys,
+        scan_date=scan_date,
     )
     deduped_assignments = cross_platform_dedupe(raw_assignments)
     new_assignments = [
@@ -84,14 +86,31 @@ def prepare_candidates(
     ]
 
     memory_update = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        previous_memory=memory_data,
     )
 
     suggested_report = [
         item for item in suggestions if item.get("suggested_section") is not None
     ]
+    visible_by_source: dict[str, int] = {}
+    unique_visible_by_source: dict[str, int] = {}
+    new_ids_by_source: dict[str, int] = {}
+    seen_source_ids: dict[str, set[str]] = {}
+    visible_source_ids: dict[str, set[str]] = {}
+    for key in seen_keys:
+        if ":" not in key:
+            continue
+        source_key, source_id = key.split(":", 1)
+        seen_source_ids.setdefault(source_key, set()).add(source_id)
+    for assignment in raw_assignments:
+        visible_by_source[assignment.platform] = visible_by_source.get(assignment.platform, 0) + 1
+        visible_source_ids.setdefault(assignment.platform, set()).add(assignment.source_id)
+    for source_key, source_ids in visible_source_ids.items():
+        unique_visible_by_source[source_key] = len(source_ids)
+        new_ids_by_source[source_key] = len(source_ids - seen_source_ids.get(source_key, set()))
 
     return {
         "source": "assignment-fetch",
@@ -106,6 +125,9 @@ def prepare_candidates(
             "total_unique_visible": len(deduped_assignments),
             "previously_seen": len(seen_keys),
             "new_ids": len(new_assignments),
+            "total_visible_by_source": visible_by_source,
+            "total_unique_visible_by_source": unique_visible_by_source,
+            "new_ids_by_source": new_ids_by_source,
             "expired_new_ids": len(expired),
             "script_suggestions": len(suggested_report),
             "active_consultants": len(profiles),

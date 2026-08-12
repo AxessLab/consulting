@@ -25,13 +25,15 @@ Practical implications for agents working here:
 - If scripts or dependencies change, update this file and automation prompt
   guidance in `automation-prompts/cv-generation.md` and
   `automation-prompts/assignment-listing.md`.
-- **Assignment listing** runs `python scripts/fetch-assignments.py` to scan all
-  platforms in `scripts/assignment_platforms.py`, then the automation agent
+- **Assignment listing** runs `python scripts/fetch-assignments.py` to scan the
+  active v/c/a source registry in `scripts/assignment_platforms.py`, then the
+  automation agent
   curates matches and runs `scripts/finalize-listing.py` for three-tier Slack
   output. Heuristic hints live in `scripts/assignment_matching.py`; matching
   uses `consultants.yaml`. Dedupe memory: `assignment-listing-seen.json` on disk
   plus automation Memory entry **`assignment-listing-seen.json`** for cloud
-  persistence (`scripts/listing-memory-bridge.py`).
+  persistence (`scripts/listing-memory-bridge.py`), stored as per-source
+  `sources.<source>.seen_ids`.
 
 ## Cursor Automations
 
