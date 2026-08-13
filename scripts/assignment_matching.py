@@ -474,12 +474,16 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         re.I,
     )
     if scope_match:
-        return f"{scope_match.group(2)}%"
+        percent = int(scope_match.group(2))
+        if 0 < percent <= 100:
+            return f"{percent}%"
 
     duration = assignment.duration.strip()
     duration_percent = re.fullmatch(r"(\d{1,3})\s*%", duration)
     if duration_percent:
-        return f"{duration_percent.group(1)}%"
+        percent = int(duration_percent.group(1))
+        if 0 < percent <= 100:
+            return f"{percent}%"
     hours_match = re.search(r"\b(\d{1,2})\s*(?:h/week|hours per week|timmar/vecka)\b", duration, re.I)
     if hours_match:
         return f"{hours_match.group(1)} h/week"
