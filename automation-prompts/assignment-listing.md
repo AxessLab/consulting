@@ -42,11 +42,13 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
-`assignment-listing-seen.json`, and writes:
+This scans the active registry in `scripts/assignment_platforms.py`
+(`verama.com`, `chaspartnernetwork.se`, `allakonsultuppdrag.se`), dedupes
+against `assignment-listing-seen.json`, and writes:
 
-- `assignments` — all currently visible unique records (for lookup)
-- `new_dedupe_keys` — ids not posted before
+- `assignments` — currently visible records after within-source and cross-source
+  dedupe (for lookup)
+- `new_dedupe_keys` — ids new for their source and kept after cross-source dedupe
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
@@ -54,7 +56,9 @@ This scans every platform in `scripts/assignment_platforms.py`, dedupes against
 - `platform_summary` — for the debug thread
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
-Magnit Source (`magnit-source.magnitglobal.com`) needs no secrets — public Open IT Sweden jobs via the Azure jobsearch API.
+Active listing id prefixes are `v` (Verama), `c` (Chas Partner Network), and
+`a` (allakonsultuppdrag). Cross-source duplicate preference is `v`, then `c`,
+then `a`.
 
 ### 2. Curate matches (your main job)
 
@@ -137,8 +141,10 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: top-level `sources`, keyed by source key. Each source
+stores its letter `prefix`, bare `seen_ids`, `total_visible`, and
+`total_unique_visible`. Failed or skipped sources keep their previous `seen_ids`
+for that run.
 
 ## Filtering rules
 
@@ -246,9 +252,10 @@ Three sections (built by `finalize-listing.py`). Section titles are **bold** in 
 2. Other roles mentioning accessibility related terms
 3. Other roles where accessibility is not mentioned
 
-Pipe-separated lines. Verama ids use a `v` prefix; Chas Partner Network ids use a
-`c` prefix. Platform is implied by the assignment link. Title is a Slack link
-(`<url|title>`). Omit client and hours/scope when unknown.
+Pipe-separated lines. Verama ids use a `v` prefix, Chas Partner Network ids use
+a `c` prefix, and allakonsultuppdrag ids use an `a` prefix. Platform is implied
+by the assignment link. Title is a Slack link (`<url|title>`). Omit client and
+hours/scope when unknown.
 
 ```text
 *1. Accessibility specialist related roles*

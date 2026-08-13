@@ -179,6 +179,8 @@ def skill_names(assignment: AssignmentRecord) -> list[str]:
     for skill in assignment.skills:
         if isinstance(skill, dict) and skill.get("name"):
             names.append(normalize_text(str(skill["name"])))
+        elif isinstance(skill, str) and skill.strip():
+            names.append(normalize_text(skill))
     return names
 
 
@@ -209,8 +211,13 @@ def is_active_assignment(assignment: AssignmentRecord, scan_date: date) -> bool:
 
 
 def is_remote(work_mode: str, location: str) -> bool:
-    fields = normalize_text(f"{work_mode} {location}")
-    return any(term in fields for term in ("remote", "distans", "fjarrarbete", "fjärrarbete"))
+    normalized_work_mode = normalize_text(work_mode)
+    normalized_location = normalize_text(location)
+    percent_remote = re.search(r"\b(\d{1,3})\s*%\s*remote\b", normalized_work_mode)
+    if percent_remote and int(percent_remote.group(1)) < 100:
+        return any(term in normalized_location for term in ("remote", "distans", "fjarrarbete"))
+    fields = f"{normalized_work_mode} {normalized_location}"
+    return any(term in fields for term in ("remote", "distans", "fjarrarbete"))
 
 
 def is_hybrid(work_mode: str, location: str) -> bool:
@@ -445,7 +452,7 @@ def match_consultants_for_assignment(
     return section, matched
 
 
-UNKNOWN_HOURS_LABEL = "not stated (probably full time)"
+UNKNOWN_HOURS_LABEL = ""
 UNKNOWN_CLIENT_LABEL = "not stated"
 
 
@@ -459,10 +466,15 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if scope_match:
         return f"{scope_match.group(2)}%"
 
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    duration = assignment.duration.strip()
+    duration_percent = re.fullmatch(r"(\d{1,3})\s*%", duration)
+    if duration_percent:
+        return f"{duration_percent.group(1)}%"
+    hours_match = re.search(r"\b(\d{1,2})\s*(?:h/week|hours per week|timmar/vecka)\b", duration, re.I)
+    if hours_match:
+        return f"{hours_match.group(1)} h/week"
+    if re.search(r"\b(part[- ]time|deltid)\b", text, re.I):
+        return "Part time"
     return UNKNOWN_HOURS_LABEL
 
 
@@ -470,7 +482,6 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
     for pattern in (
         r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
     ):
         match = re.search(pattern, description, re.I)
         if match:
@@ -482,6 +493,9 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
+    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö&.\-\s]{3,80})$", assignment.title)
+    if title_match:
+        return title_match.group(1).strip(" .")
     return UNKNOWN_CLIENT_LABEL
 
 
@@ -514,7 +528,10 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
+        location,
     ]
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
@@ -523,11 +540,10 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     segments.extend(
         [
             assignment.broker,
-            posted_date_label(assignment, scan_date),
             f"Match: {consultants}",
         ]
     )
-    return " | ".join(segments)
+    return " | ".join(segment for segment in segments if segment)
 
 
 def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[AssignmentRecord]:
@@ -535,8 +551,8 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
     by_fingerprint: dict[str, AssignmentRecord] = {}
     platform_rank = {
         "verama.com": 0,
-        "allakonsultuppdrag.se": 1,
-        "chaspartnernetwork.se": 2,
+        "chaspartnernetwork.se": 1,
+        "allakonsultuppdrag.se": 2,
         "magnit-source.magnitglobal.com": 3,
     }
 

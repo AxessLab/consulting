@@ -41,9 +41,9 @@ fit c19622 Joel
 fit Karin Toft
 ```
 
-When the first token after `fit` is a listed assignment id (all digits, `v`
-followed by digits for Verama, or `c` followed by digits for Chas Partner
-Network), the automation uses **listed assignment mode**
+When the first token after `fit` is a listed assignment id (`a` for
+allakonsultuppdrag, `v` for Verama, or `c` for Chas Partner Network, followed by
+digits), the automation uses **listed assignment mode**
 and reads the id and ad link from the parent message. When it is not a listed
 id, the automation uses **pasted ad mode** and reads the assignment requirements
 from the parent message text instead of fetching an online ad.
@@ -73,9 +73,9 @@ generate Karin Toft sv
 The optional language token must be the final token. Supported values are
 `english`, `swedish`, `en`, and `sv`.
 
-When the first token after `generate` is a listed assignment id (all digits, `v`
-followed by digits for Verama, or `c` followed by digits for Chas Partner
-Network), the automation uses **listed assignment mode** and reads the id and ad
+When the first token after `generate` is a listed assignment id (`a` for
+allakonsultuppdrag, `v` for Verama, or `c` for Chas Partner Network, followed by
+digits), the automation uses **listed assignment mode** and reads the id and ad
 link from the parent message. When it is not a listed id, the automation uses
 **pasted ad mode** and reads the assignment requirements from the parent message
 text instead of fetching an online ad.
