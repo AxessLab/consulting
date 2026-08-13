@@ -79,8 +79,12 @@ PM_TITLES = re.compile(
 NON_IT_PM_CONTEXT = re.compile(
     r"\b(socialförvaltning|socialforvaltning|social services|rail|transport|"
     r"automotive|vehicle|marketing|value proposition|sales enablement|"
-    r"organizational change|field support|mechatronic|seat belt|payroll|"
-    r"robotics|security architect|cybersecurity|exposure management|"
+    r"organizational change|field support|mechatronic|seat belt)\b",
+    re.I,
+)
+
+EXCLUDED_PM_CONTEXT = re.compile(
+    r"\b(payroll|robotics|security architect|cybersecurity|exposure management|"
     r"vulnerability)\b",
     re.I,
 )
@@ -365,6 +369,8 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
 
 def matches_pm(text: str) -> bool:
     if not PM_TITLES.search(text):
+        return False
+    if EXCLUDED_PM_CONTEXT.search(text):
         return False
     if NON_IT_PM_CONTEXT.search(text) and not IT_PM_CONTEXT.search(text):
         return False
