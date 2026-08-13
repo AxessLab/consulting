@@ -19,15 +19,15 @@ on cloud runs (see `automation-prompts/assignment-listing.md` step 0 and 5).
 
 Defined in `scripts/assignment_platforms.py` → `PLATFORM_SCANNERS`:
 
-| Platform | Auth | Notes |
-|----------|------|-------|
-| `allakonsultuppdrag.se` | None | JSON API only |
-| `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
-| `chaspartnernetwork.se` | None | WP REST index + admin-ajax Konsult filter + detail HTML scrape |
-| `magnit-source.magnitglobal.com` | None | Public Azure jobsearch API; Open + IT + Sweden; detail fetch required |
+| Prefix | Platform | Auth | Notes |
+|--------|----------|------|-------|
+| `v` | `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API; detail fetch only for new plausible rows |
+| `c` | `chaspartnernetwork.se` | None | WP REST index + admin-ajax Konsult filter + detail HTML scrape |
+| `a` | `allakonsultuppdrag.se` | None | JSON API only |
 
-Add new platforms by implementing `scan_<name>()` and registering it in
-`PLATFORM_SCANNERS`.
+Add new platforms by implementing `scan_<name>()`, registering it in
+`PLATFORM_SCANNERS`, and adding it to the active source prefix registry when it
+should be included in the scheduled listing.
 
 ## Matching
 
