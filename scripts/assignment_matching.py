@@ -79,7 +79,9 @@ PM_TITLES = re.compile(
 NON_IT_PM_CONTEXT = re.compile(
     r"\b(socialförvaltning|socialforvaltning|social services|rail|transport|"
     r"automotive|vehicle|marketing|value proposition|sales enablement|"
-    r"organizational change|field support|mechatronic|seat belt)\b",
+    r"organizational change|field support|mechatronic|seat belt|payroll|"
+    r"robotics|security architect|cybersecurity|exposure management|"
+    r"vulnerability)\b",
     re.I,
 )
 
@@ -339,8 +341,10 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
 
     if re.search(r"\b(ui artist|game art|graphic artist)\b", text):
         pass
-    elif re.search(r"\b(ios|android|mobile developer|software developer)\b", text):
-        if re.search(r"\b(ux|ui designer|product designer|user experience)\b", text, re.I):
+    elif re.search(r"\b(ios|android|mobile developer)\b", text):
+        pass
+    elif re.search(r"\bsoftware developer\b", text):
+        if re.search(r"\b(ux designer|ui designer|product designer)\b", text, re.I):
             categories.add("ux")
     elif re.search(
         r"\b(ux|ui|product designer|user experience|interaction design|"

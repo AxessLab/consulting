@@ -307,8 +307,7 @@ def _collect_named_values(value: Any) -> list[dict[str, str]]:
         for key in ("name", "title", "label", "competenceName"):
             raw = value.get(key)
             if raw:
-                names.append({"name": str(raw)})
-                break
+                return [{"name": str(raw)}]
         for nested in value.values():
             names.extend(_collect_named_values(nested))
     elif isinstance(value, list):
