@@ -459,7 +459,9 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if re.search(r"\b\d{1,3}\s*%", duration):
         match = re.search(r"\b(\d{1,3})\s*%", duration)
         if match:
-            return f"{match.group(1)}%"
+            value = int(match.group(1))
+            if 0 < value <= 100:
+                return f"{value}%"
     if re.search(r"\b(part[- ]?time|deltid)\b", duration, re.I):
         return "Part time"
     hours_match = re.search(r"\b(\d{1,2})\s*(?:h|hours|timmar)\s*/?\s*(?:week|vecka|v)\b", duration, re.I)
@@ -473,7 +475,9 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
         re.I,
     )
     if scope_match:
-        return f"{scope_match.group(2)}%"
+        value = int(scope_match.group(2))
+        if 0 < value <= 100:
+            return f"{value}%"
     if re.search(r"\b(part[- ]?time|deltid)\b", text, re.I):
         return "Part time"
     return UNKNOWN_HOURS_LABEL
