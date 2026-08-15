@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any
 
-from assignment_platforms import AssignmentRecord
+from assignment_platforms import SOURCE_REGISTRY, AssignmentRecord
 from consultant_utils import load_consultants
 
 INHOUSE_A11Y_TEAM = "Inhouse accessibility team"
@@ -179,6 +179,8 @@ def skill_names(assignment: AssignmentRecord) -> list[str]:
     for skill in assignment.skills:
         if isinstance(skill, dict) and skill.get("name"):
             names.append(normalize_text(str(skill["name"])))
+        elif isinstance(skill, str) and skill.strip():
+            names.append(normalize_text(skill))
     return names
 
 
@@ -210,6 +212,9 @@ def is_active_assignment(assignment: AssignmentRecord, scan_date: date) -> bool:
 
 def is_remote(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
+    percent_remote = re.search(r"\b(\d{1,3})\s*%\s*remote\b", fields)
+    if percent_remote and int(percent_remote.group(1)) < 100:
+        fields = fields.replace(percent_remote.group(0), "")
     return any(term in fields for term in ("remote", "distans", "fjarrarbete", "fjärrarbete"))
 
 
@@ -445,24 +450,36 @@ def match_consultants_for_assignment(
     return section, matched
 
 
-UNKNOWN_HOURS_LABEL = "not stated (probably full time)"
-UNKNOWN_CLIENT_LABEL = "not stated"
+UNKNOWN_HOURS_LABEL = ""
+UNKNOWN_CLIENT_LABEL = ""
 
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
-    text = f"{assignment.description} {assignment.duration}"
+    duration = assignment.duration or ""
+    if re.search(r"\b\d{1,3}\s*%", duration):
+        match = re.search(r"\b(\d{1,3})\s*%", duration)
+        if match:
+            value = int(match.group(1))
+            if 0 < value <= 100:
+                return f"{value}%"
+    if re.search(r"\b(part[- ]?time|deltid)\b", duration, re.I):
+        return "Part time"
+    hours_match = re.search(r"\b(\d{1,2})\s*(?:h|hours|timmar)\s*/?\s*(?:week|vecka|v)\b", duration, re.I)
+    if hours_match:
+        return f"{hours_match.group(1)} h/week"
+
+    text = f"{assignment.description} {duration}"
     scope_match = re.search(
         r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
         text,
         re.I,
     )
     if scope_match:
-        return f"{scope_match.group(2)}%"
-
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+        value = int(scope_match.group(2))
+        if 0 < value <= 100:
+            return f"{value}%"
+    if re.search(r"\b(part[- ]?time|deltid)\b", text, re.I):
+        return "Part time"
     return UNKNOWN_HOURS_LABEL
 
 
@@ -470,7 +487,6 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
     for pattern in (
         r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
     ):
         match = re.search(pattern, description, re.I)
         if match:
@@ -482,6 +498,9 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
+    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö]+(?:\s+[A-ZÅÄÖ][A-Za-zÅÄÖåäö]+){0,3})\b", assignment.title)
+    if title_match:
+        return title_match.group(1).strip(" .")
     return UNKNOWN_CLIENT_LABEL
 
 
@@ -514,7 +533,10 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
+        location,
     ]
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
@@ -523,7 +545,6 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     segments.extend(
         [
             assignment.broker,
-            posted_date_label(assignment, scan_date),
             f"Match: {consultants}",
         ]
     )
@@ -531,13 +552,10 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
 
 
 def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[AssignmentRecord]:
-    """Prefer verama.com when the same role appears on multiple platforms."""
+    """Prefer sources by registry rank when the same role appears on multiple sources."""
     by_fingerprint: dict[str, AssignmentRecord] = {}
     platform_rank = {
-        "verama.com": 0,
-        "allakonsultuppdrag.se": 1,
-        "chaspartnernetwork.se": 2,
-        "magnit-source.magnitglobal.com": 3,
+        source_key: int(config["rank"]) for source_key, config in SOURCE_REGISTRY.items()
     }
 
     for assignment in assignments:
