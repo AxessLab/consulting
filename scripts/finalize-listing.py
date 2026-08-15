@@ -38,7 +38,8 @@ def load_curated(path: Path) -> dict[str, Any]:
 def assignment_index(candidates: dict[str, Any]) -> dict[str, AssignmentRecord]:
     index: dict[str, AssignmentRecord] = {}
     for row in candidates.get("assignments", []):
-        record = AssignmentRecord(**row)
+        record_data = {key: value for key, value in row.items() if key != "source_key"}
+        record = AssignmentRecord(**record_data)
         index[record.dedupe_key] = record
         index[f"{record.platform}:{record.listing_id}"] = record
         index[record.listing_id] = record
@@ -95,16 +96,29 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    source_counts = {
+        item.get("platform") or item.get("source_key"): item
+        for item in candidates.get("platform_results", [])
+    }
+    visible_bits = []
+    new_bits = []
+    for source_key, item in source_counts.items():
+        if not source_key:
+            continue
+        visible_bits.append(f"{source_key}: {item.get('count', 0)}")
+        new_bits.append(f"{source_key}: {item.get('new_ids', 0)}")
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
+        "Total visible per source: " + (", ".join(visible_bits) if visible_bits else "(unknown)"),
+        "New ids per source after per-source dedupe: "
+        + (", ".join(new_bits) if new_bits else "(unknown)"),
         (
-            "Visible assignments: "
-            f"{stats.get('total_visible', 0)} "
-            f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
+            "Combined pool: "
+            f"{stats.get('total_visible', 0)} visible "
+            f"({stats.get('total_unique_visible', 0)} after cross-source dedupe)"
         ),
-        f"New ids: {stats.get('new_ids', 0)}",
-        f"Reported matches: {reported_count}",
+        f"Reported matches after cross-source dedupe: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
         "",
         "Close non-matches (sample):",

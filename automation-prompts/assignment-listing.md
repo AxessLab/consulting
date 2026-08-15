@@ -54,7 +54,9 @@ This scans every platform in `scripts/assignment_platforms.py`, dedupes against
 - `platform_summary` — for the debug thread
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
-Magnit Source (`magnit-source.magnitglobal.com`) needs no secrets — public Open IT Sweden jobs via the Azure jobsearch API.
+Active sources are Verama (`v`), Chas Partner Network (`c`), and
+allakonsultuppdrag.se (`a`), scanned in that registry order. Do not scrape
+rendered listing pages when a source provides API JSON.
 
 ### 2. Curate matches (your main job)
 
@@ -137,8 +139,10 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: unified `sources` object. Each source stores its
+listing prefix, bare native `seen_ids`, `total_visible`, and
+`total_unique_visible`. If a source fails or is skipped, preserve its previous
+memory entry for that run.
 
 ## Filtering rules
 
