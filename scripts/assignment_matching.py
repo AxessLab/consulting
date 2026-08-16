@@ -347,7 +347,7 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
     ):
         categories.add("ux")
 
-    if matches_pm(text):
+    if PM_TITLES.search(title_summary) and matches_pm(text):
         categories.add("pm")
 
     if phrase_match(r"\b(arkitekt|architect)\b", text) and not PM_TITLES.search(text):
