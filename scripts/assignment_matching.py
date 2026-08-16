@@ -294,20 +294,24 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
         return {"accessibility_specialist"}
 
     text = combined_text(assignment)
+    title_summary = normalize_text(f"{assignment.title} {assignment.description_summary}")
     skills = skill_names(assignment)
     categories: set[str] = set()
 
+    has_react_or_next = phrase_match(r"\b(react|next\.js|nextjs)\b", text) or any(
+        s in skills for s in ("react", "nextjs")
+    )
+    has_frontend_primary = phrase_match(
+        r"\b(react|next\.js|nextjs|frontend|front-end)\b", title_summary
+    )
     if re.search(
         r"\b(python|\.net|php|vue|c#|embedded|fpga|data engineer|mobile|ios|android|"
         r"solution architect|platform architect)\b",
         text,
     ):
-        if re.search(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text):
+        if has_react_or_next or has_frontend_primary:
             categories.add("react_frontend")
-    elif phrase_match(r"\b(react|next\.js|nextjs|frontend|front-end)\b", text) or (
-        any(s in skills for s in ("react", "nextjs", "frontend"))
-        and phrase_match(r"\b(frontend|front-end|react)\b", text)
-    ):
+    elif has_react_or_next or has_frontend_primary:
         categories.add("react_frontend")
 
     if phrase_match(r"\b(angular|wordpress)\b", text) or any(
@@ -338,7 +342,7 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
     elif re.search(
         r"\b(ux|ui|product designer|user experience|interaction design|"
         r"interaktionsdesign|tjanstedesign|tjänstedesign)\b",
-        text,
+        title_summary,
         re.I,
     ):
         categories.add("ux")
