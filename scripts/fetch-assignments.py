@@ -92,9 +92,13 @@ def prepare_candidates(
             continue
         source_key, source_id = seen_key.split(":", 1)
         seen_ids_by_source.setdefault(source_key, set()).add(source_id)
+    result_source_keys = [result.platform for result in platform_results]
     new_ids_by_source = {
-        source_key: len(ids - seen_ids_by_source.get(source_key, set()))
-        for source_key, ids in visible_ids_by_source.items()
+        source_key: len(
+            visible_ids_by_source.get(source_key, set())
+            - seen_ids_by_source.get(source_key, set())
+        )
+        for source_key in result_source_keys
     }
 
     memory_update = build_memory_payload(
@@ -126,7 +130,8 @@ def prepare_candidates(
                 result.platform: result.count for result in platform_results
             },
             "total_unique_visible_by_source": {
-                source_key: len(ids) for source_key, ids in visible_ids_by_source.items()
+                source_key: len(visible_ids_by_source.get(source_key, set()))
+                for source_key in result_source_keys
             },
             "expired_new_ids": len(expired),
             "script_suggestions": len(suggested_report),
