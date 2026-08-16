@@ -53,8 +53,9 @@ This scans every platform in `scripts/assignment_platforms.py`, dedupes against
 - `memory_update` — draft memory (do not commit until after Slack post)
 - `platform_summary` — for the debug thread
 
-Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
-Magnit Source (`magnit-source.magnitglobal.com`) needs no secrets — public Open IT Sweden jobs via the Azure jobsearch API.
+Active sources are Verama (`v`), Chas Partner Network (`c`), and
+allakonsultuppdrag.se (`a`). Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in
+automation secrets for Verama.
 
 ### 2. Curate matches (your main job)
 
@@ -137,8 +138,9 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: a `sources` object keyed by source, where each source
+stores its listing prefix, bare `seen_ids`, `total_visible`, and
+`total_unique_visible`.
 
 ## Filtering rules
 
@@ -246,9 +248,10 @@ Three sections (built by `finalize-listing.py`). Section titles are **bold** in 
 2. Other roles mentioning accessibility related terms
 3. Other roles where accessibility is not mentioned
 
-Pipe-separated lines. Verama ids use a `v` prefix; Chas Partner Network ids use a
-`c` prefix. Platform is implied by the assignment link. Title is a Slack link
-(`<url|title>`). Omit client and hours/scope when unknown.
+Pipe-separated lines. Verama ids use a `v` prefix, Chas Partner Network ids use
+a `c` prefix, and allakonsultuppdrag.se ids use an `a` prefix. Platform is
+implied by the assignment link. Title is a Slack link (`<url|title>`). Omit
+client and hours/scope when unknown.
 
 ```text
 *1. Accessibility specialist related roles*

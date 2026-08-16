@@ -18,6 +18,12 @@ MAGNIT_BROWSE_BASE = "https://magnit-source.magnitglobal.com"
 MAGNIT_API_BASE = "https://app-openmarketgateway-prod.azurewebsites.net"
 ALLAKONSULT_USER_AGENT = "Mozilla/5.0 (compatible; AssignmentScanner/1.0)"
 SCAN_USER_AGENT = "Mozilla/5.0 (compatible; AxessLabAssignmentScanner/1.0)"
+SOURCE_PREFIXES = {
+    "verama.com": "v",
+    "chaspartnernetwork.se": "c",
+    "allakonsultuppdrag.se": "a",
+    "magnit-source.magnitglobal.com": "m",
+}
 _TAG_RE = re.compile(r"<[^>]+>")
 _WHITESPACE_RE = re.compile(r"\s+")
 _DATE_RANGE_RE = re.compile(
@@ -112,7 +118,7 @@ def scan_allakonsultuppdrag(
                 record = AssignmentRecord(
                     platform=platform,
                     source_id=source_id,
-                    listing_id=source_id,
+                    listing_id=f"{SOURCE_PREFIXES[platform]}{source_id}",
                     title=row.get("title") or "",
                     description=row.get("description") or "",
                     description_summary=row.get("descriptionSummary") or "",
@@ -251,6 +257,7 @@ def scan_verama(
                             title=row.get("title") or "",
                             description_summary=row.get("systemId") or "",
                             published_date=row.get("firstDayOfApplications"),
+                            last_application_date=row.get("lastDayOfApplications"),
                             work_mode=work_mode,
                             location=_verama_location(row.get("city"), row.get("countryCode")),
                             source_url=f"{VERAMA_BASE}/app/job-requests/{source_id}",
@@ -699,7 +706,11 @@ PLATFORM_SCANNERS: dict[str, PlatformScanner] = {
     "magnit-source.magnitglobal.com": scan_magnitsource,
 }
 
-DEFAULT_PLATFORMS = list(PLATFORM_SCANNERS.keys())
+DEFAULT_PLATFORMS = [
+    "verama.com",
+    "chaspartnernetwork.se",
+    "allakonsultuppdrag.se",
+]
 
 
 def scan_platforms(

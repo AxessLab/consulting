@@ -35,7 +35,7 @@ def build_platform_summary(platform_results: list[dict[str, Any]]) -> str:
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def prepare_candidates(
@@ -47,7 +47,7 @@ def prepare_candidates(
     headless: bool = True,
     with_suggestions: bool = True,
 ) -> dict[str, Any]:
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, memory_data = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
@@ -83,10 +83,29 @@ def prepare_candidates(
         for result in platform_results
     ]
 
+    visible_ids_by_source: dict[str, set[str]] = {}
+    for assignment in raw_assignments:
+        visible_ids_by_source.setdefault(assignment.platform, set()).add(assignment.source_id)
+    seen_ids_by_source: dict[str, set[str]] = {}
+    for seen_key in seen_keys:
+        if ":" not in seen_key:
+            continue
+        source_key, source_id = seen_key.split(":", 1)
+        seen_ids_by_source.setdefault(source_key, set()).add(source_id)
+    result_source_keys = [result.platform for result in platform_results]
+    new_ids_by_source = {
+        source_key: len(
+            visible_ids_by_source.get(source_key, set())
+            - seen_ids_by_source.get(source_key, set())
+        )
+        for source_key in result_source_keys
+    }
+
     memory_update = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        previous_memory=memory_data,
     )
 
     suggested_report = [
@@ -106,6 +125,14 @@ def prepare_candidates(
             "total_unique_visible": len(deduped_assignments),
             "previously_seen": len(seen_keys),
             "new_ids": len(new_assignments),
+            "new_ids_by_source": new_ids_by_source,
+            "total_visible_by_source": {
+                result.platform: result.count for result in platform_results
+            },
+            "total_unique_visible_by_source": {
+                source_key: len(visible_ids_by_source.get(source_key, set()))
+                for source_key in result_source_keys
+            },
             "expired_new_ids": len(expired),
             "script_suggestions": len(suggested_report),
             "active_consultants": len(profiles),
