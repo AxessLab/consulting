@@ -461,7 +461,8 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if hours_match:
         return f"{hours_match.group(1)} h/week"
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)"
+        r"[\s\S]{0,80}?(\d{1,3})\s*%",
         text,
         re.I,
     )
