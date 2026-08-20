@@ -1,0 +1,198 @@
+{
+  "consultantSlug": "emilia-michanek",
+  "language": "swedish",
+  "assignmentId": "53826",
+  "assignmentTitle": "Front-End utvecklare med erfarenhet av SDD",
+  "variantId": "frontend-developer",
+  "variantLabel": "Frontend developer",
+  "sourceCv": "cvs/Axessibility_Lab_AB_Emilia_Michanek_Frontend_developer.docx",
+  "contact": {
+    "name": "Marisa Törnros",
+    "email": "marisa@axesslab.com",
+    "phone": "+46 76 571 3150"
+  },
+  "consultantName": "Emilia Michanek",
+  "roleTitle": "Frontend webbutvecklare och tillgänglighetsspecialist",
+  "profileParagraphs": [
+    "Emilia är frontend webbutvecklare med erfarenhet sedan 2019 och arbetar med moderna webbapplikationer i React, TypeScript och Next.js. Hon kombinerar praktisk utveckling med ansvar för kravanalys, kunddialog, planering, testning, driftsättning och löpande förbättring av digitala produkter.",
+    "Hon har en stark specialisering inom digital tillgänglighet och inkluderande lösningar. Emilia har omfattande kunskap om WCAG, EN 301 549, tillgänglig kod, hjälpmedel och användartester, och bygger gränssnitt som fungerar väl för olika användare och tekniska förutsättningar.",
+    "I produktteam har Emilia tagit stort ansvar för att omsätta behov till robusta gränssnitt, hålla nere kodkomplexitet och samarbeta nära produktägare, användarrepresentanter och utvecklare. Hennes erfarenhet omfattar även integrationstunga lösningar med React-frontend, Java/Spring Boot-backend och WebSocket-kommunikation."
+  ],
+  "selectedEvidence": [
+    {
+      "title": "Frontend webbutvecklare · DigiVi",
+      "subtitle": "Feb 2023 – okt 2025",
+      "summary": "Utvecklade ett socialt nätverk för personer med särskilda behov med React, TypeScript, Material UI, SWR och Next.js. Ledde frontendteamets arbete med planering, estimering, kodning, testning, driftsättning, stackunderhåll samt dialog med produktägare och användarrepresentanter.",
+      "skills": [
+        "React",
+        "TypeScript",
+        "Next.js",
+        "Material UI",
+        "SWR",
+        "Scrum"
+      ]
+    },
+    {
+      "title": "Frontend webbutvecklare · DigiJag AB",
+      "subtitle": "Okt 2019 – pågående",
+      "summary": "Bygger och vidareutvecklar en skol- och livsplattform för personer med intellektuella funktionsnedsättningar. Emilia har både förvaltat äldre kodbas och lett en modernisering mot nyare webbtekniker, med minskad kodkomplexitet, snabbare utvecklingscykler och högre grad av tillgänglighet.",
+      "skills": [
+        "TypeScript",
+        "React",
+        "Next.js",
+        "WCAG 2.1",
+        "Vercel",
+        "SWR"
+      ]
+    },
+    {
+      "title": "Frontend webbutvecklare · Kultur i Väst",
+      "subtitle": "Okt 2021 – apr 2023",
+      "summary": "Utvecklade Techformance, en interaktiv teaterapplikation där deltagare kunde påverka händelser på scenen. Lösningen hade React i frontend, Java/Spring Boot i backend och WebSocket-integration mot uppspelningsmjukvara för styrning av ljud och bild.",
+      "skills": [
+        "React",
+        "TypeScript",
+        "Java",
+        "Spring Boot",
+        "WebSockets",
+        "Material UI"
+      ]
+    }
+  ],
+  "competenceChips": [
+    "React.js",
+    "Next.js",
+    "TypeScript",
+    "JavaScript",
+    "Material UI",
+    "SWR",
+    "React Query",
+    "Redux",
+    "REST",
+    "Git",
+    "Linux",
+    "WCAG 2.2",
+    "Tillgänglig kod",
+    "Användartester",
+    "Scrum"
+  ],
+  "projects": [
+    {
+      "title": "Frontend webbutvecklare · DigiVi",
+      "subtitle": "Feb 2023 – okt 2025",
+      "summary": "Utvecklade ett socialt nätverk för personer med särskilda behov. Arbetet bedrevs med React, TypeScript, Material UI, SWR och Next.js och omfattade frontendledning, planering, estimering, kodning, testning, driftsättning, underhåll av teknisk stack samt möten med produktägare och användarrepresentanter.",
+      "skills": [
+        "HTML",
+        "JavaScript",
+        "CSS",
+        "Git",
+        "TypeScript",
+        "SSL/TLS",
+        "Material UI",
+        "Netlify",
+        "Next.js",
+        "Scrum",
+        "SWR"
+      ]
+    },
+    {
+      "title": "Frontend webbutvecklare · DigiJag AB",
+      "subtitle": "Okt 2019 – pågående",
+      "summary": "Bygger en skol- och livsplattform för personer med intellektuella funktionsnedsättningar. Emilia har förvaltat en äldre kodbas och lett en modernisering mot uppdaterade webbtekniker, vilket minskade kodkomplexiteten, kortade utvecklingscyklerna och ökade tillgängligheten.",
+      "skills": [
+        "Testning",
+        "Webbutveckling",
+        "TypeScript",
+        "React.js",
+        "Next.js",
+        "WCAG 2.1",
+        "Vercel",
+        "SWR"
+      ]
+    },
+    {
+      "title": "Frontend webbutvecklare · Kultur i Väst",
+      "subtitle": "Okt 2021 – apr 2023",
+      "summary": "Utvecklade den interaktiva teaterapplikationen Techformance, där deltagare kan påverka vad som händer på scenen. Backend byggdes i Java och Spring Boot, frontend i React och lösningen använde WebSocket-integration mot uppspelningsmjukvara för ljud- och bildstyrning.",
+      "skills": [
+        "HTML",
+        "JavaScript",
+        "CSS",
+        "Git",
+        "TypeScript",
+        "SSL/TLS",
+        "Material UI",
+        "Java",
+        "Spring Boot",
+        "WebSockets"
+      ]
+    },
+    {
+      "title": "Testning av PeerTube · HowlRound theatre commons",
+      "subtitle": "Jun 2025",
+      "summary": "Genomförde användbarhetstestning och tillgänglighetsgranskning av PeerTubes livespelare och livechatt när de bäddas in som iframes på externa webbsidor. Dokumenterade tillgänglighets- och användbarhetsproblem för utvecklarna via deras GitHub-projekt.",
+      "skills": [
+        "Användbarhetstestning",
+        "Tillgänglighetsgranskning",
+        "GitHub",
+        "WCAG"
+      ]
+    },
+    {
+      "title": "Tillgänglighetsspecialist · Dustin",
+      "subtitle": "Sep 2023 – okt 2023",
+      "summary": "Analyserade tillgänglighet och nya lagkrav enligt tillgänglighetsdirektivet. Den externa webbplatsen testades med hjälpmedel och mot standarder som WCAG 2.1 AA och EN 301 549. Resultatet innehöll föreslagna lösningar, prioriteringar, bilder och videor som gjorde det tydligt för mottagarna vad som behövde göras.",
+      "skills": [
+        "Tillgänglighetsgranskning",
+        "Testning",
+        "WCAG 2.1",
+        "EN 301 549"
+      ]
+    },
+    {
+      "title": "Webbutveckling · Begripsam AB",
+      "subtitle": "Mar 2019 – maj 2022",
+      "summary": "Utvecklade en visualisering för projektet Svenskarna med funktionsnedsättning och internet, så att journalister och andra intressenter kunde analysera årlig statistik på djupet. Lösningen byggdes med Angular och Highcharts, interaktiva diagram, filtrering och gruppering samt höga tillgänglighetskrav.",
+      "skills": [
+        "Webbtillgänglighet",
+        "TypeScript",
+        "Highcharts.js",
+        "Angular",
+        "WCAG 2.1"
+      ]
+    }
+  ],
+  "skillLevels": [
+    {
+      "level": "Expert",
+      "skills": "HTML, HTTP, Linux, Nginx."
+    },
+    {
+      "level": "Avancerad",
+      "skills": "Frontendutveckling, React.js, TypeScript, JavaScript, Material UI, Redux, SWR, REST, Git, Scrum, CI/CD, WCAG 2.1/2.2, tillgänglighetstestning, tillgänglig kod och webbutveckling."
+    },
+    {
+      "level": "Hög kompetens",
+      "skills": "Next.js, React Query, CMS, CSS, GitHub, Jest, Vercel, Netlify, Cloudflare, iOS/Android-granskning, skärmläsare, VPAT, rapportskrivning och användbarhetstestning."
+    },
+    {
+      "level": "Medel",
+      "skills": "Backend, Java, Spring Boot, SQL, WebSockets, webbsäkerhet, testledning, Redux Toolkit och Ruby."
+    }
+  ],
+  "certifications": "Certified Professional in Accessibility Core Competencies (CPACC), International Association of Accessibility Professionals (IAAP), 2023. Programmering, Linköpings universitet, 2015–2018.",
+  "languages": [
+    {
+      "language": "Svenska",
+      "proficiency": "Modersmål eller tvåspråkig nivå"
+    },
+    {
+      "language": "Engelska",
+      "proficiency": "Modersmål eller tvåspråkig nivå"
+    },
+    {
+      "language": "Norska",
+      "proficiency": "Professionell arbetsnivå"
+    }
+  ]
+}
