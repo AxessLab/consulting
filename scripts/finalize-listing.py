@@ -95,16 +95,43 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    source_counts: dict[str, str] = {}
+    for result in candidates.get("platform_results", []):
+        source_key = result.get("platform", "")
+        if not source_key:
+            continue
+        if result.get("status") == "ok":
+            source_counts[source_key] = str(result.get("count", 0))
+        elif result.get("status") == "skipped":
+            source_counts[source_key] = "skipped"
+        else:
+            source_counts[source_key] = "error"
+    scanned = ", ".join(
+        f"{source_key} ({count})" for source_key, count in source_counts.items()
+    )
+
+    new_by_source = stats.get("new_ids_by_source") or {}
+    total_visible_parts = [
+        f"{source_key}: {count}"
+        for source_key, count in source_counts.items()
+        if count not in {"error", "skipped"}
+    ]
+    new_parts = [
+        f"{source_key}: {new_by_source.get(source_key, 0)}"
+        for source_key in source_counts
+        if source_counts[source_key] not in {"error", "skipped"}
+    ]
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        f"Scanned sources: {scanned or '(unknown)'}",
         f"Scan date: {candidates.get('scan_date', '')}",
-        (
-            "Visible assignments: "
-            f"{stats.get('total_visible', 0)} "
-            f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
-        ),
-        f"New ids: {stats.get('new_ids', 0)}",
+        f"Total visible per source: {', '.join(total_visible_parts) or '(none)'}",
+        f"New ids per source: {', '.join(new_parts) or '(none)'}",
         f"Reported matches: {reported_count}",
+        (
+            "Merged pool: "
+            f"{stats.get('total_visible', 0)} visible, "
+            f"{stats.get('total_unique_visible', 0)} after cross-source dedupe"
+        ),
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
         "",
         "Close non-matches (sample):",

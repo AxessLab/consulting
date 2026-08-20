@@ -54,7 +54,9 @@ This scans every platform in `scripts/assignment_platforms.py`, dedupes against
 - `platform_summary` — for the debug thread
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
-Magnit Source (`magnit-source.magnitglobal.com`) needs no secrets — public Open IT Sweden jobs via the Azure jobsearch API.
+The active source registry is Verama (`v`), Chas Partner Network (`c`), and
+allakonsultuppdrag (`a`), in that preference order for cross-source duplicate
+reporting.
 
 ### 2. Curate matches (your main job)
 
@@ -87,7 +89,7 @@ Write `curated-listing.json`:
   ],
   "debug_rejects": [
     {
-      "listing_id": "6830",
+      "listing_id": "a6830",
       "platform": "allakonsultuppdrag.se",
       "title": "GIS Consultant - Project Manager",
       "reason": "location",
@@ -137,8 +139,9 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: a unified `sources` object. Each source entry stores
+the source prefix, bare native `seen_ids`, `total_visible`, and
+`total_unique_visible`.
 
 ## Filtering rules
 
@@ -246,9 +249,10 @@ Three sections (built by `finalize-listing.py`). Section titles are **bold** in 
 2. Other roles mentioning accessibility related terms
 3. Other roles where accessibility is not mentioned
 
-Pipe-separated lines. Verama ids use a `v` prefix; Chas Partner Network ids use a
-`c` prefix. Platform is implied by the assignment link. Title is a Slack link
-(`<url|title>`). Omit client and hours/scope when unknown.
+Pipe-separated lines. Verama ids use a `v` prefix, Chas Partner Network ids use
+a `c` prefix, and allakonsultuppdrag ids use an `a` prefix. Platform is implied
+by the assignment link. Title is a Slack link (`<url|title>`). Omit client and
+hours/scope when unknown.
 
 ```text
 *1. Accessibility specialist related roles*
@@ -278,7 +282,7 @@ generate c19622 Joel english
 
 | Concern | Location |
 |---------|----------|
-| Platform scanners | `scripts/assignment_platforms.py` |
+| Source scanners and registry | `scripts/assignment_platforms.py` |
 | Fetch + dedupe | `scripts/fetch-assignments.py` |
 | Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
