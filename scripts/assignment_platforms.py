@@ -90,6 +90,50 @@ def _allakonsult_session() -> requests.Session:
     return session
 
 
+def _allakonsult_clean_location(location: str, description: str) -> str:
+    location = (location or "").strip()
+    location = re.split(r"Typ av jobb|Referensnummer", location, maxsplit=1)[0].strip(" :")
+    if location and location.lower() not in {"unknown", "<"}:
+        return location
+
+    patterns = (
+        r"Plats\s*:?\s*([^.\n]{2,80}?)(?:Typ av jobb|Distansarbete|Uppdragsperiod|Ansökningstiden|$)",
+        r"Location\s*;\s*([^.\n]{2,80}?)(?:\*\*|Target rate|Start|$)",
+        r"\b(Sweden,\s*Stockholm(?: Metropolitan Area)?(?:\s*•\s*Hybrid)?)\b",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, description or "", re.I)
+        if not match:
+            continue
+        candidate = _WHITESPACE_RE.sub(" ", match.group(1)).strip(" :;-")
+        if candidate and candidate.lower() not in {"unknown", "<"}:
+            return candidate
+    return ""
+
+
+def _allakonsult_clean_work_mode(work_mode: str, location: str, description: str) -> str:
+    work_mode = (work_mode or "").strip()
+    if work_mode.lower() in {"unknown", "<"}:
+        work_mode = ""
+    if work_mode:
+        return work_mode
+
+    text = f"{location} {description or ''}"
+    remote_match = re.search(r"Distansarbete\s*(\d{1,3})\s*%", text, re.I)
+    if remote_match:
+        value = int(remote_match.group(1))
+        if value >= 100:
+            return "remote"
+        if value > 0:
+            return f"hybrid, {value}% remote"
+        return "on-site"
+    if re.search(r"\b(Distans|Remote)\b", location, re.I):
+        return "remote"
+    if re.search(r"\bHybrid\b", location, re.I):
+        return "hybrid"
+    return ""
+
+
 def scan_allakonsultuppdrag(
     *,
     page_size: int = 100,
@@ -117,20 +161,27 @@ def scan_allakonsultuppdrag(
 
             for row in payload.get("data") or []:
                 source_id = str(row["id"])
+                description = row.get("description") or ""
+                location = _allakonsult_clean_location(row.get("location") or "", description)
+                work_mode = _allakonsult_clean_work_mode(
+                    row.get("workMode") or "",
+                    location,
+                    description,
+                )
                 record = AssignmentRecord(
                     platform=platform,
                     source_id=source_id,
                     listing_id=f"a{source_id}",
                     title=row.get("title") or "",
-                    description=row.get("description") or "",
+                    description=description,
                     description_summary=row.get("descriptionSummary") or "",
                     published_date=row.get("publishedDate"),
                     last_application_date=row.get("lastApplicationDate"),
                     start_date=row.get("startDate"),
                     end_date=row.get("endDate"),
                     duration=row.get("duration") or "",
-                    work_mode=row.get("workMode") or "",
-                    location=row.get("location") or "",
+                    work_mode=work_mode,
+                    location=location,
                     source_url=row.get("sourceUrl") or f"{ALLAKONSULT_BASE}/",
                     broker=row.get("broker") or "",
                     skills=row.get("skills") or [],
