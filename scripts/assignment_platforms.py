@@ -100,6 +100,7 @@ def _allakonsult_clean_location(location: str, description: str) -> str:
         r"Plats\s*:?\s*([^.\n]{2,80}?)(?:Typ av jobb|Distansarbete|Uppdragsperiod|Ansökningstiden|$)",
         r"Location\s*;\s*([^.\n]{2,80}?)(?:\*\*|Target rate|Start|$)",
         r"\b(Sweden,\s*Stockholm(?: Metropolitan Area)?(?:\s*•\s*Hybrid)?)\b",
+        r"\buppdrag i\s+(Stockholm|Solna|Sundbyberg|Göteborg|Gothenburg|Goteborg)\b",
     )
     for pattern in patterns:
         match = re.search(pattern, description or "", re.I)
