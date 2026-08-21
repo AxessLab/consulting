@@ -15,19 +15,18 @@ writes `curated-listing.json`. Dedupe memory: `assignment-listing-seen.json`
 locally, synced via automation Memory entry **`assignment-listing-seen.json`**
 on cloud runs (see `automation-prompts/assignment-listing.md` step 0 and 5).
 
-## Registered platforms
+## Active sources
 
-Defined in `scripts/assignment_platforms.py` → `PLATFORM_SCANNERS`:
+Defined by `ACTIVE_SOURCE_ORDER` in `scripts/assignment_platforms.py`:
 
-| Platform | Auth | Notes |
-|----------|------|-------|
-| `allakonsultuppdrag.se` | None | JSON API only |
-| `verama.com` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
-| `chaspartnernetwork.se` | None | WP REST index + admin-ajax Konsult filter + detail HTML scrape |
-| `magnit-source.magnitglobal.com` | None | Public Azure jobsearch API; Open + IT + Sweden; detail fetch required |
+| Source | Prefix | Auth | Notes |
+|--------|--------|------|-------|
+| `verama.com` | `v` | `VERAMA_EMAIL`, `VERAMA_PASSWORD` | Playwright login + REST API |
+| `chaspartnernetwork.se` | `c` | None | WP REST index + admin-ajax Konsult filter + detail HTML scrape |
+| `allakonsultuppdrag.se` | `a` | None | JSON API only |
 
-Add new platforms by implementing `scan_<name>()` and registering it in
-`PLATFORM_SCANNERS`.
+Add new sources by implementing `scan_<name>()`, assigning an unused prefix, and
+adding the source to `ACTIVE_SOURCE_ORDER`.
 
 ## Matching
 
