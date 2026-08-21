@@ -27,14 +27,13 @@ Each source has a single-letter **listing prefix**. The Slack/fit/generate id is
 
 | Prefix | Source key | Memory `seen_ids` | Status |
 |--------|------------|-------------------|--------|
-| `a` | `allakonsultuppdrag.se` | bare numeric id | active |
 | `v` | `verama.com` | bare numeric id | active |
 | `c` | `chaspartnernetwork.se` | bare numeric id | active |
-| `m` | `magnit-source.magnitglobal.com` | job GUID | active |
+| `a` | `allakonsultuppdrag.se` | bare numeric id | active |
 
 When adding a source: pick an unused lowercase letter, add a row here, add a `## Source: …` section below, and extend memory `sources` on first run.
 
-**Cross-source duplicate preference** (when title + broker + location clearly match): prefer, in order, `v` (Verama), then `a` (allakonsultuppdrag), then `c` (Chas Partner Network), then `m` (Magnit Source), then other sources by registry order. Still persist every visible `source_id` per source in memory.
+**Cross-source duplicate preference** (when title + broker + location clearly match): prefer, in order, `v` (Verama), then `c` (Chas Partner Network), then `a` (allakonsultuppdrag), then other sources by registry order. Still persist every visible `source_id` per source in memory.
 
 ## Canonical assignment record
 
@@ -85,10 +84,9 @@ Top-level fields:
   "last_scan_at": "2026-06-25T08:00:00Z",
   "scan_date": "2026-06-25",
   "sources": {
-    "allakonsultuppdrag.se": { "prefix": "a", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 },
     "verama.com": { "prefix": "v", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 },
     "chaspartnernetwork.se": { "prefix": "c", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 },
-    "magnit-source.magnitglobal.com": { "prefix": "m", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 }
+    "allakonsultuppdrag.se": { "prefix": "a", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 }
   }
 }
 ```
@@ -290,75 +288,6 @@ REST `content` and `acf` are empty — do not expect JSON detail.
 
 - Treat `Distans` / `fjärrarbete` in `workMode` as remote; `Hybrid` as hybrid; `Ej distans` as on-site.
 - Prefer Python `scripts/fetch-assignments.py` / `assignment_platforms.scan_chaspartnernetwork` when available in the repo checkout; otherwise follow this section manually.
-
----
-
-## Source: magnit-source.magnitglobal.com (`m`)
-
-Public — no login. Browse UI at `https://magnit-source.magnitglobal.com/browse`. List rows lack description and skills, so detail fetch is required for matching.
-
-**API base:** `https://app-openmarketgateway-prod.azurewebsites.net`
-
-**Headers:**
-
-- `User-Agent: Mozilla/5.0 (compatible; AxessLabAssignmentScanner/1.0)`
-- `Accept: application/json`
-- `Content-Type: application/json`
-- `Origin: https://magnit-source.magnitglobal.com`
-
-### List
-
-`POST /api/jobsearch`
-
-Body (Open IT only; page with `continuationToken`):
-
-```json
-{
-  "searchTerm": "",
-  "selectedCategories": ["11"],
-  "selectedStatuses": ["4"],
-  "selectedLocations": [],
-  "pageSize": 20,
-  "sortOption": { "orderBy": "PublishedDate", "direction": "Desc" },
-  "continuationToken": null
-}
-```
-
-- Status `"4"` = Open; category `"11"` = IT & Software Development.
-- Response: `{ totalCount, jobs[], continuationToken }`. Resend the same filters with the prior `continuationToken` until it is null.
-- After each page, keep only jobs whose `location` indicates Sweden (e.g. contains `SWE`).
-
-### Detail (for every Sweden job kept)
-
-`GET /api/jobsearch/{id}/details`
-
-Use for description/skills, dates, hours, and work location type. On detail failure, keep the list stub (title/location/dates) so the id remains visible.
-
-### Field mapping
-
-| Canonical | Native |
-|-----------|--------|
-| `listing_id` | `m` + job GUID |
-| `source_id` | job GUID (string) |
-| `title` | `title` |
-| `description` | strip HTML from `jobSkills` then `jobDescription` (prefix `Client: {company}` when known) |
-| `descriptionSummary` | `Client: {company}` when `company` present |
-| `publishedDate` | `technicalDetails.dateFirstPublished` |
-| `lastApplicationDate` | `requestDetails.submissionDeadline` (fallback list `submissionDeadline`) |
-| `startDate` / `endDate` | `requestDetails.startDate` / `endDate` |
-| `duration` | `requestDetails.hoursPerWeek` as e.g. `40 h/week` |
-| `workMode` | list `workLocationType` or detail `candidateRequirements.workLocationType` |
-| `location` | `location` / `requestDetails.location` |
-| `sourceUrl` | `https://magnit-source.magnitglobal.com/browse/job/{id}` |
-| `broker` | `Magnit Source` |
-| `skills` | `<li>` items from `jobSkills` HTML when present |
-
-### Magnit-specific notes
-
-- `company` is the end client (e.g. SEB); `clientInfo` is Magnit boilerplate — ignore it for client naming.
-- Prefer Python `scripts/fetch-assignments.py` / `assignment_platforms.scan_magnitsource` when available in the repo checkout; otherwise follow this section manually.
-
----
 
 ## Source: (template for new sources)
 
