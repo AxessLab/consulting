@@ -492,7 +492,7 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "denna",
                 "kunden",
                 "client",
-            }:
+            } and not normalize_text(client).startswith(("soker", "söker", "letar")):
                 return client
     title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö&.,\-\s]{3,80})$", assignment.title)
     if title_match:
