@@ -27,14 +27,13 @@ Each source has a single-letter **listing prefix**. The Slack/fit/generate id is
 
 | Prefix | Source key | Memory `seen_ids` | Status |
 |--------|------------|-------------------|--------|
-| `a` | `allakonsultuppdrag.se` | bare numeric id | active |
 | `v` | `verama.com` | bare numeric id | active |
 | `c` | `chaspartnernetwork.se` | bare numeric id | active |
-| `m` | `magnit-source.magnitglobal.com` | job GUID | active |
+| `a` | `allakonsultuppdrag.se` | bare numeric id | active |
 
 When adding a source: pick an unused lowercase letter, add a row here, add a `## Source: …` section below, and extend memory `sources` on first run.
 
-**Cross-source duplicate preference** (when title + broker + location clearly match): prefer, in order, `v` (Verama), then `a` (allakonsultuppdrag), then `c` (Chas Partner Network), then `m` (Magnit Source), then other sources by registry order. Still persist every visible `source_id` per source in memory.
+**Cross-source duplicate preference** (when title + broker + location clearly match): prefer, in order, `v` (Verama), then `c` (Chas Partner Network), then `a` (allakonsultuppdrag), then other sources by registry order. Still persist every visible `source_id` per source in memory.
 
 ## Canonical assignment record
 
