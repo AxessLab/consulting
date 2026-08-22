@@ -18,6 +18,12 @@ MAGNIT_BROWSE_BASE = "https://magnit-source.magnitglobal.com"
 MAGNIT_API_BASE = "https://app-openmarketgateway-prod.azurewebsites.net"
 ALLAKONSULT_USER_AGENT = "Mozilla/5.0 (compatible; AssignmentScanner/1.0)"
 SCAN_USER_AGENT = "Mozilla/5.0 (compatible; AxessLabAssignmentScanner/1.0)"
+SOURCE_REGISTRY: dict[str, dict[str, str]] = {
+    "verama.com": {"prefix": "v"},
+    "chaspartnernetwork.se": {"prefix": "c"},
+    "allakonsultuppdrag.se": {"prefix": "a"},
+}
+SOURCE_ORDER = list(SOURCE_REGISTRY)
 _TAG_RE = re.compile(r"<[^>]+>")
 _WHITESPACE_RE = re.compile(r"\s+")
 _DATE_RANGE_RE = re.compile(
@@ -112,7 +118,7 @@ def scan_allakonsultuppdrag(
                 record = AssignmentRecord(
                     platform=platform,
                     source_id=source_id,
-                    listing_id=source_id,
+                    listing_id=f"a{source_id}",
                     title=row.get("title") or "",
                     description=row.get("description") or "",
                     description_summary=row.get("descriptionSummary") or "",
@@ -158,8 +164,11 @@ def scan_verama(
     *,
     page_size: int = 100,
     headless: bool = True,
+    seen_ids: set[str] | None = None,
+    scan_date: datetime | None = None,
 ) -> tuple[list[AssignmentRecord], PlatformScanResult]:
     platform = "verama.com"
+    seen_ids = seen_ids or set()
 
     try:
         from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
@@ -210,7 +219,168 @@ def scan_verama(
                 raise RuntimeError("Could not capture Verama auth headers after login")
 
             api = context.request
+            def parse_date(value: Any) -> datetime | None:
+                if not value:
+                    return None
+                try:
+                    return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+                except ValueError:
+                    return None
+
+            def title_is_plausible(title: str) -> bool:
+                text = title.lower()
+                outside = re.search(
+                    r"\b(sap|network|nätverk|security operations|soc|hr|payroll|"
+                    r"lön|automation engineer|factory|produktionsteknik|embedded|"
+                    r"fpga|testare|tester|data engineer|cloud engineer|devops)\b",
+                    text,
+                )
+                target = re.search(
+                    r"\b(accessibility|tillgänglighet|tillganglighet|wcag|react|"
+                    r"next|frontend|front-end|angular|wordpress|java|spring|"
+                    r"fullstack|full-stack|ux|ui|designer|projektledare|"
+                    r"project manager|scrum master|agile coach|koordinator|"
+                    r"consultant|konsult|developer|utvecklare)\b",
+                    text,
+                )
+                return bool(target and not outside)
+
+            def location_precheck(record: AssignmentRecord) -> bool:
+                fields = f"{record.work_mode} {record.location}".lower()
+                normalized = (
+                    fields.replace("ä", "a").replace("å", "a").replace("ö", "o")
+                )
+                if any(term in normalized for term in ("remote", "distans", "fjarrarbete")):
+                    return True
+                near = (
+                    "stockholm",
+                    "solna",
+                    "sundbyberg",
+                    "kista",
+                    "bromma",
+                    "sollentuna",
+                    "danderyd",
+                    "taby",
+                    "jarfalla",
+                    "nacka",
+                    "huddinge",
+                    "lidingo",
+                    "alvsjo",
+                    "arsta",
+                    "stockholms lan",
+                    "botkyrka",
+                    "upplands vasby",
+                    "sodertalje",
+                    "haninge",
+                    "tyreso",
+                    "vallingby",
+                    "farsta",
+                )
+                if any(place in normalized for place in near):
+                    return True
+                title = record.title.lower()
+                if re.search(r"\b(frontend|front-end|react|angular|wordpress)\b", title):
+                    return "göteborg" in fields or "goteborg" in normalized or "gothenburg" in normalized
+                return bool(re.search(r"accessibility|tillgänglighet|tillganglighet|wcag", title))
+
+            def should_fetch_detail(record: AssignmentRecord) -> bool:
+                if record.source_id in seen_ids:
+                    return False
+                deadline = parse_date(record.last_application_date)
+                if deadline and scan_date and deadline.date() < scan_date.date():
+                    return False
+                if not title_is_plausible(record.title):
+                    return False
+                if not location_precheck(record):
+                    return False
+                return True
+
+            def first_value(mapping: dict[str, Any], keys: tuple[str, ...]) -> Any:
+                for key in keys:
+                    value = mapping.get(key)
+                    if value not in (None, "", []):
+                        return value
+                return None
+
+            def merge_detail(record: AssignmentRecord, detail: dict[str, Any]) -> None:
+                description = first_value(
+                    detail,
+                    (
+                        "description",
+                        "jobDescription",
+                        "assignmentDescription",
+                        "requestDescription",
+                        "descriptionHtml",
+                    ),
+                )
+                if isinstance(description, str):
+                    record.description = _TAG_RE.sub(" ", html.unescape(description))
+                    record.description = _WHITESPACE_RE.sub(" ", record.description).strip()
+                    if not record.description_summary and record.description:
+                        record.description_summary = record.description[:300]
+
+                skills = first_value(detail, ("skills", "competences", "requirements"))
+                if isinstance(skills, list):
+                    normalized_skills: list[dict[str, Any]] = []
+                    for skill in skills:
+                        if isinstance(skill, dict):
+                            name = first_value(skill, ("name", "title", "label"))
+                            if name:
+                                normalized_skills.append({"name": str(name)})
+                        elif isinstance(skill, str):
+                            normalized_skills.append({"name": skill})
+                    record.skills = normalized_skills
+
+                record.last_application_date = (
+                    first_value(
+                        detail,
+                        (
+                            "lastDayOfApplications",
+                            "lastApplicationDate",
+                            "applicationDeadline",
+                            "deadline",
+                        ),
+                    )
+                    or record.last_application_date
+                )
+                record.start_date = first_value(
+                    detail,
+                    ("firstDayOfAssignment", "assignmentStartDate", "startDate"),
+                )
+                record.end_date = first_value(
+                    detail,
+                    ("lastDayOfAssignment", "assignmentEndDate", "endDate"),
+                )
+                if record.start_date and record.end_date:
+                    record.duration = f"{str(record.start_date)[:10]} - {str(record.end_date)[:10]}"
+                elif first_value(detail, ("duration", "extent", "scope")):
+                    record.duration = str(first_value(detail, ("duration", "extent", "scope")))
+
+            def fetch_detail(record: AssignmentRecord) -> None:
+                for path in (
+                    f"/api/job-requests/v2/{record.source_id}",
+                    f"/api/job-requests/{record.source_id}",
+                ):
+                    detail_response = api.get(
+                        f"{VERAMA_BASE}{path}",
+                        headers={
+                            **auth_headers,
+                            "accept": "application/json, text/plain, */*",
+                            "referer": f"{VERAMA_BASE}/app/job-requests",
+                        },
+                        timeout=60000,
+                    )
+                    if detail_response.status == 200:
+                        merge_detail(record, detail_response.json() or {})
+                        return
+                    if detail_response.status not in (404, 410):
+                        raise RuntimeError(
+                            f"Verama detail API returned {detail_response.status}: "
+                            f"{detail_response.text()[:200]}"
+                        )
+
             page_num = 0
+            by_key: dict[str, AssignmentRecord] = {}
             while True:
                 response = api.get(
                     f"{VERAMA_BASE}/api/job-requests/v2",
@@ -240,29 +410,36 @@ def scan_verama(
                 for row in rows:
                     source_id = str(row["id"])
                     remoteness = row.get("remoteness")
-                    work_mode = (
-                        f"{remoteness}% remote" if remoteness is not None else ""
+                    if remoteness == 100:
+                        work_mode = "remote"
+                    elif remoteness is not None:
+                        work_mode = f"{remoteness}% remote"
+                    else:
+                        work_mode = ""
+                    record = AssignmentRecord(
+                        platform=platform,
+                        source_id=source_id,
+                        listing_id=f"v{source_id}",
+                        title=row.get("title") or "",
+                        description_summary=row.get("systemId") or "",
+                        published_date=row.get("firstDayOfApplications"),
+                        last_application_date=row.get("lastDayOfApplications")
+                        or row.get("lastApplicationDate"),
+                        work_mode=work_mode,
+                        location=_verama_location(row.get("city"), row.get("countryCode")),
+                        source_url=f"{VERAMA_BASE}/app/job-requests/{source_id}",
+                        broker=row.get("originServiceName") or "",
                     )
-                    records.append(
-                        AssignmentRecord(
-                            platform=platform,
-                            source_id=source_id,
-                            listing_id=f"v{source_id}",
-                            title=row.get("title") or "",
-                            description_summary=row.get("systemId") or "",
-                            published_date=row.get("firstDayOfApplications"),
-                            work_mode=work_mode,
-                            location=_verama_location(row.get("city"), row.get("countryCode")),
-                            source_url=f"{VERAMA_BASE}/app/job-requests/{source_id}",
-                            broker=row.get("originServiceName") or "",
-                        )
-                    )
+                    if should_fetch_detail(record):
+                        fetch_detail(record)
+                    by_key[record.dedupe_key] = record
 
                 if payload.get("last") or not rows:
                     break
                 page_num += 1
 
             browser.close()
+            records = list(by_key.values())
 
         return records, PlatformScanResult(platform=platform, status="ok", count=len(records))
     except PlaywrightTimeoutError as exc:
@@ -699,7 +876,7 @@ PLATFORM_SCANNERS: dict[str, PlatformScanner] = {
     "magnit-source.magnitglobal.com": scan_magnitsource,
 }
 
-DEFAULT_PLATFORMS = list(PLATFORM_SCANNERS.keys())
+DEFAULT_PLATFORMS = SOURCE_ORDER
 
 
 def scan_platforms(
@@ -707,6 +884,8 @@ def scan_platforms(
     *,
     max_pages: int | None = None,
     headless: bool = True,
+    seen_ids_by_platform: dict[str, set[str]] | None = None,
+    scan_date: datetime | None = None,
 ) -> tuple[list[AssignmentRecord], list[PlatformScanResult]]:
     assignments: list[AssignmentRecord] = []
     results: list[PlatformScanResult] = []
@@ -741,6 +920,8 @@ def scan_platforms(
                 verama_email,
                 verama_password,
                 headless=headless,
+                seen_ids=(seen_ids_by_platform or {}).get(platform_id, set()),
+                scan_date=scan_date,
             )
         else:
             rows, result = scanner(max_pages=max_pages)
