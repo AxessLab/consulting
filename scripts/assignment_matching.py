@@ -482,6 +482,7 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
     description = f"{assignment.description_summary}\n{assignment.description}"
     for pattern in (
         r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
+        r"(?:Till|För)\s+vår\s+kund\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&.,\-\s]{2,80}?)(?:\s+söker|\s+soker|\s+letar|[﻿.,])",
     ):
         match = re.search(pattern, description, re.I)
         if match:
@@ -493,7 +494,7 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
-    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö&.\-\s]{3,60})$", assignment.title)
+    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö&.,\-\s]{3,80})$", assignment.title)
     if title_match:
         return title_match.group(1).strip(" .")
     return UNKNOWN_CLIENT_LABEL
