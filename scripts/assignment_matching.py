@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any
 
-from assignment_platforms import AssignmentRecord
+from assignment_platforms import ACTIVE_PLATFORM_ORDER, AssignmentRecord
 from consultant_utils import load_consultants
 
 INHOUSE_A11Y_TEAM = "Inhouse accessibility team"
@@ -450,7 +450,17 @@ UNKNOWN_CLIENT_LABEL = "not stated"
 
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
-    text = f"{assignment.description} {assignment.duration}"
+    duration = assignment.duration or ""
+    duration_match = re.search(r"\b(\d{1,3})\s*%", duration)
+    if duration_match:
+        return f"{duration_match.group(1)}%"
+    hours_match = re.search(r"\b(\d{1,3})\s*h(?:ours)?/?(?:week|vecka|v)?\b", duration, re.I)
+    if hours_match:
+        return f"{hours_match.group(1)} h/week"
+    if re.search(r"\b(part[- ]?time|deltid)\b", duration, re.I):
+        return "Part time"
+
+    text = assignment.description or ""
     scope_match = re.search(
         r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
         text,
@@ -458,30 +468,28 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     )
     if scope_match:
         return f"{scope_match.group(2)}%"
-
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    if re.search(r"\b(part[- ]?time|deltid)\b", text, re.I):
+        return "Part time"
     return UNKNOWN_HOURS_LABEL
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
-    for pattern in (
-        r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
-    ):
-        match = re.search(pattern, description, re.I)
-        if match:
-            client = match.group(1).strip(" .")
-            if len(client) > 3 and normalize_text(client) not in {
-                "detta",
-                "denna",
-                "kunden",
-                "client",
-            }:
-                return client
+    match = re.search(r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)", description, re.I)
+    if match:
+        client = match.group(1).strip(" .")
+        if len(client) > 3 and normalize_text(client) not in {
+            "detta",
+            "denna",
+            "kunden",
+            "client",
+        }:
+            return client
+    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+)$", assignment.title)
+    if title_match:
+        client = title_match.group(1).strip(" .")
+        if len(client) > 3:
+            return client
     return UNKNOWN_CLIENT_LABEL
 
 
@@ -511,34 +519,30 @@ def slack_title_link(url: str, title: str) -> str:
 
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
-    location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
     ]
+    if assignment.location:
+        segments.append(assignment.location)
+    if assignment.work_mode:
+        segments.append(assignment.work_mode)
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
     if match.client_label != UNKNOWN_CLIENT_LABEL:
         segments.append(f"Client: {match.client_label}")
-    segments.extend(
-        [
-            assignment.broker,
-            posted_date_label(assignment, scan_date),
-            f"Match: {consultants}",
-        ]
-    )
+    if assignment.broker:
+        segments.append(assignment.broker)
+    segments.append(f"Match: {consultants}")
     return " | ".join(segments)
 
 
 def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[AssignmentRecord]:
-    """Prefer verama.com when the same role appears on multiple platforms."""
+    """Prefer sources in the active registry order for obvious duplicate roles."""
     by_fingerprint: dict[str, AssignmentRecord] = {}
-    platform_rank = {
-        "verama.com": 0,
-        "allakonsultuppdrag.se": 1,
-        "chaspartnernetwork.se": 2,
-        "magnit-source.magnitglobal.com": 3,
-    }
+    platform_rank = {platform: index for index, platform in enumerate(ACTIVE_PLATFORM_ORDER)}
 
     for assignment in assignments:
         fingerprint = normalize_text(
