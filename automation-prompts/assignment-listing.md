@@ -4,7 +4,7 @@ Use this guidance when producing Slack assignment lists for consultant matching.
 
 ## Goal
 
-Post new IT consulting assignments from **all configured platforms** in three
+Post new IT consulting assignments from **all registered sources** in three
 sections, with a debug thread reply.
 
 **Python handles mechanical work** (platform fetch, dedupe, memory, Slack line
@@ -42,7 +42,7 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+This scans every active source in `scripts/assignment_platforms.py`, dedupes against
 `assignment-listing-seen.json`, and writes:
 
 - `assignments` — all currently visible unique records (for lookup)
@@ -50,11 +50,14 @@ This scans every platform in `scripts/assignment_platforms.py`, dedupes against
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
-- `memory_update` — draft memory (do not commit until after Slack post)
-- `platform_summary` — for the debug thread
+- `memory_update` — draft unified source memory (do not commit until after Slack post)
+- `platform_summary` — scanned-source summary for the debug thread
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
-Magnit Source (`magnit-source.magnitglobal.com`) needs no secrets — public Open IT Sweden jobs via the Azure jobsearch API.
+The active registry is Verama (`v`), Chas Partner Network (`c`), and
+allakonsultuppdrag.se (`a`); source-specific logic is limited to authentication,
+fetch URLs, detail decisions, and field mapping into the canonical assignment
+record.
 
 ### 2. Curate matches (your main job)
 
@@ -137,8 +140,10 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: a unified `sources` object. Each active source stores
+its listing prefix, bare native `seen_ids`, `total_visible`, and
+`total_unique_visible`. Legacy `seen_keys`, `platforms`, and single-source
+memory shapes may be imported once, but new writes must use `sources`.
 
 ## Filtering rules
 
