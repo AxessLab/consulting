@@ -42,11 +42,11 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+This scans every active source in `scripts/assignment_platforms.py`, dedupes against
 `assignment-listing-seen.json`, and writes:
 
 - `assignments` — all currently visible unique records (for lookup)
-- `new_dedupe_keys` — ids not posted before
+- `new_dedupe_keys` — source ids not seen before after cross-source reporting dedupe
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
@@ -54,7 +54,9 @@ This scans every platform in `scripts/assignment_platforms.py`, dedupes against
 - `platform_summary` — for the debug thread
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
-Magnit Source (`magnit-source.magnitglobal.com`) needs no secrets — public Open IT Sweden jobs via the Azure jobsearch API.
+The active default sources are Verama, Chas Partner Network, and allakonsultuppdrag.se.
+Magnit Source (`magnit-source.magnitglobal.com`) remains available as an explicit
+scanner for ad hoc runs, but is not part of the default Slack report.
 
 ### 2. Curate matches (your main job)
 
@@ -137,8 +139,10 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: unified `sources` object. Each source key stores its
+letter prefix, bare native `seen_ids`, `total_visible`, and
+`total_unique_visible`. Failed or skipped sources keep their previous source
+state and are not updated for that run.
 
 ## Filtering rules
 
