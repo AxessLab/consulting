@@ -6,7 +6,7 @@ import html
 import os
 import re
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import date, datetime
 from typing import Any, Callable
 
 import requests
@@ -14,10 +14,14 @@ import requests
 ALLAKONSULT_BASE = "https://allakonsultuppdrag.se"
 VERAMA_BASE = "https://app.verama.com"
 CHAS_BASE = "https://chaspartnernetwork.se"
-MAGNIT_BROWSE_BASE = "https://magnit-source.magnitglobal.com"
-MAGNIT_API_BASE = "https://app-openmarketgateway-prod.azurewebsites.net"
 ALLAKONSULT_USER_AGENT = "Mozilla/5.0 (compatible; AssignmentScanner/1.0)"
 SCAN_USER_AGENT = "Mozilla/5.0 (compatible; AxessLabAssignmentScanner/1.0)"
+PREFIX_BY_SOURCE = {
+    "verama.com": "v",
+    "chaspartnernetwork.se": "c",
+    "allakonsultuppdrag.se": "a",
+}
+SOURCE_ORDER = ["verama.com", "chaspartnernetwork.se", "allakonsultuppdrag.se"]
 _TAG_RE = re.compile(r"<[^>]+>")
 _WHITESPACE_RE = re.compile(r"\s+")
 _DATE_RANGE_RE = re.compile(
@@ -59,8 +63,14 @@ class AssignmentRecord:
     def dedupe_key(self) -> str:
         return f"{self.platform}:{self.source_id}"
 
+    @property
+    def source_key(self) -> str:
+        return self.platform
+
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        payload = asdict(self)
+        payload["source_key"] = self.platform
+        return payload
 
 
 @dataclass
@@ -112,7 +122,7 @@ def scan_allakonsultuppdrag(
                 record = AssignmentRecord(
                     platform=platform,
                     source_id=source_id,
-                    listing_id=source_id,
+                    listing_id=f"a{source_id}",
                     title=row.get("title") or "",
                     description=row.get("description") or "",
                     description_summary=row.get("descriptionSummary") or "",
@@ -152,14 +162,196 @@ def _verama_location(city: str | None, country_code: str | None) -> str:
     return city or country_code or ""
 
 
+def _verama_work_mode(remoteness: Any, explicit: str = "") -> str:
+    explicit_normalized = (explicit or "").strip()
+    explicit_lc = explicit_normalized.lower()
+    if any(term in explicit_lc for term in ("distans", "remote", "fjärr", "fjarr")):
+        return explicit_normalized or "Remote"
+    try:
+        percent = int(remoteness)
+    except (TypeError, ValueError):
+        return explicit_normalized
+    if percent >= 100:
+        return "Remote"
+    if percent > 0:
+        return f"Hybrid ({percent}% remote)"
+    return explicit_normalized or "On-site"
+
+
+def _verama_parse_date(value: str | None) -> date | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).date()
+    except ValueError:
+        return None
+
+
+def _verama_title_plausible(title: str) -> bool:
+    text = title.lower()
+    if re.search(
+        r"\b(sap|nätverk|network|security operations|soc|hr|payroll|lön|"
+        r"automation engineer|factory|produktion|inköp|procurement|analyst)\b",
+        text,
+    ) and not re.search(r"\b(ux|ui|react|frontend|front-end|java|accessibility|tillgänglighet|projektledare|scrum)\b", text):
+        return False
+    return bool(
+        re.search(
+            r"\b(ux|ui|designer|react|next|frontend|front-end|angular|wordpress|"
+            r"java|spring|fullstack|full-stack|backend|systemutvecklare|"
+            r"projektledare|project manager|scrum master|agile coach|"
+            r"accessibility|tillgänglighet|wcag|consultant|konsult|developer|utvecklare)\b",
+            text,
+        )
+    )
+
+
+def _verama_a11y_title(title: str) -> bool:
+    return re.search(
+        r"tillgänglighetsgransk|tillganglighetsgransk|tillgänglighetsspecialist|"
+        r"tillganglighetsspecialist|accessibility specialist|wcag specialist",
+        title,
+        re.I,
+    ) is not None
+
+
+def _verama_location_precheck(record: AssignmentRecord) -> bool:
+    fields = f"{record.work_mode} {record.location}".lower()
+    percentage_remote = [int(match) for match in re.findall(r"\b(\d{1,3})\s*%\s*remote\b", fields)]
+    if percentage_remote and any(percent >= 100 for percent in percentage_remote):
+        return True
+    fields_without_partial_remote = re.sub(r"\b\d{1,3}\s*%\s*remote\b", "", fields)
+    if (
+        "remote" in fields_without_partial_remote
+        or "distans" in fields_without_partial_remote
+        or "fjärr" in fields_without_partial_remote
+    ):
+        return True
+    return re.search(
+        r"stockholm|solna|sundbyberg|kista|bromma|sollentuna|danderyd|täby|taby|"
+        r"järfälla|jarfalla|nacka|huddinge|lidingö|lidingo|älvsjö|alvsjo|"
+        r"årsta|arsta|stockholms län|stockholms lan|göteborg|goteborg|gothenburg",
+        record.location,
+        re.I,
+    ) is not None
+
+
+def _verama_should_fetch_detail(
+    record: AssignmentRecord,
+    *,
+    seen_ids: set[str],
+    scan_date: date | None,
+) -> bool:
+    if record.source_id in seen_ids:
+        return False
+    deadline = _verama_parse_date(record.last_application_date)
+    if scan_date and deadline and deadline < scan_date:
+        return False
+    if record.last_application_date is None:
+        return True
+    if not _verama_title_plausible(record.title):
+        return False
+    if not _verama_location_precheck(record) and not _verama_a11y_title(record.title):
+        return False
+    return True
+
+
+def _nested_value(payload: Any, names: set[str]) -> Any:
+    if isinstance(payload, dict):
+        for key, value in payload.items():
+            if key in names and value not in (None, ""):
+                return value
+        for value in payload.values():
+            found = _nested_value(value, names)
+            if found not in (None, ""):
+                return found
+    if isinstance(payload, list):
+        for item in payload:
+            found = _nested_value(item, names)
+            if found not in (None, ""):
+                return found
+    return None
+
+
+def _normalize_verama_skills(value: Any) -> list[dict[str, Any]]:
+    skills: list[dict[str, Any]] = []
+    if not isinstance(value, list):
+        return skills
+    for item in value:
+        if isinstance(item, dict):
+            name = item.get("name") or item.get("title") or item.get("label")
+        else:
+            name = str(item)
+        if name:
+            skills.append({"name": str(name)})
+    return skills
+
+
+def _merge_verama_detail(record: AssignmentRecord, detail: dict[str, Any]) -> AssignmentRecord:
+    description = _nested_value(
+        detail,
+        {
+            "description",
+            "jobDescription",
+            "assignmentDescription",
+            "requestDescription",
+            "text",
+        },
+    )
+    if isinstance(description, str):
+        clean_description = _WHITESPACE_RE.sub(" ", _TAG_RE.sub(" ", html.unescape(description))).strip()
+        record.description = clean_description
+        if not record.description_summary:
+            record.description_summary = clean_description[:300]
+
+    last_application = _nested_value(
+        detail,
+        {"lastDayOfApplications", "lastApplicationDate", "applicationDeadline", "deadline"},
+    )
+    if last_application and not record.last_application_date:
+        record.last_application_date = str(last_application)
+
+    start_date = _nested_value(detail, {"firstDayOfAssignment", "startDate", "assignmentStartDate"})
+    end_date = _nested_value(detail, {"lastDayOfAssignment", "endDate", "assignmentEndDate"})
+    if start_date:
+        record.start_date = str(start_date)
+    if end_date:
+        record.end_date = str(end_date)
+    if record.start_date and record.end_date:
+        record.duration = f"{record.start_date[:10]} - {record.end_date[:10]}"
+
+    explicit_work_mode = _nested_value(detail, {"workMode", "remoteDescription", "placeOfWork"})
+    if isinstance(explicit_work_mode, str) and explicit_work_mode.strip():
+        record.work_mode = _verama_work_mode(None, explicit_work_mode)
+
+    skills = _normalize_verama_skills(
+        _nested_value(detail, {"skills", "competences", "requiredSkills", "requestedSkills"})
+    )
+    if skills:
+        record.skills = skills
+    return record
+
+
+def _verama_get_json(api: Any, url: str, headers: dict[str, str]) -> dict[str, Any] | None:
+    response = api.get(url, headers=headers, timeout=60000)
+    if response.status == 404:
+        return None
+    if response.status != 200:
+        raise RuntimeError(f"Verama API returned {response.status}: {response.text()[:200]}")
+    return response.json()
+
+
 def scan_verama(
     email: str,
     password: str,
     *,
     page_size: int = 100,
     headless: bool = True,
+    seen_ids: set[str] | None = None,
+    scan_date: date | None = None,
 ) -> tuple[list[AssignmentRecord], PlatformScanResult]:
     platform = "verama.com"
+    seen_ids = seen_ids or set()
 
     try:
         from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
@@ -173,6 +365,7 @@ def scan_verama(
         )
 
     records: list[AssignmentRecord] = []
+    by_source_id: dict[str, AssignmentRecord] = {}
 
     try:
         with sync_playwright() as playwright:
@@ -240,28 +433,52 @@ def scan_verama(
                 for row in rows:
                     source_id = str(row["id"])
                     remoteness = row.get("remoteness")
-                    work_mode = (
-                        f"{remoteness}% remote" if remoteness is not None else ""
+                    record = AssignmentRecord(
+                        platform=platform,
+                        source_id=source_id,
+                        listing_id=f"v{source_id}",
+                        title=row.get("title") or "",
+                        description_summary="",
+                        published_date=row.get("firstDayOfApplications"),
+                        last_application_date=row.get("lastDayOfApplications"),
+                        work_mode=_verama_work_mode(remoteness),
+                        location=_verama_location(row.get("city"), row.get("countryCode")),
+                        source_url=f"{VERAMA_BASE}/app/job-requests/{source_id}",
+                        broker=row.get("originServiceName") or "",
                     )
-                    records.append(
-                        AssignmentRecord(
-                            platform=platform,
-                            source_id=source_id,
-                            listing_id=f"v{source_id}",
-                            title=row.get("title") or "",
-                            description_summary=row.get("systemId") or "",
-                            published_date=row.get("firstDayOfApplications"),
-                            work_mode=work_mode,
-                            location=_verama_location(row.get("city"), row.get("countryCode")),
-                            source_url=f"{VERAMA_BASE}/app/job-requests/{source_id}",
-                            broker=row.get("originServiceName") or "",
-                        )
-                    )
+                    by_source_id[source_id] = record
 
                 if payload.get("last") or not rows:
                     break
                 page_num += 1
 
+            detail_headers = {
+                **auth_headers,
+                "accept": "application/json, text/plain, */*",
+                "referer": f"{VERAMA_BASE}/app/job-requests",
+            }
+            for record in by_source_id.values():
+                if not _verama_should_fetch_detail(
+                    record,
+                    seen_ids=seen_ids,
+                    scan_date=scan_date,
+                ):
+                    continue
+                detail = _verama_get_json(
+                    api,
+                    f"{VERAMA_BASE}/api/job-requests/v2/{record.source_id}",
+                    detail_headers,
+                )
+                if detail is None:
+                    detail = _verama_get_json(
+                        api,
+                        f"{VERAMA_BASE}/api/job-requests/{record.source_id}",
+                        detail_headers,
+                    )
+                if detail:
+                    _merge_verama_detail(record, detail)
+
+            records = list(by_source_id.values())
             browser.close()
 
         return records, PlatformScanResult(platform=platform, status="ok", count=len(records))
@@ -487,219 +704,15 @@ def scan_chaspartnernetwork(
         )
 
 
-def _magnit_session() -> requests.Session:
-    session = requests.Session()
-    session.headers.update(
-        {
-            "User-Agent": SCAN_USER_AGENT,
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "Origin": MAGNIT_BROWSE_BASE,
-        }
-    )
-    return session
-
-
-def _magnit_strip_html(value: str) -> str:
-    text = _TAG_RE.sub(" ", html.unescape(value or ""))
-    return _WHITESPACE_RE.sub(" ", text).strip()
-
-
-def _magnit_date(value: Any) -> str | None:
-    if not value:
-        return None
-    text = str(value).strip()
-    return text[:10] if text else None
-
-
-def _magnit_is_sweden(location: str) -> bool:
-    loc = (location or "").upper()
-    return "SWE" in loc or loc.endswith(", SE") or loc == "SE"
-
-
-def _magnit_parse_skills_html(skills_html: str) -> list[dict[str, Any]]:
-    skills: list[dict[str, Any]] = []
-    for raw in _LI_ITEM_RE.findall(skills_html or ""):
-        name = _magnit_strip_html(raw)
-        if name:
-            skills.append({"name": name})
-    return skills
-
-
-def scan_magnitsource(
-    *,
-    page_size: int = 20,
-    max_pages: int | None = None,
-) -> tuple[list[AssignmentRecord], PlatformScanResult]:
-    """Scan Magnit Source open IT jobs in Sweden via the public jobsearch API."""
-    platform = "magnit-source.magnitglobal.com"
-    session = _magnit_session()
-    records: list[AssignmentRecord] = []
-    by_key: dict[str, AssignmentRecord] = {}
-
-    try:
-        continuation_token: Any = None
-        page = 1
-        while True:
-            if max_pages is not None and page > max_pages:
-                break
-
-            payload: dict[str, Any] = {
-                "searchTerm": "",
-                "selectedCategories": ["11"],
-                "selectedhoursPerWeeks": [],
-                "selectedLocationTypes": [],
-                "selectedExperiences": [],
-                "selectedStartDates": [],
-                "selectedContractDurations": [],
-                "selectedLocations": [],
-                "selectedStatuses": ["4"],
-                "tenant": None,
-                "pageSize": page_size,
-                "sortOption": {"orderBy": "PublishedDate", "direction": "Desc"},
-                "continuationToken": continuation_token,
-            }
-            response = session.post(
-                f"{MAGNIT_API_BASE}/api/jobsearch",
-                json=payload,
-                timeout=60,
-            )
-            response.raise_for_status()
-            body = response.json() or {}
-            jobs = body.get("jobs") or []
-
-            for row in jobs:
-                location = row.get("location") or ""
-                if not _magnit_is_sweden(location):
-                    continue
-
-                source_id = str(row.get("id") or "").strip()
-                if not source_id:
-                    continue
-
-                title = row.get("title") or ""
-                company = (row.get("company") or "").strip()
-                source_url = f"{MAGNIT_BROWSE_BASE}/browse/job/{source_id}"
-                work_mode = row.get("workLocationType") or ""
-                start_date = _magnit_date(row.get("startDate"))
-                last_application_date = _magnit_date(row.get("submissionDeadline"))
-                published_date = None
-                end_date = None
-                duration = ""
-                description = ""
-                description_summary = f"Client: {company}" if company else ""
-                skills: list[dict[str, Any]] = []
-
-                try:
-                    detail_resp = session.get(
-                        f"{MAGNIT_API_BASE}/api/jobsearch/{source_id}/details",
-                        timeout=60,
-                    )
-                    detail_resp.raise_for_status()
-                    detail = detail_resp.json() or {}
-                    request_details = detail.get("requestDetails") or {}
-                    candidate_reqs = detail.get("candidateRequirements") or {}
-                    technical = detail.get("technicalDetails") or {}
-
-                    if not title:
-                        title = detail.get("title") or title
-                    if not company:
-                        company = (detail.get("company") or "").strip()
-                        if company:
-                            description_summary = f"Client: {company}"
-
-                    location = (
-                        request_details.get("location")
-                        or detail.get("location")
-                        or location
-                    )
-                    work_mode = (
-                        candidate_reqs.get("workLocationType")
-                        or detail.get("workLocationType")
-                        or work_mode
-                        or ""
-                    )
-                    start_date = _magnit_date(
-                        request_details.get("startDate")
-                    ) or start_date
-                    end_date = _magnit_date(request_details.get("endDate"))
-                    last_application_date = _magnit_date(
-                        request_details.get("submissionDeadline")
-                    ) or last_application_date
-                    published_date = _magnit_date(
-                        technical.get("dateFirstPublished")
-                    )
-                    hours = request_details.get("hoursPerWeek")
-                    if hours is not None and str(hours).strip():
-                        duration = f"{hours} h/week"
-
-                    skills_html = detail.get("jobSkills") or ""
-                    desc_html = detail.get("jobDescription") or ""
-                    skills = _magnit_parse_skills_html(skills_html)
-                    skills_text = _magnit_strip_html(skills_html)
-                    desc_text = _magnit_strip_html(desc_html)
-                    parts: list[str] = []
-                    if description_summary:
-                        parts.append(description_summary)
-                    if skills_text:
-                        parts.append(skills_text)
-                    if desc_text:
-                        parts.append(desc_text)
-                    description = "\n\n".join(parts)
-                except Exception:  # noqa: BLE001
-                    # Keep the list stub so the listing still sees the assignment.
-                    if description_summary:
-                        description = description_summary
-
-                record = AssignmentRecord(
-                    platform=platform,
-                    source_id=source_id,
-                    listing_id=f"m{source_id}",
-                    title=title,
-                    description=description,
-                    description_summary=description_summary,
-                    published_date=published_date,
-                    last_application_date=last_application_date,
-                    start_date=start_date,
-                    end_date=end_date,
-                    duration=duration,
-                    work_mode=work_mode if isinstance(work_mode, str) else "",
-                    location=location,
-                    source_url=source_url,
-                    broker="Magnit Source",
-                    skills=skills,
-                )
-                by_key[record.dedupe_key] = record
-
-            continuation_token = body.get("continuationToken")
-            if not continuation_token or not jobs:
-                break
-            page += 1
-
-        records = list(by_key.values())
-        return records, PlatformScanResult(
-            platform=platform, status="ok", count=len(records)
-        )
-    except Exception as exc:  # noqa: BLE001
-        records = list(by_key.values())
-        return records, PlatformScanResult(
-            platform=platform,
-            status="error",
-            count=len(records),
-            message=str(exc),
-        )
-
-
 PlatformScanner = Callable[..., tuple[list[AssignmentRecord], PlatformScanResult]]
 
 PLATFORM_SCANNERS: dict[str, PlatformScanner] = {
     "allakonsultuppdrag.se": scan_allakonsultuppdrag,
     "verama.com": scan_verama,
     "chaspartnernetwork.se": scan_chaspartnernetwork,
-    "magnit-source.magnitglobal.com": scan_magnitsource,
 }
 
-DEFAULT_PLATFORMS = list(PLATFORM_SCANNERS.keys())
+DEFAULT_PLATFORMS = SOURCE_ORDER
 
 
 def scan_platforms(
@@ -707,6 +720,8 @@ def scan_platforms(
     *,
     max_pages: int | None = None,
     headless: bool = True,
+    seen_ids_by_platform: dict[str, set[str]] | None = None,
+    scan_date: date | None = None,
 ) -> tuple[list[AssignmentRecord], list[PlatformScanResult]]:
     assignments: list[AssignmentRecord] = []
     results: list[PlatformScanResult] = []
@@ -741,6 +756,8 @@ def scan_platforms(
                 verama_email,
                 verama_password,
                 headless=headless,
+                seen_ids=(seen_ids_by_platform or {}).get(platform_id, set()),
+                scan_date=scan_date,
             )
         else:
             rows, result = scanner(max_pages=max_pages)

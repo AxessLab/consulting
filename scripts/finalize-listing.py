@@ -38,7 +38,9 @@ def load_curated(path: Path) -> dict[str, Any]:
 def assignment_index(candidates: dict[str, Any]) -> dict[str, AssignmentRecord]:
     index: dict[str, AssignmentRecord] = {}
     for row in candidates.get("assignments", []):
-        record = AssignmentRecord(**row)
+        payload = dict(row)
+        payload.pop("source_key", None)
+        record = AssignmentRecord(**payload)
         index[record.dedupe_key] = record
         index[f"{record.platform}:{record.listing_id}"] = record
         index[record.listing_id] = record
@@ -95,14 +97,21 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    source_stats = candidates.get("source_stats") or []
+    visible_parts = [
+        f"{item.get('source')}: visible {item.get('total_visible', 0)}, "
+        f"unique {item.get('total_unique_visible', 0)}, new {item.get('new_ids', 0)}"
+        for item in source_stats
+    ]
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
         (
             "Visible assignments: "
             f"{stats.get('total_visible', 0)} "
             f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
         ),
+        "Per-source totals: " + "; ".join(visible_parts) if visible_parts else "Per-source totals: (unknown)",
         f"New ids: {stats.get('new_ids', 0)}",
         f"Reported matches: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
