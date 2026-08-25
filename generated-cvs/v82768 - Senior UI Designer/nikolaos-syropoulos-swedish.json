@@ -1,0 +1,199 @@
+{
+  "consultantSlug": "nikolaos-syropoulos",
+  "language": "swedish",
+  "assignmentId": "v82768",
+  "assignmentTitle": "Senior UI Designer",
+  "variantId": "senior-ux-ui-designer",
+  "variantLabel": "Senior UX/UI Designer",
+  "sourceCv": "cvs/Axessibility_Lab_AB_Nikolaos_Syropoulos_Senior_UXUI_Designer__Senterprise.docx",
+  "contact": {
+    "name": "Nikolaos Syropoulos",
+    "email": "nicko@axesslab.com",
+    "phone": "0736222678"
+  },
+  "consultantName": "Nikolaos Syropoulos",
+  "roleTitle": "Senior UX/UI-designer och produktdesigner",
+  "profileParagraphs": [
+    "Nikolaos \"Nicko\" Syropoulos är senior produktdesigner och UX/UI-designer med mer än tolv års erfarenhet av att designa digitala produkter för webb och mobil. Han har stark erfarenhet av användarresearch, informationsarkitektur, interaktionsdesign, användningstester, prototyper och designsystem.",
+    "Han har arbetat i tvärfunktionella produktteam hos organisationer som Zalando, Nordea och CSN, i nära samarbete med produktägare, utvecklare, researchers och intressenter. I sitt arbete kombinerar han visuellt UI-hantverk, systemtänkande och genomförbara designspecifikationer med tillgänglighet och inkluderande design.",
+    "Nicko är CPACC-certifierad tillgänglighetsspecialist och har omfattande erfarenhet av att integrera WCAG, kognitiv tillgänglighet och inkluderande design i produktdesign, designsystem och skalbara digitala tjänster."
+  ],
+  "selectedEvidence": [
+    {
+      "title": "Senior Product Designer och Accessibility Specialist · Zalando",
+      "subtitle": "Aug 2023 – Dec 2025 · Berlin",
+      "summary": "Arbetade med omdesign och vidareutveckling av Zalando Design System, inklusive komponentdesign, designtokens, variabler i Figma och tillgänglighetsförbättringar. Som Design Captain för Open Houses kopplade han samman designers och utvecklare i designgranskningar på skala och tränade fler än 100 designers i tillgänglig design."
+    },
+    {
+      "title": "Senior Product Designer · NKC / Hjärnkraft",
+      "subtitle": "Jan 2022 – Dec 2024 · Stockholm",
+      "summary": "Designade en digital kunskapsplattform om förvärvad hjärnskada med fokus på tydlig informationsarkitektur, varumärkesidentitet, visuell design och en tillgänglig högupplöst Figma-prototyp. Samarbetade med webbutvecklingsteamet för att översätta designspecifikationer till en responsiv plattform."
+    },
+    {
+      "title": "Senior Product Designer · SBAB Bank AB",
+      "subtitle": "Mar 2022 – May 2022 · Stockholm",
+      "summary": "Förfinade användargränssnittet i Respekttrappan och anpassade produkten till SBAB:s nya designsystem. Arbetet omfattade layout, komponenter, interaktionsmönster, visuell konsekvens och detaljerade UI-specifikationer i Figma för utvecklingsteamet."
+    }
+  ],
+  "competenceChips": [
+    "Figma",
+    "UI Design",
+    "UX/UI",
+    "Produktdesign",
+    "Designsystem",
+    "Designtokens",
+    "Högupplösta prototyper",
+    "Interaktionsdesign",
+    "Informationsarkitektur",
+    "Användarresearch",
+    "Användningstester",
+    "Tillgänglighetsdesign",
+    "WCAG 2.2 AA",
+    "Kognitiv tillgänglighet",
+    "Designgranskning",
+    "Tvärfunktionellt samarbete",
+    "Agilt arbetssätt",
+    "AI"
+  ],
+  "projects": [
+    {
+      "title": "Senior Product Designer och Accessibility Specialist · Zalando",
+      "subtitle": "Aug 2023 – Dec 2025 · Berlin",
+      "summary": "Nicko utvärderade Zalandos digitala plattformar för webb, mobil webb, iOS och Android, identifierade tillgänglighetsgap och tog fram genomförbara designrekommendationer enligt WCAG 2.2 och kognitiva tillgänglighetsriktlinjer. Han ingick i Core Accessibility Team och samarbetade dagligen med produktdesigners, utvecklare, researchers och produktchefer i en agil miljö. Arbetet omfattade omdesign av komponenter i Zalando Design System med Figma-tokens och variabler, nya komponenter och layouter för tillgänglighet och edge cases, designgranskningar på skala samt utbildning och stöd till fler än 100 designers.",
+      "skills": [
+        "Figma",
+        "Designtokens",
+        "Designsystem",
+        "UI",
+        "WCAG 2.2 AA",
+        "Kognitiv tillgänglighet",
+        "Agilt samarbete"
+      ]
+    },
+    {
+      "title": "Senior Product Designer · NKC / Hjärnkraft",
+      "subtitle": "Jan 2022 – Dec 2024 · Stockholm",
+      "summary": "För Nationellt kompetenscentrum förvärvad hjärnskada samarbetade Nicko med Hjärnkraft för att designa och utveckla en digital plattform för kunskap om hjärnskador, patienträttigheter, vårdprogram och nationella samt regionala vårdriktlinjer. Han genomförde user research, workshops och kvalitativa intervjuer, designade informationsarkitektur och navigation, tog fram varumärkesidentitet med färgpalett, typografi och logotyp samt skapade ett visuellt designsystem och en tillgänglig högupplöst Figma-prototyp.",
+      "skills": [
+        "Informationsarkitektur",
+        "Visuell design",
+        "Prototyper",
+        "Användarresearch",
+        "UX writing",
+        "Tillgänglighetsdesign",
+        "Samarbete med utvecklare"
+      ]
+    },
+    {
+      "title": "Accessibility Auditor (Lead) · ICA Sverige",
+      "subtitle": "May 2024 – Jun 2024",
+      "summary": "Som tillgänglighetsspecialist genomförde Nicko en omfattande tillgänglighetsgranskning av Apotek Hjärtats digitala tjänster inom ICA Gruppen enligt WCAG 2.2 och EN 301 549. Granskningen omfattade struktur, navigation, interaktion och visuell presentation samt resulterade i prioriterade rekommendationer för design och utveckling. Han samarbetade med interna design- och utvecklingsteam för att förankra fynd och stödja hållbar integrering av tillgänglighet i vidare arbete.",
+      "skills": [
+        "Tillgänglighetsgranskning",
+        "WCAG 2.2",
+        "EN 301 549",
+        "UX Design",
+        "Webb och mobil",
+        "Designrekommendationer"
+      ]
+    },
+    {
+      "title": "Product Designer och Accessibility Specialist · HowlRound Theatre Commons",
+      "subtitle": "Feb 2024 – May 2024 · Boston",
+      "summary": "Nicko ledde tillgänglighetsutvärderingar och användbarhetsresearch för HowlRound med fokus på ökad inkludering, användbarhet och innehållstillgänglighet. Arbetet inkluderade en designorienterad utvärdering med kognitiva och UX-relaterade rekommendationer samt en formell granskning mot WCAG 2.2 och EN 301 549. Han organiserade användningstester, tog fram designlösningar och höll utbildning för innehållsredaktörer.",
+      "skills": [
+        "Inkluderande design",
+        "Användningstester",
+        "WCAG",
+        "Tillgänglighetsutvärdering",
+        "Designlösningar",
+        "Stakeholder-samarbete"
+      ]
+    },
+    {
+      "title": "Product Designer, UX Lead och Accessibility Specialist · DigiJag / Riksförbundet FUB",
+      "subtitle": "Mar 2018 – Aug 2023 · Stockholm",
+      "summary": "Nicko ledde UX-research, konceptutveckling och design för en utbildningsplattform för användare med måttlig intellektuell funktionsnedsättning. Han designade informationsarkitektur och interaktionsflöden, tog fram UX-dokumentation, designspecifikationer och Figma-prototyper samt faciliterade användningstester med varierade målgrupper. Arbetet bedrevs nära utvecklare och produktägare i agila sprintar.",
+      "skills": [
+        "UX Research",
+        "Interaktionsdesign",
+        "Figma-prototyper",
+        "Kognitiv tillgänglighet",
+        "WCAG",
+        "Scrum"
+      ]
+    },
+    {
+      "title": "Product Designer, UX Lead och Accessibility Specialist · Relationer som funkar / Riksförbundet FUB",
+      "subtitle": "Oct 2021 – Aug 2022 · Stockholm",
+      "summary": "Nicko ledde UX-strategi, konceptualisering och end-to-end-design av DigiVi, en social app för personer med mild till måttlig kognitiv funktionsnedsättning och autism. Han designade research- och co-creation-workshops, informationsarkitektur, interaktionsmönster, innehållsstrategi, varumärke, högupplösta Figma-prototyper och användarflöden. Lösningen blev internationellt uppmärksammad för sin inkluderande och människocentrerade design.",
+      "skills": [
+        "UX-strategi",
+        "Visuell design",
+        "Prototyper",
+        "Användarresearch",
+        "Human-centered design",
+        "Tillgänglighetsriktlinjer"
+      ]
+    },
+    {
+      "title": "Senior Product Designer · SBAB Bank AB",
+      "subtitle": "Mar 2022 – May 2022 · Stockholm",
+      "summary": "Nicko arbetade med Respekttrappan, ett internt tillgänglighetsverktyg hos SBAB Bank, för att förfina användargränssnittet och linjera produkten med organisationens nya designsystem. Arbetet fokuserade på visuell konsekvens, tillgängliga interaktioner, skalbara UI-komponenter och detaljerade Figma-specifikationer för implementation.",
+      "skills": [
+        "UI Design",
+        "Figma",
+        "Designsystem",
+        "UI-komponenter",
+        "Designspecifikationer",
+        "Agila arbetsflöden"
+      ]
+    },
+    {
+      "title": "Product Designer och UX Strategist · Nordea Innovation Platform",
+      "subtitle": "Jan 2019 – May 2019 · Stockholm",
+      "summary": "Nicko bidrog till design och utveckling av en intern innovationsplattform för Nordea, senare integrerad i Nordeas intranät och använd dagligen av tusentals medarbetare. Han ledde UX-design och konceptutveckling, samarbetade med Scrum masters, produktchefer och utvecklare, skapade högupplösta prototyper och designade tillgängliga interaktionsmönster för en bred intern målgrupp.",
+      "skills": [
+        "UX-strategi",
+        "Interaktionsdesign",
+        "Produktdesign",
+        "Prototyper",
+        "Scrum",
+        "Tillgänglig webbdesign"
+      ]
+    }
+  ],
+  "skillLevels": [
+    {
+      "level": "Expert",
+      "skills": "Senior UX/UI-design, produktdesign, UI-design, interaktionsdesign, informationsarkitektur, högupplösta prototyper i Figma, användarresearch, användningstester och tillgänglighetsdesign."
+    },
+    {
+      "level": "Avancerad",
+      "skills": "Designsystem, designtokens, Figma-variabler, komponentdesign, designgranskning, UX writing, service design, customer journey mapping, workshopfacilitering och co-creation."
+    },
+    {
+      "level": "Hög kompetens",
+      "skills": "WCAG 2.1/2.2, EN 301 549, kognitiv tillgänglighet, inkluderande design, tillgänglighetsgranskning, designrekommendationer, agila arbetssätt och tvärfunktionellt samarbete med utvecklare, produktägare och stakeholders."
+    },
+    {
+      "level": "Övrig kompetens",
+      "skills": "AI som verktyg, design sprints, wireframing, varumärkesidentitet, typografi, visuell hierarki, webbaserad och mobil produktdesign samt design för iOS och Android."
+    }
+  ],
+  "certifications": "CPACC - IAAP Certified Professional in Accessibility Core Competencies, International Association of Accessibility Professionals (IAAP), 2024. Research in Human-Computer Interaction and Accessibility, KTH - Royal Institute of Technology, 2020-2022 (PhD ej slutförd). Master of Science i Interactive Media Technology, KTH - Royal Institute of Technology, 2016-2019. Master of Science i Health Informatics, Karolinska Institutet, 2012-2014. Bachelor of Science i Speech and Language Pathology, University of Ioannina, 2004-2008.",
+  "languages": [
+    {
+      "language": "Grekiska",
+      "proficiency": "Modersmål eller tvåspråkig nivå"
+    },
+    {
+      "language": "Engelska",
+      "proficiency": "Full professionell nivå"
+    },
+    {
+      "language": "Svenska",
+      "proficiency": "Full professionell nivå"
+    }
+  ]
+}
