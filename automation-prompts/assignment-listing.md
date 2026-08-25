@@ -55,6 +55,7 @@ This scans every platform in `scripts/assignment_platforms.py`, dedupes against
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
 Magnit Source (`magnit-source.magnitglobal.com`) needs no secrets — public Open IT Sweden jobs via the Azure jobsearch API.
+Cinode Market (`cinode.com/market`) needs no secrets — public Sweden listings (`sweden` + `sverige` country filters).
 
 ### 2. Curate matches (your main job)
 

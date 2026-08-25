@@ -31,10 +31,11 @@ Each source has a single-letter **listing prefix**. The Slack/fit/generate id is
 | `v` | `verama.com` | bare numeric id | active |
 | `c` | `chaspartnernetwork.se` | bare numeric id | active |
 | `m` | `magnit-source.magnitglobal.com` | job GUID | active |
+| `n` | `cinode.com/market` | bare numeric id | active |
 
 When adding a source: pick an unused lowercase letter, add a row here, add a `## Source: …` section below, and extend memory `sources` on first run.
 
-**Cross-source duplicate preference** (when title + broker + location clearly match): prefer, in order, `v` (Verama), then `a` (allakonsultuppdrag), then `c` (Chas Partner Network), then `m` (Magnit Source), then other sources by registry order. Still persist every visible `source_id` per source in memory.
+**Cross-source duplicate preference** (when title + broker + location clearly match): prefer, in order, `v` (Verama), then `a` (allakonsultuppdrag), then `c` (Chas Partner Network), then `m` (Magnit Source), then `n` (Cinode Market), then other sources by registry order. Still persist every visible `source_id` per source in memory.
 
 ## Canonical assignment record
 
@@ -88,7 +89,8 @@ Top-level fields:
     "allakonsultuppdrag.se": { "prefix": "a", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 },
     "verama.com": { "prefix": "v", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 },
     "chaspartnernetwork.se": { "prefix": "c", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 },
-    "magnit-source.magnitglobal.com": { "prefix": "m", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 }
+    "magnit-source.magnitglobal.com": { "prefix": "m", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 },
+    "cinode.com/market": { "prefix": "n", "seen_ids": [], "total_visible": 0, "total_unique_visible": 0 }
   }
 }
 ```
@@ -360,6 +362,40 @@ Use for description/skills, dates, hours, and work location type. On detail fail
 
 ---
 
+## Source: cinode.com/market (`n`)
+
+Public — no login. Browse UI at `https://cinode.com/market`. Filter to Sweden with country keys `sweden` and `sverige` (they are separate buckets). List cards omit the full description, so detail fetch is required for matching.
+
+**List:** `GET https://cinode.com/market` for CSRF + cookies, then `POST /market/requests/filters` with JSON filters and `X-Csrf-Token`. Pagination (if present) is `GET /market?nextCursor=…` with `X-Requested-With: XMLHttpRequest`.
+
+**Detail:** `GET https://cinode.com/market/requests/{id}` for description, skills, dates, extent, and location.
+
+### Field mapping
+
+| Canonical | Native |
+|-----------|--------|
+| `listing_id` | `n` + numeric request id |
+| `source_id` | numeric request id (string) |
+| `title` | card/detail heading |
+| `description` | strip HTML from `.wysiwyg-output`; prefix `Client: {company}` |
+| `descriptionSummary` | `Client: {company}` |
+| `publishedDate` | Details “Announced” |
+| `lastApplicationDate` | card/detail “Deadline” |
+| `startDate` / `endDate` | Details “Date” range |
+| `duration` | date range and/or “Extent” |
+| `workMode` | Hybrid/Remote badge or remote % |
+| `location` | city + remote % |
+| `sourceUrl` | `https://cinode.com/market/requests/{id}` |
+| `broker` | announcing company |
+| `skills` | Desired skills links |
+
+### Cinode-specific notes
+
+- Prefer Python `scripts/fetch-assignments.py` / `assignment_platforms.scan_cinode_market` when available.
+- Cinode Market is the public board. Partner Network (logged-in incoming partner requests) is a different surface and is not scanned here.
+
+---
+
 ## Source: (template for new sources)
 
 ```markdown
@@ -467,12 +503,12 @@ If the first pass produces suspicious matches, refine locally before Slack. Post
 
 ## Consultants
 
-- Joel Holmberg, 14 years, backend Java, fullstack Java + React, frontend React
+- Joel Holmberg, 14 years, backend Java, fullstack Java + React, frontend React, SCRUM master
 - Nicko Syropoulis, 10 years, UX
 - Karin Toft, 10 years, front-end Angular, WordPress, React
 - Max Rautenberg, 4 years, front-end React
 - Soma Azad, 10 years, UX
-- Erik GS, 15 years, Project Manager, Scrum Master, Project coordinator
+- Erik GS, 15 years, Project Manager (web), Scrum Master, Project coordinator
 - Emma Dawson, 5 years, front-end React
 - Daniel Göransson, 10 years, Accessibility specialist, Assistive tech specialist, Wordpress
 - Hampus Sethfors, 14 years, Accessibility specialist

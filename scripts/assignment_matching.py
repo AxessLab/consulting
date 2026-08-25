@@ -538,6 +538,7 @@ def cross_platform_dedupe(assignments: list[AssignmentRecord]) -> list[Assignmen
         "allakonsultuppdrag.se": 1,
         "chaspartnernetwork.se": 2,
         "magnit-source.magnitglobal.com": 3,
+        "cinode.com/market": 4,
     }
 
     for assignment in assignments:

@@ -44,7 +44,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--max-pages",
         type=int,
         default=None,
-        help="Limit allakonsultuppdrag.se pagination (testing)",
+        help="Limit pagination for page-based platforms (testing)",
     )
     parser.add_argument(
         "--headed",

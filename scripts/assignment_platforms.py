@@ -16,6 +16,36 @@ VERAMA_BASE = "https://app.verama.com"
 CHAS_BASE = "https://chaspartnernetwork.se"
 MAGNIT_BROWSE_BASE = "https://magnit-source.magnitglobal.com"
 MAGNIT_API_BASE = "https://app-openmarketgateway-prod.azurewebsites.net"
+CINODE_MARKET_BASE = "https://cinode.com"
+CINODE_MARKET_COUNTRIES = ["sweden", "sverige"]
+_CINODE_MONTHS = {
+    "jan": 1,
+    "feb": 2,
+    "mar": 3,
+    "apr": 4,
+    "may": 5,
+    "jun": 6,
+    "jul": 7,
+    "aug": 8,
+    "sep": 9,
+    "oct": 10,
+    "nov": 11,
+    "dec": 12,
+}
+_CINODE_DATE_RE = re.compile(r"(\d{1,2})\s+([A-Za-z]{3}),\s*(\d{4})")
+_CINODE_RANGE_RE = re.compile(
+    r"(\d{1,2}\s+[A-Za-z]{3},\s*\d{4})\s+to\s+(\d{1,2}\s+[A-Za-z]{3},\s*\d{4})",
+    re.I,
+)
+_CINODE_CARD_SPLIT_RE = re.compile(
+    r'<div class="requests-list__card"\s+data-href="/market/requests/(\d+)"',
+    re.I,
+)
+_CINODE_CSRF_RE = re.compile(
+    r'name="__CsrfToken"[^>]*value="([^"]+)"|'
+    r'value="([^"]+)"[^>]*name="__CsrfToken"',
+    re.I,
+)
 ALLAKONSULT_USER_AGENT = "Mozilla/5.0 (compatible; AssignmentScanner/1.0)"
 SCAN_USER_AGENT = "Mozilla/5.0 (compatible; AxessLabAssignmentScanner/1.0)"
 _TAG_RE = re.compile(r"<[^>]+>")
@@ -690,6 +720,347 @@ def scan_magnitsource(
         )
 
 
+def _cinode_session() -> requests.Session:
+    session = requests.Session()
+    session.headers.update(
+        {
+            "User-Agent": SCAN_USER_AGENT,
+            "Accept": "text/html,application/json",
+        }
+    )
+    return session
+
+
+def _cinode_strip_html(value: str) -> str:
+    text = _TAG_RE.sub(" ", html.unescape(value or ""))
+    return _WHITESPACE_RE.sub(" ", text).strip()
+
+
+def _cinode_parse_date(value: str | None) -> str | None:
+    if not value:
+        return None
+    match = _CINODE_DATE_RE.search(value)
+    if not match:
+        return None
+    month = _CINODE_MONTHS.get(match.group(2).lower())
+    if not month:
+        return None
+    return f"{match.group(3)}-{month:02d}-{int(match.group(1)):02d}"
+
+
+def _cinode_parse_range(value: str) -> tuple[str | None, str | None]:
+    match = _CINODE_RANGE_RE.search(value or "")
+    if match:
+        return _cinode_parse_date(match.group(1)), _cinode_parse_date(match.group(2))
+    from_match = re.search(
+        r"From\s+(\d{1,2}\s+[A-Za-z]{3},\s*\d{4})",
+        value or "",
+        re.I,
+    )
+    if from_match:
+        return _cinode_parse_date(from_match.group(1)), None
+    return None, None
+
+
+def _cinode_csrf(html_text: str) -> str:
+    match = _CINODE_CSRF_RE.search(html_text)
+    if not match:
+        raise RuntimeError("Could not find Cinode Market CSRF token")
+    return match.group(1) or match.group(2)
+
+
+def _cinode_next_cursor(response: requests.Response, html_text: str) -> str | None:
+    header = response.headers.get("X-Next-Cursor") or response.headers.get(
+        "x-next-cursor"
+    )
+    if header:
+        return header
+    match = re.search(r'data-next-cursor="([^"]+)"', html_text)
+    return match.group(1) if match else None
+
+
+def _cinode_work_mode(html_chunk: str) -> str:
+    remote = re.search(r"\((\d+%\s*remote)\)", html_chunk, re.I)
+    if re.search(r"badge--hybrid", html_chunk, re.I):
+        return f"Hybrid ({remote.group(1)})" if remote else "Hybrid"
+    if re.search(r"badge--remote", html_chunk, re.I):
+        return "Remote"
+    return remote.group(1) if remote else ""
+
+
+def _cinode_parse_cards(html_text: str) -> list[dict[str, str]]:
+    parts = _CINODE_CARD_SPLIT_RE.split(html_text)
+    cards: list[dict[str, str]] = []
+    for index in range(1, len(parts), 2):
+        source_id = parts[index]
+        body = parts[index + 1] if index + 1 < len(parts) else ""
+        title_match = re.search(
+            r'e2e-market-request-link[^>]*>\s*(.*?)\s*</a>',
+            body,
+            re.I | re.S,
+        )
+        company_match = re.search(
+            r'class="requests-list__card-company[^"]*"[^>]*>\s*(.*?)\s*</(?:a|span|div)>',
+            body,
+            re.I | re.S,
+        )
+        if not company_match:
+            company_match = re.search(
+                r'/market/requests/company/[^"]+[^>]*>(.*?)</a>',
+                body,
+                re.I | re.S,
+            )
+        city_match = re.search(
+            r'/market/requests/city/[^"]+"[^>]*title="([^"]+)"',
+            body,
+            re.I,
+        )
+        announced_match = re.search(r"Announced\s+([^<]+)", body, re.I)
+        deadline_match = re.search(r"Deadline\s+([^<]+)", body, re.I)
+        range_text = ""
+        cal_match = re.search(
+            r'href="#icon-calendar"[\s\S]*?<p>(.*?)</p>',
+            body,
+            re.I,
+        )
+        if cal_match:
+            range_text = _cinode_strip_html(cal_match.group(1))
+        start_date, end_date = _cinode_parse_range(range_text)
+        cards.append(
+            {
+                "source_id": source_id,
+                "title": _cinode_strip_html(title_match.group(1) if title_match else ""),
+                "company": _cinode_strip_html(
+                    company_match.group(1) if company_match else ""
+                ),
+                "location": html.unescape(city_match.group(1)).strip()
+                if city_match
+                else "",
+                "work_mode": _cinode_work_mode(body),
+                "published_date": _cinode_parse_date(
+                    _cinode_strip_html(announced_match.group(1))
+                    if announced_match
+                    else ""
+                )
+                or "",
+                "last_application_date": _cinode_parse_date(
+                    _cinode_strip_html(deadline_match.group(1))
+                    if deadline_match
+                    else ""
+                )
+                or "",
+                "start_date": start_date or "",
+                "end_date": end_date or "",
+                "duration": range_text,
+            }
+        )
+    return cards
+
+
+def _cinode_parse_detail(html_text: str) -> dict[str, Any]:
+    parsed: dict[str, Any] = {}
+    desc_match = re.search(
+        r'class="wysiwyg-output"[^>]*>(.*?)</div>\s*</div>',
+        html_text,
+        re.I | re.S,
+    )
+    if desc_match:
+        parsed["description"] = _cinode_strip_html(desc_match.group(1))
+
+    for label_raw, value_html in re.findall(
+        r'<p class="details__item--label">\s*(.*?)\s*</p>\s*<p>(.*?)</p>',
+        html_text,
+        re.I | re.S,
+    ):
+        label = _cinode_strip_html(label_raw).rstrip(":").lower()
+        value = _cinode_strip_html(value_html)
+        if not value:
+            continue
+        if label.startswith("announced"):
+            parsed["published_date"] = _cinode_parse_date(value)
+        elif label.startswith("company"):
+            parsed["company"] = value
+        elif label.startswith("date"):
+            start_date, end_date = _cinode_parse_range(value)
+            parsed["start_date"] = start_date
+            parsed["end_date"] = end_date
+            parsed["date_range"] = value
+        elif label.startswith("location"):
+            parsed["location"] = value
+        elif label.startswith("extent"):
+            parsed["extent"] = value
+        elif "remotely" in label:
+            parsed["remote"] = value
+
+    skills: list[dict[str, Any]] = []
+    for raw in re.findall(
+        r'class="details__skill"[^>]*>\s*<a[^>]*>(.*?)</a>',
+        html_text,
+        re.I | re.S,
+    ):
+        name = _cinode_strip_html(raw)
+        if name:
+            skills.append({"name": name})
+    parsed["skills"] = skills
+    return parsed
+
+
+def scan_cinode_market(
+    *,
+    page_size: int = 100,
+    max_pages: int | None = None,
+) -> tuple[list[AssignmentRecord], PlatformScanResult]:
+    """Scan public Cinode Market assignments in Sweden (country keys sweden + sverige)."""
+    del page_size  # Market uses cursor pages, not a page size.
+    platform = "cinode.com/market"
+    session = _cinode_session()
+    by_key: dict[str, AssignmentRecord] = {}
+
+    try:
+        landing = session.get(f"{CINODE_MARKET_BASE}/market", timeout=60)
+        landing.raise_for_status()
+        csrf = _cinode_csrf(landing.text)
+        filter_url = f"{CINODE_MARKET_BASE}/market/requests/filters"
+        payload = {
+            "keywords": {"values": []},
+            "countries": {"values": list(CINODE_MARKET_COUNTRIES)},
+            "cities": {"values": []},
+            "companies": {"values": []},
+            "endCustomerAssignments": None,
+            "remoteWork": {"values": []},
+        }
+
+        page = 1
+        response = session.post(
+            filter_url,
+            json=payload,
+            headers={
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "X-Csrf-Token": csrf,
+                "Referer": f"{CINODE_MARKET_BASE}/market",
+                "Origin": CINODE_MARKET_BASE,
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+        html_text = response.text
+        cursor = _cinode_next_cursor(response, html_text)
+
+        while True:
+            for card in _cinode_parse_cards(html_text):
+                source_id = card["source_id"]
+                source_url = f"{CINODE_MARKET_BASE}/market/requests/{source_id}"
+                title = card["title"]
+                company = card["company"]
+                location = card["location"]
+                work_mode = card["work_mode"]
+                published_date = card["published_date"] or None
+                last_application_date = card["last_application_date"] or None
+                start_date = card["start_date"] or None
+                end_date = card["end_date"] or None
+                duration = card["duration"]
+                description = ""
+                description_summary = f"Client: {company}" if company else ""
+                skills: list[dict[str, Any]] = []
+
+                try:
+                    detail_resp = session.get(source_url, timeout=60)
+                    detail_resp.raise_for_status()
+                    detail = _cinode_parse_detail(detail_resp.text)
+                    if detail.get("description"):
+                        description = detail["description"]
+                    if detail.get("company"):
+                        company = detail["company"]
+                        description_summary = f"Client: {company}"
+                    if detail.get("location"):
+                        location = detail["location"]
+                    if detail.get("published_date"):
+                        published_date = detail["published_date"]
+                    if detail.get("start_date"):
+                        start_date = detail["start_date"]
+                    if detail.get("end_date"):
+                        end_date = detail["end_date"]
+                    if detail.get("date_range") and not duration:
+                        duration = detail["date_range"]
+                    if detail.get("extent"):
+                        duration = (
+                            f"{detail['extent']}"
+                            if not duration
+                            else f"{duration}; {detail['extent']}"
+                        )
+                    if detail.get("remote") and not work_mode:
+                        work_mode = detail["remote"]
+                    skills = detail.get("skills") or []
+                    if description_summary and description:
+                        description = f"{description_summary}\n\n{description}"
+                    elif description_summary:
+                        description = description_summary
+                    skills_text = ", ".join(
+                        str(item.get("name") or "") for item in skills if item.get("name")
+                    )
+                    if skills_text:
+                        description = (
+                            f"{description}\n\nSkills: {skills_text}"
+                            if description
+                            else f"Skills: {skills_text}"
+                        )
+                except Exception:  # noqa: BLE001
+                    if description_summary:
+                        description = description_summary
+
+                record = AssignmentRecord(
+                    platform=platform,
+                    source_id=source_id,
+                    listing_id=f"n{source_id}",
+                    title=title,
+                    description=description,
+                    description_summary=description_summary,
+                    published_date=published_date,
+                    last_application_date=last_application_date,
+                    start_date=start_date,
+                    end_date=end_date,
+                    duration=duration,
+                    work_mode=work_mode,
+                    location=location,
+                    source_url=source_url,
+                    broker=company or "Cinode Market",
+                    skills=skills,
+                )
+                by_key[record.dedupe_key] = record
+
+            if max_pages is not None and page >= max_pages:
+                break
+            if not cursor:
+                break
+            page += 1
+            more = session.get(
+                f"{CINODE_MARKET_BASE}/market",
+                params={"nextCursor": cursor},
+                headers={
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Referer": f"{CINODE_MARKET_BASE}/market",
+                },
+                timeout=60,
+            )
+            more.raise_for_status()
+            html_text = more.text
+            cursor = _cinode_next_cursor(more, html_text)
+
+        records = list(by_key.values())
+        return records, PlatformScanResult(
+            platform=platform, status="ok", count=len(records)
+        )
+    except Exception as exc:  # noqa: BLE001
+        records = list(by_key.values())
+        return records, PlatformScanResult(
+            platform=platform,
+            status="error",
+            count=len(records),
+            message=str(exc),
+        )
+
+
 PlatformScanner = Callable[..., tuple[list[AssignmentRecord], PlatformScanResult]]
 
 PLATFORM_SCANNERS: dict[str, PlatformScanner] = {
@@ -697,6 +1068,7 @@ PLATFORM_SCANNERS: dict[str, PlatformScanner] = {
     "verama.com": scan_verama,
     "chaspartnernetwork.se": scan_chaspartnernetwork,
     "magnit-source.magnitglobal.com": scan_magnitsource,
+    "cinode.com/market": scan_cinode_market,
 }
 
 DEFAULT_PLATFORMS = list(PLATFORM_SCANNERS.keys())
