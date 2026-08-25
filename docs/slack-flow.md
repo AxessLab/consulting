@@ -8,7 +8,7 @@ analysis and CV generation requests should work.
 The assignment-listing automation posts compact Slack items. Each item should
 include:
 
-- assignment id in square brackets
+- letter-prefixed assignment id (`a`, `v`, `c`, `m`, or `n`)
 - assignment title
 - location and/or main role summary
 - link to the full online ad
@@ -41,12 +41,12 @@ fit c19622 Joel
 fit Karin Toft
 ```
 
-When the first token after `fit` is a listed assignment id (all digits, `v`
-followed by digits for Verama, or `c` followed by digits for Chas Partner
-Network), the automation uses **listed assignment mode**
-and reads the id and ad link from the parent message. When it is not a listed
-id, the automation uses **pasted ad mode** and reads the assignment requirements
-from the parent message text instead of fetching an online ad.
+When the first token after `fit` is a listed assignment id (the source prefix
+`a`, `v`, `c`, `m`, or `n` followed by that source's native id), the automation
+uses **listed assignment mode** and reads the id and ad link from the parent
+message. When it is not a listed id, the automation uses **pasted ad mode** and
+reads the assignment requirements from the parent message text instead of
+fetching an online ad.
 
 ## Generate command
 
@@ -73,12 +73,12 @@ generate Karin Toft sv
 The optional language token must be the final token. Supported values are
 `english`, `swedish`, `en`, and `sv`.
 
-When the first token after `generate` is a listed assignment id (all digits, `v`
-followed by digits for Verama, or `c` followed by digits for Chas Partner
-Network), the automation uses **listed assignment mode** and reads the id and ad
-link from the parent message. When it is not a listed id, the automation uses
-**pasted ad mode** and reads the assignment requirements from the parent message
-text instead of fetching an online ad.
+When the first token after `generate` is a listed assignment id (the source
+prefix `a`, `v`, `c`, `m`, or `n` followed by that source's native id), the
+automation uses **listed assignment mode** and reads the id and ad link from the
+parent message. When it is not a listed id, the automation uses **pasted ad
+mode** and reads the assignment requirements from the parent message text
+instead of fetching an online ad.
 
 ## Pasted ad flow
 
