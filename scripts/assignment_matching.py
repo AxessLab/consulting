@@ -486,12 +486,14 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "kunden",
                 "client",
             }:
+                if normalize_text(client) == normalize_text(assignment.broker):
+                    return UNKNOWN_CLIENT_LABEL
                 return client
 
     title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&.\- ]{2,60})", assignment.title)
     if title_match:
         client = title_match.group(1).strip(" .")
-        if client:
+        if client and normalize_text(client) != normalize_text(assignment.broker):
             return client
     return UNKNOWN_CLIENT_LABEL
 
