@@ -23,6 +23,7 @@ from assignment_matching import (
 )
 from assignment_platforms import DEFAULT_PLATFORMS, AssignmentRecord, scan_platforms
 from listing_memory import DEFAULT_MEMORY_PATH, build_memory_payload, load_memory
+from listing_memory import seen_ids_by_source
 
 
 def build_platform_summary(platform_results: list[dict[str, Any]]) -> str:
@@ -35,7 +36,7 @@ def build_platform_summary(platform_results: list[dict[str, Any]]) -> str:
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def prepare_candidates(
@@ -47,12 +48,15 @@ def prepare_candidates(
     headless: bool = True,
     with_suggestions: bool = True,
 ) -> dict[str, Any]:
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, memory_data = load_memory(memory_path)
+    source_seen_ids = seen_ids_by_source(memory_data)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_ids_by_platform=source_seen_ids,
+        scan_date=scan_date,
     )
     deduped_assignments = cross_platform_dedupe(raw_assignments)
     new_assignments = [
@@ -84,10 +88,24 @@ def prepare_candidates(
     ]
 
     memory_update = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        previous_memory=memory_data,
     )
+    source_counts: dict[str, dict[str, int]] = {}
+    for result in platform_results:
+        visible_ids = {
+            assignment.source_id
+            for assignment in raw_assignments
+            if assignment.platform == result.platform
+        }
+        seen_ids = source_seen_ids.get(result.platform, set())
+        source_counts[result.platform] = {
+            "total_visible": result.count,
+            "total_unique_visible": len(visible_ids),
+            "new_ids": len(visible_ids - seen_ids),
+        }
 
     suggested_report = [
         item for item in suggestions if item.get("suggested_section") is not None
@@ -106,6 +124,11 @@ def prepare_candidates(
             "total_unique_visible": len(deduped_assignments),
             "previously_seen": len(seen_keys),
             "new_ids": len(new_assignments),
+            "new_ids_by_source": {
+                source_key: counts["new_ids"]
+                for source_key, counts in source_counts.items()
+            },
+            "source_counts": source_counts,
             "expired_new_ids": len(expired),
             "script_suggestions": len(suggested_report),
             "active_consultants": len(profiles),
