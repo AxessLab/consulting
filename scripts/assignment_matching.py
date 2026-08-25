@@ -328,6 +328,8 @@ def detect_role_categories(assignment: AssignmentRecord) -> set[str]:
                 s in skills for s in ("react", "angular")
             ):
                 categories.add("fullstack_java")
+            else:
+                categories.add("java")
     elif phrase_match(r"\bjava\b", text) or "java" in skills:
         if not re.search(r"\b(python|\.net|php|vue|c#|embedded|fpga|data engineer)\b", text):
             categories.add("java")
