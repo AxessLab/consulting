@@ -6,7 +6,7 @@ import html
 import os
 import re
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any, Callable
 
 import requests
@@ -18,6 +18,54 @@ MAGNIT_BROWSE_BASE = "https://magnit-source.magnitglobal.com"
 MAGNIT_API_BASE = "https://app-openmarketgateway-prod.azurewebsites.net"
 ALLAKONSULT_USER_AGENT = "Mozilla/5.0 (compatible; AssignmentScanner/1.0)"
 SCAN_USER_AGENT = "Mozilla/5.0 (compatible; AxessLabAssignmentScanner/1.0)"
+SOURCE_PREFIXES = {
+    "verama.com": "v",
+    "chaspartnernetwork.se": "c",
+    "allakonsultuppdrag.se": "a",
+}
+DEFAULT_PLATFORM_ORDER = [
+    "verama.com",
+    "chaspartnernetwork.se",
+    "allakonsultuppdrag.se",
+]
+VERAMA_TARGET_TITLE_RE = re.compile(
+    r"\b("
+    r"tillgänglighet|tillganglighet|accessibility|wcag|"
+    r"react|next\.?js|frontend|front-end|angular|wordpress|"
+    r"java|spring|backend|systemutvecklare|fullstack|full-stack|"
+    r"ux|ui|product designer|interaktionsdesign|tjänstedesign|tjanstedesign|"
+    r"project manager|projektledare|scrum master|projektkoordinator|"
+    r"project coordinator|agile coach|leveransansvarig|consultant|konsult|developer|utvecklare"
+    r")\b",
+    re.I,
+)
+VERAMA_CLEAR_OUTSIDE_TITLE_RE = re.compile(
+    r"\b("
+    r"sap|network|nätverk|natverk|security|säkerhet|sakerhet|hr|payroll|"
+    r"automation engineer|automationsingenjör|automationsingenjor|factory|"
+    r"embedded|fpga|data engineer|devops|cloud|ios|android|mobile|"
+    r"\.net|c#|python|php|vue"
+    r")\b",
+    re.I,
+)
+VERAMA_A11Y_TITLE_RE = re.compile(
+    r"tillgänglighetsgranskare|tillganglighetsgranskare|"
+    r"tillgänglighetsspecialist|tillganglighetsspecialist|"
+    r"accessibility specialist|accessibility consultant|wcag specialist|"
+    r"document accessibility|dokumenttillgänglighet|dokumenttillganglighet|"
+    r"webbtillgänglighetsspecialist|webbtillganglighetsspecialist",
+    re.I,
+)
+VERAMA_NEAR_LOCATION_RE = re.compile(
+    r"stockholm|solna|sundbyberg|kista|bromma|sollentuna|danderyd|"
+    r"täby|taby|järfälla|jarfalla|nacka|huddinge|lidingö|lidingo|"
+    r"älvsjö|alvsjo|årsta|arsta|stockholms län|stockholms lan|botkyrka|"
+    r"upplands väsby|upplands vasby|södertälje|sodertalje|haninge|"
+    r"tyresö|tyreso|vällingby|vallingby|farsta",
+    re.I,
+)
+VERAMA_GOTHENBURG_RE = re.compile(r"göteborg|goteborg|gothenburg", re.I)
+REMOTE_TERMS_RE = re.compile(r"remote|distans|fjärrarbete|fjarrarbete", re.I)
 _TAG_RE = re.compile(r"<[^>]+>")
 _WHITESPACE_RE = re.compile(r"\s+")
 _DATE_RANGE_RE = re.compile(
@@ -112,7 +160,7 @@ def scan_allakonsultuppdrag(
                 record = AssignmentRecord(
                     platform=platform,
                     source_id=source_id,
-                    listing_id=source_id,
+                    listing_id=f"a{source_id}",
                     title=row.get("title") or "",
                     description=row.get("description") or "",
                     description_summary=row.get("descriptionSummary") or "",
@@ -152,12 +200,149 @@ def _verama_location(city: str | None, country_code: str | None) -> str:
     return city or country_code or ""
 
 
+def _verama_work_mode(remoteness: Any) -> str:
+    if remoteness is None:
+        return ""
+    try:
+        remote_percent = int(remoteness)
+    except (TypeError, ValueError):
+        return str(remoteness)
+    if remote_percent >= 100:
+        return "remote"
+    if remote_percent > 0:
+        return f"{remote_percent}% remote"
+    return "on-site"
+
+
+def _verama_parse_date(value: Any) -> date | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).date()
+    except ValueError:
+        return None
+
+
+def _verama_find_first(payload: dict[str, Any], keys: tuple[str, ...]) -> Any:
+    for key in keys:
+        value = payload.get(key)
+        if value:
+            return value
+    return None
+
+
+def _verama_text(payload: dict[str, Any], keys: tuple[str, ...]) -> str:
+    value = _verama_find_first(payload, keys)
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return _chas_strip_html(value)
+    return _chas_strip_html(str(value))
+
+
+def _verama_collect_skills(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    skill_keys = {
+        "skills",
+        "skillRequirements",
+        "competences",
+        "competencies",
+        "requiredSkills",
+        "requiredCompetences",
+        "mustHaveSkills",
+        "niceToHaveSkills",
+    }
+    skills: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def add_skill(value: Any) -> None:
+        if isinstance(value, dict):
+            name = value.get("name") or value.get("title") or value.get("label")
+        else:
+            name = value
+        if not name:
+            return
+        text = _chas_strip_html(str(name))
+        if text and text.lower() not in seen:
+            seen.add(text.lower())
+            skills.append({"name": text})
+
+    def walk(value: Any, parent_key: str = "") -> None:
+        if isinstance(value, dict):
+            if parent_key in skill_keys:
+                add_skill(value)
+            for key, child in value.items():
+                walk(child, key)
+        elif isinstance(value, list):
+            if parent_key in skill_keys:
+                for item in value:
+                    add_skill(item)
+            else:
+                for item in value:
+                    walk(item, parent_key)
+
+    walk(payload)
+    return skills
+
+
+def _verama_detail_payload(api: Any, source_id: str, headers: dict[str, str]) -> dict[str, Any]:
+    for path in (
+        f"{VERAMA_BASE}/api/job-requests/v2/{source_id}",
+        f"{VERAMA_BASE}/api/job-requests/{source_id}",
+    ):
+        response = api.get(path, headers=headers, timeout=60000)
+        if response.status == 404:
+            continue
+        if response.status != 200:
+            raise RuntimeError(
+                f"Verama detail API for {source_id} returned {response.status}: "
+                f"{response.text()[:200]}"
+            )
+        payload = response.json()
+        return payload if isinstance(payload, dict) else {}
+    return {}
+
+
+def _verama_location_precheck(record: AssignmentRecord) -> bool:
+    work_and_location = f"{record.work_mode} {record.location}"
+    if REMOTE_TERMS_RE.search(work_and_location):
+        return True
+    if VERAMA_NEAR_LOCATION_RE.search(record.location):
+        return True
+    if re.search(r"\b(react|next\.?js|frontend|front-end|angular|wordpress)\b", record.title, re.I):
+        return VERAMA_GOTHENBURG_RE.search(record.location) is not None
+    return False
+
+
+def _verama_should_fetch_detail(
+    record: AssignmentRecord,
+    *,
+    seen_source_ids: set[str],
+    scan_date: date | None,
+) -> bool:
+    if record.source_id in seen_source_ids:
+        return False
+    last_app = _verama_parse_date(record.last_application_date)
+    if scan_date is not None and last_app is not None and last_app < scan_date:
+        return False
+    if VERAMA_CLEAR_OUTSIDE_TITLE_RE.search(record.title) and not VERAMA_TARGET_TITLE_RE.search(
+        record.title
+    ):
+        return False
+    if not VERAMA_TARGET_TITLE_RE.search(record.title):
+        return False
+    if not _verama_location_precheck(record) and not VERAMA_A11Y_TITLE_RE.search(record.title):
+        return False
+    return True
+
+
 def scan_verama(
     email: str,
     password: str,
     *,
     page_size: int = 100,
     headless: bool = True,
+    seen_source_ids: set[str] | None = None,
+    scan_date: date | None = None,
 ) -> tuple[list[AssignmentRecord], PlatformScanResult]:
     platform = "verama.com"
 
@@ -172,7 +357,8 @@ def scan_verama(
             message="playwright is not installed; run pip install -r requirements.txt",
         )
 
-    records: list[AssignmentRecord] = []
+    seen_source_ids = seen_source_ids or set()
+    by_key: dict[str, AssignmentRecord] = {}
 
     try:
         with sync_playwright() as playwright:
@@ -239,24 +425,94 @@ def scan_verama(
                 rows = payload.get("content") or []
                 for row in rows:
                     source_id = str(row["id"])
-                    remoteness = row.get("remoteness")
-                    work_mode = (
-                        f"{remoteness}% remote" if remoteness is not None else ""
+                    record = AssignmentRecord(
+                        platform=platform,
+                        source_id=source_id,
+                        listing_id=f"v{source_id}",
+                        title=row.get("title") or "",
+                        description_summary="",
+                        published_date=row.get("firstDayOfApplications"),
+                        last_application_date=row.get("lastDayOfApplications")
+                        or row.get("applicationDeadline")
+                        or row.get("deadline"),
+                        work_mode=_verama_work_mode(row.get("remoteness")),
+                        location=_verama_location(row.get("city"), row.get("countryCode")),
+                        source_url=f"{VERAMA_BASE}/app/job-requests/{source_id}",
+                        broker=row.get("originServiceName") or "",
                     )
-                    records.append(
-                        AssignmentRecord(
-                            platform=platform,
-                            source_id=source_id,
-                            listing_id=f"v{source_id}",
-                            title=row.get("title") or "",
-                            description_summary=row.get("systemId") or "",
-                            published_date=row.get("firstDayOfApplications"),
-                            work_mode=work_mode,
-                            location=_verama_location(row.get("city"), row.get("countryCode")),
-                            source_url=f"{VERAMA_BASE}/app/job-requests/{source_id}",
-                            broker=row.get("originServiceName") or "",
+                    if _verama_should_fetch_detail(
+                        record,
+                        seen_source_ids=seen_source_ids,
+                        scan_date=scan_date,
+                    ):
+                        detail_headers = {
+                            **auth_headers,
+                            "accept": "application/json, text/plain, */*",
+                            "referer": f"{VERAMA_BASE}/app/job-requests/{source_id}",
+                        }
+                        detail = _verama_detail_payload(api, source_id, detail_headers)
+                        description = _verama_text(
+                            detail,
+                            (
+                                "description",
+                                "jobDescription",
+                                "assignmentDescription",
+                                "requestDescription",
+                                "longDescription",
+                                "specification",
+                                "roleDescription",
+                            ),
                         )
-                    )
+                        record.description = description
+                        record.description_summary = (
+                            _verama_text(detail, ("descriptionSummary", "summary", "shortDescription"))
+                            or description[:300]
+                        )
+                        record.last_application_date = (
+                            _verama_find_first(
+                                detail,
+                                (
+                                    "lastDayOfApplications",
+                                    "applicationDeadline",
+                                    "deadline",
+                                    "lastApplicationDate",
+                                    "submissionDeadline",
+                                ),
+                            )
+                            or record.last_application_date
+                        )
+                        record.start_date = _verama_find_first(
+                            detail,
+                            (
+                                "firstDayOfAssignment",
+                                "startDate",
+                                "assignmentStartDate",
+                                "contractStartDate",
+                            ),
+                        )
+                        record.end_date = _verama_find_first(
+                            detail,
+                            (
+                                "lastDayOfAssignment",
+                                "endDate",
+                                "assignmentEndDate",
+                                "contractEndDate",
+                            ),
+                        )
+                        record.duration = _verama_text(
+                            detail,
+                            ("duration", "assignmentPeriod", "scope", "workload", "extent"),
+                        )
+                        detail_work_mode = _verama_text(
+                            detail,
+                            ("workMode", "remotePolicy", "remotenessDescription"),
+                        )
+                        if detail_work_mode and "remote" not in record.work_mode.lower():
+                            record.work_mode = f"{record.work_mode} {detail_work_mode}".strip()
+                        detail_skills = _verama_collect_skills(detail)
+                        if detail_skills:
+                            record.skills = detail_skills
+                    by_key[record.dedupe_key] = record
 
                 if payload.get("last") or not rows:
                     break
@@ -264,19 +520,22 @@ def scan_verama(
 
             browser.close()
 
+        records = list(by_key.values())
         return records, PlatformScanResult(platform=platform, status="ok", count=len(records))
     except PlaywrightTimeoutError as exc:
+        records = list(by_key.values())
         return records, PlatformScanResult(
             platform=platform,
             status="error",
-            count=len(records),
+            count=len(by_key),
             message=f"Verama login or listing timed out: {exc}",
         )
     except Exception as exc:  # noqa: BLE001
+        records = list(by_key.values())
         return records, PlatformScanResult(
             platform=platform,
             status="error",
-            count=len(records),
+            count=len(by_key),
             message=str(exc),
         )
 
@@ -699,7 +958,7 @@ PLATFORM_SCANNERS: dict[str, PlatformScanner] = {
     "magnit-source.magnitglobal.com": scan_magnitsource,
 }
 
-DEFAULT_PLATFORMS = list(PLATFORM_SCANNERS.keys())
+DEFAULT_PLATFORMS = DEFAULT_PLATFORM_ORDER
 
 
 def scan_platforms(
@@ -707,11 +966,14 @@ def scan_platforms(
     *,
     max_pages: int | None = None,
     headless: bool = True,
+    seen_ids_by_platform: dict[str, set[str]] | None = None,
+    scan_date: date | None = None,
 ) -> tuple[list[AssignmentRecord], list[PlatformScanResult]]:
     assignments: list[AssignmentRecord] = []
     results: list[PlatformScanResult] = []
     verama_email = os.environ.get("VERAMA_EMAIL")
     verama_password = os.environ.get("VERAMA_PASSWORD")
+    seen_ids_by_platform = seen_ids_by_platform or {}
 
     for platform_id in platform_ids:
         scanner = PLATFORM_SCANNERS.get(platform_id)
@@ -741,6 +1003,8 @@ def scan_platforms(
                 verama_email,
                 verama_password,
                 headless=headless,
+                seen_source_ids=seen_ids_by_platform.get(platform_id, set()),
+                scan_date=scan_date,
             )
         else:
             rows, result = scanner(max_pages=max_pages)
