@@ -42,11 +42,11 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
+This scans every registered source in `scripts/assignment_platforms.py`, dedupes against
 `assignment-listing-seen.json`, and writes:
 
-- `assignments` — all currently visible unique records (for lookup)
-- `new_dedupe_keys` — ids not posted before
+- `assignments` — all currently visible records in the canonical source shape
+- `new_dedupe_keys` — per-source new ids after cross-source reporting dedupe
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
@@ -138,8 +138,9 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: unified `sources` object. Each source stores its
+listing prefix, bare native `seen_ids`, `total_visible`, and
+`total_unique_visible`. Skipped or errored sources preserve their prior memory.
 
 ## Filtering rules
 
@@ -247,8 +248,8 @@ Three sections (built by `finalize-listing.py`). Section titles are **bold** in 
 2. Other roles mentioning accessibility related terms
 3. Other roles where accessibility is not mentioned
 
-Pipe-separated lines. Verama ids use a `v` prefix; Chas Partner Network ids use a
-`c` prefix. Platform is implied by the assignment link. Title is a Slack link
+Pipe-separated lines. Listing ids use the source prefix (`a`, `v`, `c`, `m`,
+`n`). Platform is implied by the assignment link. Title is a Slack link
 (`<url|title>`). Omit client and hours/scope when unknown.
 
 ```text
@@ -279,14 +280,15 @@ generate c19622 Joel english
 
 | Concern | Location |
 |---------|----------|
-| Platform scanners | `scripts/assignment_platforms.py` |
+| Source scanners/registry | `scripts/assignment_platforms.py` |
 | Fetch + dedupe | `scripts/fetch-assignments.py` |
 | Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
 | Slack formatting + memory | `scripts/finalize-listing.py` |
 | Consultant names, roles, locations | `consultants.yaml` |
 
-When adding a new platform, register a scanner in `assignment_platforms.py`.
+When adding a new source, add it to the source registry and register a scanner
+in `assignment_platforms.py`.
 
 ## Debug / script-only mode
 
