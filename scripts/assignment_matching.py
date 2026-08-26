@@ -84,8 +84,9 @@ NON_IT_PM_CONTEXT = re.compile(
 )
 
 IT_PM_CONTEXT = re.compile(
-    r"\b(it|digital|software|system|web|app|platform|erp|iam|payment|"
-    r"digital workplace|intranät|intranet|e-service|e-tjänst|devops|cloud)\b",
+    r"\b(it|digital|software|web|app|platform|erp|iam|payment|payments|"
+    r"digital workplace|intranät|intranet|e-service|e-tjänst|devops|cloud|"
+    r"systemutveckling|systemförvaltning|systemforvaltning)\b",
     re.I,
 )
 
@@ -179,6 +180,8 @@ def skill_names(assignment: AssignmentRecord) -> list[str]:
     for skill in assignment.skills:
         if isinstance(skill, dict) and skill.get("name"):
             names.append(normalize_text(str(skill["name"])))
+        elif isinstance(skill, str) and skill.strip():
+            names.append(normalize_text(skill))
     return names
 
 
@@ -445,32 +448,35 @@ def match_consultants_for_assignment(
     return section, matched
 
 
-UNKNOWN_HOURS_LABEL = "not stated (probably full time)"
-UNKNOWN_CLIENT_LABEL = "not stated"
+UNKNOWN_HOURS_LABEL = ""
+UNKNOWN_CLIENT_LABEL = ""
 
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
     text = f"{assignment.description} {assignment.duration}"
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max|extent)"
+        r"[^%\n]{0,40}(\d{1,3})\s*%",
         text,
         re.I,
     )
     if scope_match:
         return f"{scope_match.group(2)}%"
 
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    hours_match = re.search(r"\b(\d{1,2})\s*h(?:ours)?\s*/?\s*(?:week|vecka|v)\b", text, re.I)
+    if hours_match:
+        return f"{hours_match.group(1)} h/week"
+    if re.search(r"\b(part[ -]?time|deltid)\b", text, re.I):
+        return "Part time"
+    if re.search(r"\b(full[ -]?time|heltid)\b", text, re.I):
+        return "Full time"
     return UNKNOWN_HOURS_LABEL
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
-    description = assignment.description
+    description = f"{assignment.description_summary}\n{assignment.description}"
     for pattern in (
         r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
     ):
         match = re.search(pattern, description, re.I)
         if match:
@@ -482,6 +488,12 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
+    title_match = re.search(
+        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&.\- ]{3,60})$",
+        assignment.title,
+    )
+    if title_match:
+        return title_match.group(1).strip(" .")
     return UNKNOWN_CLIENT_LABEL
 
 
@@ -511,22 +523,23 @@ def slack_title_link(url: str, title: str) -> str:
 
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
-    location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
     ]
+    if assignment.location:
+        segments.append(assignment.location)
+    if assignment.work_mode:
+        segments.append(assignment.work_mode)
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
     if match.client_label != UNKNOWN_CLIENT_LABEL:
         segments.append(f"Client: {match.client_label}")
-    segments.extend(
-        [
-            assignment.broker,
-            posted_date_label(assignment, scan_date),
-            f"Match: {consultants}",
-        ]
-    )
+    if assignment.broker:
+        segments.append(assignment.broker)
+    segments.append(f"Match: {consultants}")
     return " | ".join(segments)
 
 
@@ -634,6 +647,7 @@ def suggestion_to_dict(suggestion: AssignmentSuggestion) -> dict[str, Any]:
     return {
         "dedupe_key": assignment.dedupe_key,
         "listing_id": assignment.listing_id,
+        "source_key": assignment.platform,
         "platform": assignment.platform,
         "title": assignment.title,
         "location": assignment.location,
