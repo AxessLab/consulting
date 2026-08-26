@@ -456,7 +456,7 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     text = f"{assignment.description} {assignment.duration}"
     scope_match = re.search(
         r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max|extent)"
-        r"[^%\n]{0,40}(\d{1,3})\s*%",
+        r"[^%\n]{0,40}?(\d{1,3})\s*%",
         text,
         re.I,
     )
@@ -518,6 +518,8 @@ def validate_match(match: MatchedAssignment) -> str | None:
 def slack_title_link(url: str, title: str) -> str:
     """Slack mrkdwn link; sanitize characters that break `<url|label>` parsing."""
     label = title.replace("|", " ").replace("<", "").replace(">", "").strip() or "View listing"
+    if not url:
+        return label
     return f"<{url}|{label}>"
 
 
