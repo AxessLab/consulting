@@ -15,6 +15,7 @@ assignment-listing-seen.json
 listing-candidates.json
 curated-listing.json
 listing-output.json
+memory-export.json
 __pycache__/
 *.pyc
 .tmp-*
