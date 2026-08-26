@@ -532,15 +532,17 @@ def slack_title_link(url: str, title: str) -> str:
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
     consultants = ", ".join(match.consultants)
+    location = "" if normalize_text(assignment.location) == "unknown" else assignment.location
+    work_mode = "" if normalize_text(assignment.work_mode) == "unknown" else assignment.work_mode
     segments = [
         assignment.listing_id,
         posted_date_label(assignment, scan_date),
         slack_title_link(assignment.source_url, assignment.title),
     ]
-    if assignment.location:
-        segments.append(assignment.location)
-    if assignment.work_mode:
-        segments.append(assignment.work_mode)
+    if location:
+        segments.append(location)
+    if work_mode:
+        segments.append(work_mode)
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
     if match.client_label != UNKNOWN_CLIENT_LABEL:
