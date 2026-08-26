@@ -476,7 +476,7 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
 def parse_client_label(assignment: AssignmentRecord) -> str:
     description = f"{assignment.description_summary}\n{assignment.description}"
     for pattern in (
-        r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
+        r"(?:Kund|Client|End client|Slutkund)\s*:\s*([^\n|]+)",
     ):
         match = re.search(pattern, description, re.I)
         if match:
