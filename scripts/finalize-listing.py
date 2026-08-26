@@ -38,7 +38,7 @@ def load_curated(path: Path) -> dict[str, Any]:
 def assignment_index(candidates: dict[str, Any]) -> dict[str, AssignmentRecord]:
     index: dict[str, AssignmentRecord] = {}
     for row in candidates.get("assignments", []):
-        record = AssignmentRecord(**row)
+        record = AssignmentRecord.from_dict(row)
         index[record.dedupe_key] = record
         index[f"{record.platform}:{record.listing_id}"] = record
         index[record.listing_id] = record
@@ -95,8 +95,22 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    source_stats = stats.get("sources") if isinstance(stats.get("sources"), dict) else {}
+    per_source_bits: list[str] = []
+    for source_key, source_state in source_stats.items():
+        if not isinstance(source_state, dict):
+            continue
+        status = source_state.get("status")
+        if status == "ok":
+            per_source_bits.append(
+                f"{source_key}: visible {source_state.get('total_visible', 0)}, "
+                f"unique {source_state.get('total_unique_visible', 0)}, "
+                f"new {source_state.get('new_ids', 0)}"
+            )
+        elif status in {"error", "skipped"}:
+            per_source_bits.append(f"{source_key}: {status}")
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
         (
             "Visible assignments: "
@@ -106,9 +120,10 @@ def build_slack_debug(
         f"New ids: {stats.get('new_ids', 0)}",
         f"Reported matches: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
-        "",
-        "Close non-matches (sample):",
     ]
+    if per_source_bits:
+        lines.append("Per-source counts: " + "; ".join(per_source_bits))
+    lines.extend(["", "Close non-matches (sample):"])
 
     rejects = curated.get("debug_rejects") or []
     if not rejects:

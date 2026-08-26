@@ -42,16 +42,17 @@ exists on disk from a previous `--commit-memory`.
 python3 scripts/fetch-assignments.py -o listing-candidates.json
 ```
 
-This scans every platform in `scripts/assignment_platforms.py`, dedupes against
-`assignment-listing-seen.json`, and writes:
+This scans every source in `scripts/assignment_platforms.py`, dedupes against
+per-source `sources.<source_key>.seen_ids` in `assignment-listing-seen.json`,
+and writes:
 
 - `assignments` — all currently visible unique records (for lookup)
 - `new_dedupe_keys` — ids not posted before
 - `consultants` — active profiles from `consultants.yaml`
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
-- `memory_update` — draft memory (do not commit until after Slack post)
-- `platform_summary` — for the debug thread
+- `memory_update` — draft unified per-source memory (do not commit until after Slack post)
+- `platform_summary` — source summary for the debug thread
 
 Set `VERAMA_EMAIL` and `VERAMA_PASSWORD` in automation secrets for Verama.
 Magnit Source (`magnit-source.magnitglobal.com`) needs no secrets — public Open IT Sweden jobs via the Azure jobsearch API.
@@ -138,8 +139,9 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: one `sources` object keyed by source key. Each source
+stores its listing prefix, bare `seen_ids`, `total_visible`, and
+`total_unique_visible`. Failed or skipped sources keep their previous seen IDs.
 
 ## Filtering rules
 
