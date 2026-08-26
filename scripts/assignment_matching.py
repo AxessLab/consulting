@@ -459,7 +459,7 @@ UNKNOWN_CLIENT_LABEL = ""
 def parse_hours_label(assignment: AssignmentRecord) -> str:
     duration = assignment.duration or ""
     duration_percent = re.search(r"\b(\d{1,3})\s*%", duration)
-    if duration_percent:
+    if duration_percent and int(duration_percent.group(1)) > 0:
         return f"{duration_percent.group(1)}%"
     hours_match = re.search(r"\b(\d{1,2})\s*(?:h|hours)\s*/?\s*(?:week|vecka|v)\b", duration, re.I)
     if hours_match:
@@ -469,12 +469,18 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
 
     text = f"{assignment.description} {duration}"
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)"
+        r"[^%\n]{0,80}?\b(\d{1,3})(?:\s*[–-]\s*(\d{1,3}))?\s*%",
         text,
         re.I,
     )
     if scope_match:
-        return f"{scope_match.group(2)}%"
+        start = int(scope_match.group(2))
+        end = int(scope_match.group(3)) if scope_match.group(3) else None
+        if end is not None and end > 0 and end != start:
+            return f"{start}-{end}%"
+        if start > 0:
+            return f"{start}%"
     return UNKNOWN_HOURS_LABEL
 
 
