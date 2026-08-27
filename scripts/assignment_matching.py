@@ -55,8 +55,11 @@ A11Y_STRONG_TERMS = [
     r"tillganglighetsgranskare",
     r"tillgänglighetsspecialist",
     r"tillganglighetsspecialist",
+    r"tillgänglighetsexpert",
+    r"tillganglighetsexpert",
     r"accessibility specialist",
     r"accessibility consultant",
+    r"accessibility expert",
     r"wcag specialist",
     r"document accessibility",
     r"dokumenttillgänglighet",
@@ -291,10 +294,13 @@ def mentions_accessibility(assignment: AssignmentRecord) -> bool:
     return any(
         term in text
         for term in (
-            "tillganglighet",
             "accessibility",
             "wcag",
+            "webbtillganglighet",
+            "digital tillganglighet",
+            "tillganglighetsdirektiv",
             "tillganglighetsgransk",
+            "dokumenttillganglighet",
         )
     )
 
