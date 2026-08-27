@@ -6,6 +6,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from datetime import date, datetime
+from html import unescape
 from typing import Any
 
 from assignment_platforms import AssignmentRecord
@@ -466,9 +467,10 @@ UNKNOWN_CLIENT_LABEL = "not stated"
 
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
-    text = f"{assignment.description} {assignment.duration}"
+    relevant_description = assignment.description[:4000]
+    text = _TAG_RE.sub(" ", unescape(f"{assignment.duration} {relevant_description}"))
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"\b(omfattning|scope|utilization|beläggning|belaggning|engagemang)\b[^%\n]{0,40}(\d{1,3})\s*%",
         text,
         re.I,
     )
@@ -490,7 +492,10 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
-    description = f"{assignment.description_summary}\n{assignment.description}"
+    description = _TAG_RE.sub(
+        " ",
+        unescape(f"{assignment.description_summary}\n{assignment.description[:1500]}"),
+    )
     for pattern in (
         r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
     ):
@@ -521,6 +526,16 @@ def posted_date_label(assignment: AssignmentRecord, scan_date: date) -> str:
     return published.isoformat() if published else scan_date.isoformat()
 
 
+_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def display_field(value: str | None) -> str:
+    text = (value or "").strip()
+    if normalize_text(text) in {"unknown", "none", "no"}:
+        return ""
+    return text
+
+
 def validate_match(match: MatchedAssignment) -> str | None:
     text = combined_text(match.assignment)
     if match.section == "accessibility_specialist":
@@ -548,10 +563,12 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
         posted_date_label(assignment, scan_date),
         slack_title_link(assignment.source_url, assignment.title),
     ]
-    if assignment.location:
-        segments.append(assignment.location)
-    if assignment.work_mode:
-        segments.append(assignment.work_mode)
+    location = display_field(assignment.location)
+    work_mode = display_field(assignment.work_mode)
+    if location:
+        segments.append(location)
+    if work_mode:
+        segments.append(work_mode)
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
     if match.client_label != UNKNOWN_CLIENT_LABEL:
