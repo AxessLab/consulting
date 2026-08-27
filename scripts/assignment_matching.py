@@ -470,7 +470,7 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     relevant_description = assignment.description[:4000]
     text = _TAG_RE.sub(" ", unescape(f"{assignment.duration} {relevant_description}"))
     scope_match = re.search(
-        r"\b(omfattning|scope|utilization|beläggning|belaggning|engagemang)\b[^%\n]{0,40}(\d{1,3})\s*%",
+        r"\b(omfattning|scope|utilization|beläggning|belaggning|engagemang)\b[\s\S]{0,80}?(\d{1,3})\s*%",
         text,
         re.I,
     )
