@@ -486,6 +486,8 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
     )
     if match:
         client = match.group(1).strip(" .")
+        if normalize_text(client) == normalize_text(assignment.broker):
+            return UNKNOWN_CLIENT_LABEL
         if len(client) > 3 and normalize_text(client) not in {
             "detta",
             "denna",
