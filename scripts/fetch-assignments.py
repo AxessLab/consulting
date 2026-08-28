@@ -35,7 +35,7 @@ def build_platform_summary(platform_results: list[dict[str, Any]]) -> str:
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def prepare_candidates(
@@ -47,7 +47,7 @@ def prepare_candidates(
     headless: bool = True,
     with_suggestions: bool = True,
 ) -> dict[str, Any]:
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, previous_memory = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
@@ -60,6 +60,16 @@ def prepare_candidates(
         for assignment in deduped_assignments
         if assignment.dedupe_key not in seen_keys
     ]
+    raw_unique_new = [
+        assignment
+        for assignment in raw_assignments
+        if assignment.dedupe_key not in seen_keys
+    ]
+    new_ids_by_source: dict[str, int] = {}
+    for assignment in raw_unique_new:
+        new_ids_by_source[assignment.platform] = (
+            new_ids_by_source.get(assignment.platform, 0) + 1
+        )
 
     profiles = load_consultant_profiles()
     suggestions: list[dict[str, Any]] = []
@@ -84,9 +94,10 @@ def prepare_candidates(
     ]
 
     memory_update = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        previous_memory=previous_memory,
     )
 
     suggested_report = [
@@ -106,6 +117,7 @@ def prepare_candidates(
             "total_unique_visible": len(deduped_assignments),
             "previously_seen": len(seen_keys),
             "new_ids": len(new_assignments),
+            "new_ids_by_source": new_ids_by_source,
             "expired_new_ids": len(expired),
             "script_suggestions": len(suggested_report),
             "active_consultants": len(profiles),

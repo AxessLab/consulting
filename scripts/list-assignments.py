@@ -55,7 +55,7 @@ def build_platform_summary(platform_results: list[PlatformScanResult]) -> str:
             parts.append(f"{result.platform} (skipped)")
         else:
             parts.append(f"{result.platform} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def build_slack_debug(
@@ -106,7 +106,7 @@ def prepare_listing(
     headless: bool = True,
 ) -> dict[str, Any]:
     scan_date = scan_date or date.today()
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, previous_memory = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
@@ -117,6 +117,12 @@ def prepare_listing(
     new_assignments = [
         assignment for assignment in deduped_assignments if assignment.dedupe_key not in seen_keys
     ]
+    raw_unique_new = [
+        assignment for assignment in raw_assignments if assignment.dedupe_key not in seen_keys
+    ]
+    new_ids_by_source: dict[str, int] = {}
+    for assignment in raw_unique_new:
+        new_ids_by_source[assignment.platform] = new_ids_by_source.get(assignment.platform, 0) + 1
 
     profiles = load_consultant_profiles()
     matches, rejects = process_assignments(
@@ -127,9 +133,10 @@ def prepare_listing(
     )
 
     memory_payload = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        previous_memory=previous_memory,
     )
 
     return {
@@ -151,6 +158,7 @@ def prepare_listing(
             "total_unique_visible": len(deduped_assignments),
             "previously_seen": len(seen_keys),
             "new_ids": len(new_assignments),
+            "new_ids_by_source": new_ids_by_source,
             "reported_matches": len(matches),
             "rejected": len(rejects),
             "active_consultants": len(profiles),

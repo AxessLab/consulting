@@ -142,7 +142,7 @@ def scan_allakonsultuppdrag(
                 record = AssignmentRecord(
                     platform=platform,
                     source_id=source_id,
-                    listing_id=source_id,
+                    listing_id=f"a{source_id}",
                     title=row.get("title") or "",
                     description=row.get("description") or "",
                     description_summary=row.get("descriptionSummary") or "",
@@ -788,6 +788,15 @@ def _cinode_work_mode(html_chunk: str) -> str:
     return remote.group(1) if remote else ""
 
 
+def _cinode_remote_value(value: str) -> str:
+    normalized = value.strip().lower()
+    if normalized in {"no", "nej"}:
+        return "on-site"
+    if normalized in {"yes", "ja"}:
+        return "Remote"
+    return value
+
+
 def _cinode_parse_cards(html_text: str) -> list[dict[str, str]]:
     parts = _CINODE_CARD_SPLIT_RE.split(html_text)
     cards: list[dict[str, str]] = []
@@ -990,7 +999,7 @@ def scan_cinode_market(
                             else f"{duration}; {detail['extent']}"
                         )
                     if detail.get("remote") and not work_mode:
-                        work_mode = detail["remote"]
+                        work_mode = _cinode_remote_value(detail["remote"])
                     skills = detail.get("skills") or []
                     if description_summary and description:
                         description = f"{description_summary}\n\n{description}"
