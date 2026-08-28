@@ -23,6 +23,7 @@ from assignment_matching import (
 )
 from assignment_platforms import DEFAULT_PLATFORMS, AssignmentRecord, PlatformScanResult, scan_platforms
 from listing_memory import DEFAULT_MEMORY_PATH, build_memory_payload, commit_memory, load_memory
+from listing_memory import collect_seen_ids_by_source
 
 
 def section_lines(matches: list[MatchedAssignment], section: str, scan_date: date) -> str:
@@ -55,7 +56,7 @@ def build_platform_summary(platform_results: list[PlatformScanResult]) -> str:
             parts.append(f"{result.platform} (skipped)")
         else:
             parts.append(f"{result.platform} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def build_slack_debug(
@@ -71,7 +72,7 @@ def build_slack_debug(
     lines = [
         build_platform_summary(platform_results),
         f"Scan date: {scan_date.isoformat()}",
-        f"Visible assignments: {total_visible} (unique after cross-platform dedupe: {total_unique_visible})",
+        f"Visible assignments: {total_visible} (reporting pool after cross-source dedupe: {total_unique_visible})",
         f"New ids: {new_count}",
         f"Reported matches: {reported_count}",
         "(deterministic mode — prefer fetch + AI curation for production)",
@@ -106,16 +107,22 @@ def prepare_listing(
     headless: bool = True,
 ) -> dict[str, Any]:
     scan_date = scan_date or date.today()
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, memory_data = load_memory(memory_path)
+    seen_ids_by_source = collect_seen_ids_by_source(memory_data)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_ids_by_source=seen_ids_by_source,
+        scan_date=scan_date,
     )
     deduped_assignments = cross_platform_dedupe(raw_assignments)
     new_assignments = [
-        assignment for assignment in deduped_assignments if assignment.dedupe_key not in seen_keys
+        assignment
+        for assignment in deduped_assignments
+        if assignment.source_id
+        not in seen_ids_by_source.get(assignment.resolved_source_key, set())
     ]
 
     profiles = load_consultant_profiles()
@@ -127,7 +134,7 @@ def prepare_listing(
     )
 
     memory_payload = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
     )
@@ -136,6 +143,7 @@ def prepare_listing(
         "source": "deterministic-listing",
         "scan_date": scan_date.isoformat(),
         "memory_path": str(memory_path),
+        "sources": [result.platform for result in platform_results],
         "platforms": [result.platform for result in platform_results],
         "platform_results": [
             {
@@ -169,7 +177,8 @@ def prepare_listing(
         "matches": [
             {
                 "listing_id": match.assignment.listing_id,
-                "platform": match.assignment.platform,
+                "source_key": match.assignment.resolved_source_key,
+                "platform": match.assignment.resolved_source_key,
                 "section": match.section,
                 "title": match.assignment.title,
                 "consultants": match.consultants,
