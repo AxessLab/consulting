@@ -451,13 +451,14 @@ UNKNOWN_CLIENT_LABEL = "not stated"
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
     text = f"{assignment.description} {assignment.duration}"
-    scope_match = re.search(
+    for scope_match in re.finditer(
         r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
         text,
         re.I,
-    )
-    if scope_match:
-        return f"{scope_match.group(2)}%"
+    ):
+        percentage = int(scope_match.group(2))
+        if 0 < percentage <= 100:
+            return f"{percentage}%"
 
     duration = assignment.duration or ""
     duration_percent = re.search(r"\b(\d{1,3})\s*%", duration)
@@ -540,9 +541,9 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
         posted_date_label(assignment, scan_date),
         slack_title_link(assignment.source_url, assignment.title),
     ]
-    if assignment.location:
+    if assignment.location and normalize_text(assignment.location) != "unknown":
         segments.append(assignment.location)
-    if assignment.work_mode:
+    if assignment.work_mode and normalize_text(assignment.work_mode) != "unknown":
         segments.append(assignment.work_mode)
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
