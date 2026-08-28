@@ -472,6 +472,9 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if weekly_hours:
         return f"{weekly_hours.group(1)} h/week"
 
+    if re.search(r"\b(full[- ]time|heltid)\b", text, re.I):
+        return "Full-time"
+
     if re.search(r"\b(part[- ]time|deltid)\b", text, re.I):
         return "Part time"
     return UNKNOWN_HOURS_LABEL
