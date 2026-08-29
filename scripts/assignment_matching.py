@@ -520,7 +520,10 @@ def slack_title_link(url: str, title: str) -> str:
 
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
-    location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
+    work_mode = assignment.work_mode.strip()
+    if normalize_text(work_mode) in {"unknown", "not stated", "not specified"}:
+        work_mode = ""
+    location = f"{assignment.location} | {work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     segments = [
         assignment.listing_id,
