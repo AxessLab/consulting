@@ -28,7 +28,7 @@ def build_slack_debug_summary(platform_results: list[dict[str, Any]]) -> str:
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

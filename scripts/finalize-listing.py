@@ -95,15 +95,22 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    new_ids_by_source = stats.get("new_ids_by_source") or {}
+    if isinstance(new_ids_by_source, dict) and new_ids_by_source:
+        new_ids_label = ", ".join(
+            f"{source}={count}" for source, count in sorted(new_ids_by_source.items())
+        )
+    else:
+        new_ids_label = "none"
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
         (
             "Visible assignments: "
             f"{stats.get('total_visible', 0)} "
             f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
         ),
-        f"New ids: {stats.get('new_ids', 0)}",
+        f"New ids after per-source dedupe: {new_ids_label}",
         f"Reported matches: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
         "",
