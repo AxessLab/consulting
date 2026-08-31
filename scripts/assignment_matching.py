@@ -487,8 +487,12 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
-    description = assignment.description
-    for pattern in (r"(?:Kund|End client|Slutkund|Client)\s*:\s*([^\n|]+)",):
+    description = f"{assignment.description_summary}\n{assignment.description}"
+    for pattern in (
+        r"(?:Kund|End client|Slutkund|Client)\s*:\s*([^\n|]+)",
+        r"\bTill\s+vår\s+kund\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&\s.-]{2,80})\s+söker",
+        r"\bTill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&\s.-]{2,80})\s+söker\s+vi",
+    ):
         match = re.search(pattern, description, re.I)
         if match:
             client = match.group(1).strip(" .")
