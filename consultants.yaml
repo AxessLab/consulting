@@ -173,6 +173,7 @@ consultants:
         roles:
           - frontend
           - react
+          - angular
           - nextjs
           - typescript
           - accessibility
@@ -203,6 +204,7 @@ consultants:
         roles:
           - frontend
           - react
+          - angular
           - typescript
           - nextjs
           - accessibility
