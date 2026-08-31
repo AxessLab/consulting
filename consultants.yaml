@@ -204,7 +204,6 @@ consultants:
         roles:
           - frontend
           - react
-          - angular
           - typescript
           - nextjs
           - accessibility
@@ -466,6 +465,7 @@ consultants:
         roles:
           - frontend
           - react
+          - angular
           - typescript
           - accessibility
           - design-system
