@@ -95,16 +95,30 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    platform_results = candidates.get("platform_results") or []
+    visible_parts = []
+    new_parts = []
+    new_by_source = stats.get("new_ids_by_source") or {}
+    for result in platform_results:
+        platform = result.get("platform", "?")
+        status = result.get("status")
+        if status == "ok":
+            visible_parts.append(f"{platform}: {result.get('count', 0)}")
+            new_parts.append(f"{platform}: {new_by_source.get(platform, 0)}")
+        else:
+            visible_parts.append(f"{platform}: ({status or 'error'})")
+            new_parts.append(f"{platform}: ({status or 'error'})")
+
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
+        "Total visible per source: " + ", ".join(visible_parts),
+        "New ids per source: " + ", ".join(new_parts),
         (
-            "Visible assignments: "
-            f"{stats.get('total_visible', 0)} "
-            f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
+            "Combined unique after cross-source dedupe: "
+            f"{stats.get('total_unique_visible', 0)}"
         ),
-        f"New ids: {stats.get('new_ids', 0)}",
-        f"Reported matches: {reported_count}",
+        f"Reported matches after cross-source dedupe: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
         "",
         "Close non-matches (sample):",
