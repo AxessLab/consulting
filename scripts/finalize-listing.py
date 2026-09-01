@@ -38,7 +38,7 @@ def load_curated(path: Path) -> dict[str, Any]:
 def assignment_index(candidates: dict[str, Any]) -> dict[str, AssignmentRecord]:
     index: dict[str, AssignmentRecord] = {}
     for row in candidates.get("assignments", []):
-        record = AssignmentRecord(**row)
+        record = AssignmentRecord.from_dict(row)
         index[record.dedupe_key] = record
         index[f"{record.platform}:{record.listing_id}"] = record
         index[record.listing_id] = record
@@ -101,9 +101,10 @@ def build_slack_debug(
         (
             "Visible assignments: "
             f"{stats.get('total_visible', 0)} "
-            f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
+            f"(unique after cross-source dedupe: {stats.get('total_unique_visible', 0)})"
         ),
-        f"New ids: {stats.get('new_ids', 0)}",
+        f"New ids by source: {json.dumps(stats.get('new_ids_by_source', {}), ensure_ascii=False)}",
+        f"New ids after cross-source dedupe: {stats.get('new_ids_after_cross_source_dedupe', stats.get('new_ids', 0))}",
         f"Reported matches: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
         "",

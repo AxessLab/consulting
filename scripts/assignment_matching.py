@@ -179,6 +179,8 @@ def skill_names(assignment: AssignmentRecord) -> list[str]:
     for skill in assignment.skills:
         if isinstance(skill, dict) and skill.get("name"):
             names.append(normalize_text(str(skill["name"])))
+        elif isinstance(skill, str) and skill.strip():
+            names.append(normalize_text(skill))
     return names
 
 
@@ -195,6 +197,7 @@ def combined_text(assignment: AssignmentRecord) -> str:
 def parse_iso_date(value: str | None) -> date | None:
     if not value:
         return None
+    value = str(value)
     try:
         return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
     except ValueError:
@@ -210,7 +213,12 @@ def is_active_assignment(assignment: AssignmentRecord, scan_date: date) -> bool:
 
 def is_remote(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
-    return any(term in fields for term in ("remote", "distans", "fjarrarbete", "fjärrarbete"))
+    if any(term in fields for term in ("distans", "fjarrarbete", "fjärrarbete")):
+        return True
+    percent_remote = re.search(r"\b(\d{1,3})\s*%\s*remote\b", fields)
+    if percent_remote:
+        return int(percent_remote.group(1)) >= 100
+    return bool(re.search(r"\b(remote|fully remote)\b", fields)) and "hybrid" not in fields
 
 
 def is_hybrid(work_mode: str, location: str) -> bool:
@@ -410,6 +418,8 @@ def match_consultants_for_assignment(
 ) -> tuple[str, list[str]]:
     if EMPLOYMENT_AD.search(combined_text(assignment)):
         return "reject", []
+    if not assignment.description and not assignment.description_summary and not skill_names(assignment):
+        return "reject", []
 
     categories = detect_role_categories(assignment)
     if not categories:
@@ -445,12 +455,20 @@ def match_consultants_for_assignment(
     return section, matched
 
 
-UNKNOWN_HOURS_LABEL = "not stated (probably full time)"
-UNKNOWN_CLIENT_LABEL = "not stated"
+UNKNOWN_HOURS_LABEL = ""
+UNKNOWN_CLIENT_LABEL = ""
 
 
 def parse_hours_label(assignment: AssignmentRecord) -> str:
-    text = f"{assignment.description} {assignment.duration}"
+    description_text = assignment.description or ""
+    duration_text = assignment.duration or ""
+    text = f"{description_text} {duration_text}"
+    duration_clean = duration_text.strip()
+    duration_normalized = normalize_text(duration_clean)
+    if re.fullmatch(r"\d{1,3}\s*%|[0-9]+(?:[.,][0-9]+)?\s*h(?:ours)?/?(?:week|vecka)", duration_normalized):
+        return duration_clean.replace(" ", "") if "%" in duration_clean else duration_clean
+    if re.search(r"\b(part[ -]?time|deltid)\b", duration_normalized):
+        return "Part time"
     scope_match = re.search(
         r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
         text,
@@ -458,19 +476,13 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     )
     if scope_match:
         return f"{scope_match.group(2)}%"
-
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
     return UNKNOWN_HOURS_LABEL
 
 
 def parse_client_label(assignment: AssignmentRecord) -> str:
     description = assignment.description
     for pattern in (
-        r"(?:Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
-        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö\s]+?)\b",
+        r"(?:Client|Kund|End client|Slutkund)\s*:\s*([^\n|]+)",
     ):
         match = re.search(pattern, description, re.I)
         if match:
@@ -511,22 +523,23 @@ def slack_title_link(url: str, title: str) -> str:
 
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
-    location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
     ]
-    if match.hours_label != UNKNOWN_HOURS_LABEL:
+    if assignment.location:
+        segments.append(assignment.location)
+    if assignment.work_mode:
+        segments.append(assignment.work_mode)
+    if match.hours_label:
         segments.append(match.hours_label)
-    if match.client_label != UNKNOWN_CLIENT_LABEL:
+    if match.client_label:
         segments.append(f"Client: {match.client_label}")
-    segments.extend(
-        [
-            assignment.broker,
-            posted_date_label(assignment, scan_date),
-            f"Match: {consultants}",
-        ]
-    )
+    if assignment.broker:
+        segments.append(assignment.broker)
+    segments.append(f"Match: {consultants}")
     return " | ".join(segments)
 
 
