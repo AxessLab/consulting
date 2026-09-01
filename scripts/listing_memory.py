@@ -1,4 +1,4 @@
-"""Persistent dedupe memory for assignment listing runs."""
+"""Persistent per-source dedupe memory for assignment listing runs."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-from assignment_platforms import AssignmentRecord, PlatformScanResult
+from assignment_platforms import AssignmentRecord, PlatformScanResult, SOURCE_REGISTRY
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MEMORY_PATH = REPO_ROOT / "assignment-listing-seen.json"
@@ -16,6 +16,14 @@ DEFAULT_MEMORY_PATH = REPO_ROOT / "assignment-listing-seen.json"
 def collect_seen_keys(data: dict[str, Any]) -> set[str]:
     """Read seen dedupe keys from current or legacy memory shapes."""
     seen_keys: set[str] = set()
+
+    sources = data.get("sources")
+    if isinstance(sources, dict):
+        for source_key, state in sources.items():
+            if isinstance(state, dict) and isinstance(state.get("seen_ids"), list):
+                for source_id in state["seen_ids"]:
+                    seen_keys.add(f"{source_key}:{source_id}")
+
     if isinstance(data.get("seen_keys"), list):
         seen_keys.update(str(item) for item in data["seen_keys"])
 
@@ -34,31 +42,51 @@ def collect_seen_keys(data: dict[str, Any]) -> set[str]:
     return seen_keys
 
 
+def collect_seen_ids_by_source(data: dict[str, Any]) -> dict[str, set[str]]:
+    """Return bare native ids grouped by source key from any supported memory shape."""
+    seen_by_source: dict[str, set[str]] = {source: set() for source in SOURCE_REGISTRY}
+    for key in collect_seen_keys(data):
+        if ":" not in key:
+            continue
+        source_key, source_id = key.split(":", 1)
+        seen_by_source.setdefault(source_key, set()).add(source_id)
+    return seen_by_source
+
+
 def normalize_memory_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    """Keep dedupe ids only in seen_keys; retain per-platform scan metadata."""
-    seen_keys = collect_seen_keys(payload)
-    platforms: dict[str, Any] = {}
-    raw_platforms = payload.get("platforms")
-    if isinstance(raw_platforms, dict):
-        for platform_id, state in raw_platforms.items():
-            if not isinstance(state, dict):
-                continue
-            entry: dict[str, Any] = {
-                "status": state.get("status"),
-                "total_visible": state.get("total_visible"),
-            }
-            if state.get("message"):
-                entry["message"] = state["message"]
-            platforms[platform_id] = entry
+    """Normalize current and legacy shapes into the unified per-source memory."""
+    seen_by_source = collect_seen_ids_by_source(payload)
+    raw_sources = payload.get("sources") if isinstance(payload.get("sources"), dict) else {}
+    sources: dict[str, Any] = {}
+
+    for source_key, meta in SOURCE_REGISTRY.items():
+        raw_state = raw_sources.get(source_key, {}) if isinstance(raw_sources, dict) else {}
+        seen_ids = sorted(seen_by_source.get(source_key, set()))
+        total_visible = len(seen_ids)
+        total_unique_visible = len(seen_ids)
+        if isinstance(raw_state, dict):
+            total_visible = int(raw_state.get("total_visible") or total_visible)
+            total_unique_visible = int(
+                raw_state.get("total_unique_visible") or total_unique_visible
+            )
+        sources[source_key] = {
+            "prefix": meta["prefix"],
+            "seen_ids": seen_ids,
+            "total_visible": total_visible,
+            "total_unique_visible": total_unique_visible,
+        }
 
     normalized: dict[str, Any] = {
         "source": payload.get("source", "multi-platform assignment listing"),
         "last_scan_at": payload.get("last_scan_at"),
         "scan_date": payload.get("scan_date"),
-        "platforms": platforms,
-        "seen_keys": sorted(seen_keys),
-        "total_visible": payload.get("total_visible", len(seen_keys)),
-        "total_unique_visible": payload.get("total_unique_visible", len(seen_keys)),
+        "sources": sources,
+        "total_visible": sum(
+            int(source.get("total_visible") or 0) for source in sources.values()
+        ),
+        "total_unique_visible": sum(
+            int(source.get("total_unique_visible") or 0) for source in sources.values()
+        ),
     }
     return normalized
 
@@ -79,25 +107,54 @@ def build_memory_payload(
     assignments: list[AssignmentRecord],
     platform_results: list[PlatformScanResult],
     scan_date: date,
+    previous_memory: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """Build the next memory state, updating only successfully scanned sources."""
     now = datetime.now(UTC).isoformat()
-    platforms: dict[str, Any] = {}
-    for result in platform_results:
-        platforms[result.platform] = {
-            "status": result.status,
-            "total_visible": result.count,
+    previous = normalize_memory_payload(previous_memory or {})
+    previous_sources = previous.get("sources", {})
+    sources: dict[str, Any] = {
+        source_key: {
+            "prefix": meta["prefix"],
+            "seen_ids": list(previous_sources.get(source_key, {}).get("seen_ids", [])),
+            "total_visible": int(previous_sources.get(source_key, {}).get("total_visible", 0)),
+            "total_unique_visible": int(
+                previous_sources.get(source_key, {}).get("total_unique_visible", 0)
+            ),
         }
-        if result.message:
-            platforms[result.platform]["message"] = result.message
+        for source_key, meta in SOURCE_REGISTRY.items()
+    }
+
+    ids_by_source: dict[str, set[str]] = {source_key: set() for source_key in SOURCE_REGISTRY}
+    visible_by_source: dict[str, int] = {source_key: 0 for source_key in SOURCE_REGISTRY}
+    for assignment in assignments:
+        ids_by_source.setdefault(assignment.platform, set()).add(assignment.source_id)
+        visible_by_source[assignment.platform] = visible_by_source.get(assignment.platform, 0) + 1
+
+    for result in platform_results:
+        if result.status != "ok":
+            continue
+        source_key = result.platform
+        meta = SOURCE_REGISTRY.get(source_key, {"prefix": ""})
+        seen_ids = sorted(ids_by_source.get(source_key, set()))
+        sources[source_key] = {
+            "prefix": meta["prefix"],
+            "seen_ids": seen_ids,
+            "total_visible": visible_by_source.get(source_key, result.count),
+            "total_unique_visible": len(seen_ids),
+        }
 
     return {
         "source": "multi-platform assignment listing",
         "last_scan_at": now,
         "scan_date": scan_date.isoformat(),
-        "platforms": platforms,
-        "seen_keys": sorted({assignment.dedupe_key for assignment in assignments}),
-        "total_visible": len(assignments),
-        "total_unique_visible": len({assignment.dedupe_key for assignment in assignments}),
+        "sources": sources,
+        "total_visible": sum(
+            int(source.get("total_visible") or 0) for source in sources.values()
+        ),
+        "total_unique_visible": sum(
+            int(source.get("total_unique_visible") or 0) for source in sources.values()
+        ),
     }
 
 
