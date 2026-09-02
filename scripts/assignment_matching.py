@@ -468,12 +468,13 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if hours_match:
         return f"{hours_match.group(1)} h/week"
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang)[^%\n]{0,40}(\d{1,3})\s*%",
         text,
         re.I,
     )
     if scope_match:
-        return f"{scope_match.group(2)}%"
+        value = int(scope_match.group(2))
+        return f"{value}%" if value > 0 else UNKNOWN_HOURS_LABEL
     if re.search(r"\b(part[ -]?time|deltid)\b", text, re.I):
         return "Part time"
     if re.search(r"\b(full[ -]?time|heltid)\b", text, re.I):
