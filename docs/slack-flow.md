@@ -8,18 +8,16 @@ analysis and CV generation requests should work.
 The assignment-listing automation posts compact Slack items. Each item should
 include:
 
-- assignment id in square brackets
-- assignment title
-- location and/or main role summary
-- link to the full online ad
-- suggested consultant names
+- source-prefixed assignment id
+- posted date
+- linked assignment title
+- location and/or work mode
+- broker and suggested consultant names
 
 Example:
 
 ```text
-[12345] Senior Front-end Developer, Stockholm
-<https://example.com/ad/12345|View ad>
-Good matches: Joel, Lena
+a12345 | 2026-06-01 | <https://example.com/ad/12345|Senior Front-end Developer> | Stockholm | Broker | Match: Joel, Lena
 ```
 
 ## Fit command
@@ -34,16 +32,18 @@ fit <name>                     # from pasted ad text
 Examples:
 
 ```text
-fit 12345 Joel
-fit 12345 Joel Andersson
+fit a12345 Joel
+fit a12345 Joel Andersson
 fit v81387 Soma
 fit c19622 Joel
+fit mcbbe63d1-d81a-bff3-1f3f-95e1a814e812 Joel
+fit n12345 Soma
 fit Karin Toft
 ```
 
-When the first token after `fit` is a listed assignment id (all digits, `v`
-followed by digits for Verama, or `c` followed by digits for Chas Partner
-Network), the automation uses **listed assignment mode**
+When the first token after `fit` is a listed assignment id (`a` allakonsult,
+`v` Verama, `c` Chas Partner Network, `m` Magnit Source, or `n` Cinode Market),
+the automation uses **listed assignment mode**
 and reads the id and ad link from the parent message. When it is not a listed
 id, the automation uses **pasted ad mode** and reads the assignment requirements
 from the parent message text instead of fetching an online ad.
@@ -60,11 +60,13 @@ generate <name> [language]                     # from pasted ad text
 Examples:
 
 ```text
-generate 12345 Joel
-generate 12345 Joel Holmberg english
-generate 12345 Joel Holmberg sv
+generate a12345 Joel
+generate a12345 Joel Holmberg english
+generate a12345 Joel Holmberg sv
 generate v81387 Soma english
 generate c19622 Joel english
+generate mcbbe63d1-d81a-bff3-1f3f-95e1a814e812 Joel english
+generate n12345 Soma english
 generate Karin Toft
 generate Karin Toft english
 generate Karin Toft sv
@@ -73,10 +75,10 @@ generate Karin Toft sv
 The optional language token must be the final token. Supported values are
 `english`, `swedish`, `en`, and `sv`.
 
-When the first token after `generate` is a listed assignment id (all digits, `v`
-followed by digits for Verama, or `c` followed by digits for Chas Partner
-Network), the automation uses **listed assignment mode** and reads the id and ad
-link from the parent message. When it is not a listed id, the automation uses
+When the first token after `generate` is a listed assignment id (`a`
+allakonsult, `v` Verama, `c` Chas Partner Network, `m` Magnit Source, or `n`
+Cinode Market), the automation uses **listed assignment mode** and reads the id
+and ad link from the parent message. When it is not a listed id, the automation uses
 **pasted ad mode** and reads the assignment requirements from the parent message
 text instead of fetching an online ad.
 

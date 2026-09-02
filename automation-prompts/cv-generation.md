@@ -14,11 +14,13 @@ generate <name> [language]                     # pasted ad text (new)
 Examples:
 
 ```text
-generate 12345 Joel
-generate 12345 Joel Holmberg english
-generate 12345 Joel Holmberg sv
+generate a12345 Joel
+generate a12345 Joel Holmberg english
+generate a12345 Joel Holmberg sv
 generate v81387 Soma english
 generate c19622 Joel english
+generate mcbbe63d1-d81a-bff3-1f3f-95e1a814e812 Joel english
+generate n12345 Soma english
 generate Karin Toft
 generate Karin Toft english
 generate Karin Toft sv
@@ -30,10 +32,11 @@ generate Karin Toft sv
 2. Treat the optional final token as a requested language only when it is one of
    `en`, `english`, `sv`, or `swedish`. Remove it from the remaining tokens.
 3. If the first remaining token is a listed assignment id, use **listed
-   assignment mode**. Listed ids are all digits (`6236`), Verama ids with a
-   `v` prefix (`v81387`), Chas Partner Network ids with a `c` prefix
-   (`c19622`), or Magnit Source ids with an `m` prefix
-   (`mcbbe63d1-d81a-bff3-1f3f-95e1a814e812`). The assignment id is that token; the consultant name is
+   assignment mode**. Listed ids use source prefixes: `a` for
+   allakonsultuppdrag.se (`a6236`), `v` for Verama (`v81387`), `c` for Chas
+   Partner Network (`c19622`), `m` for Magnit Source
+   (`mcbbe63d1-d81a-bff3-1f3f-95e1a814e812`), and `n` for Cinode Market
+   (`n12345`). The assignment id is that token; the consultant name is
    the rest of the tokens joined with spaces.
 4. Otherwise use **pasted ad mode**. The consultant name is all remaining
    tokens joined with spaces. There is no assignment id in the command.
@@ -47,7 +50,7 @@ Do not require an assignment id when the parent message is pasted ad text.
 The Slack parent message comes from the assignment-listing automation. It
 contains:
 
-- `[assignment-id]` in square brackets
+- a source-prefixed assignment id
 - assignment title and summary
 - a link to the full online ad
 

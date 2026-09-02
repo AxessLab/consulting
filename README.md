@@ -102,15 +102,17 @@ fit <name>                     # pasted ad text
 
 Examples:
 
-- `fit 12345 Joel`
-- `fit 12345 Joel Andersson`
+- `fit a12345 Joel`
+- `fit a12345 Joel Andersson`
 - `fit v81387 Soma`
 - `fit c19622 Joel`
+- `fit mcbbe63d1-d81a-bff3-1f3f-95e1a814e812 Joel`
+- `fit n12345 Soma`
 - `fit Karin Toft`
 
-When the first token after `fit` is a listed assignment id (all digits, `v`
-followed by digits for Verama, or `c` followed by digits for Chas Partner
-Network), the automation reads the Slack parent message,
+When the first token after `fit` is a listed assignment id (`a` allakonsult,
+`v` Verama, `c` Chas Partner Network, `m` Magnit Source, or `n` Cinode Market),
+the automation reads the Slack parent message,
 finds the assignment id, resolves the assignment ad link, and fetches the online
 ad page.
 
@@ -137,20 +139,22 @@ generate <name> [language]                     # pasted ad text
 
 Examples:
 
-- `generate 12345 Joel`
-- `generate 12345 Joel Holmberg english`
-- `generate 12345 Joel Holmberg sv`
+- `generate a12345 Joel`
+- `generate a12345 Joel Holmberg english`
+- `generate a12345 Joel Holmberg sv`
 - `generate v81387 Soma english`
 - `generate c19622 Joel english`
+- `generate mcbbe63d1-d81a-bff3-1f3f-95e1a814e812 Joel english`
+- `generate n12345 Soma english`
 - `generate Karin Toft`
 - `generate Karin Toft english`
 
 The optional language token must be the final token. Supported language values
 are `english`, `swedish`, `en`, and `sv`.
 
-When the first token after `generate` is a listed assignment id (all digits, `v`
-followed by digits for Verama, or `c` followed by digits for Chas Partner
-Network), the automation reads the Slack parent
+When the first token after `generate` is a listed assignment id (`a`
+allakonsult, `v` Verama, `c` Chas Partner Network, `m` Magnit Source, or `n`
+Cinode Market), the automation reads the Slack parent
 message, finds the assignment id, resolves the assignment ad link, and fetches
 the online ad page.
 

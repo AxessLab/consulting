@@ -14,10 +14,12 @@ fit <name>                   # pasted ad text (new)
 Examples:
 
 ```text
-fit 12345 Joel
-fit 12345 Joel Andersson
+fit a12345 Joel
+fit a12345 Joel Andersson
 fit v81387 Soma
 fit c19622 Joel
+fit mcbbe63d1-d81a-bff3-1f3f-95e1a814e812 Joel
+fit n12345 Soma
 fit Karin Toft
 ```
 
@@ -25,10 +27,11 @@ fit Karin Toft
 
 1. Parse the thread reply as `fit …`.
 2. If the first remaining token is a listed assignment id, use **listed
-   assignment mode**. Listed ids are all digits (`6236`), Verama ids with a
-   `v` prefix (`v81387`), Chas Partner Network ids with a `c` prefix
-   (`c19622`), or Magnit Source ids with an `m` prefix
-   (`mcbbe63d1-d81a-bff3-1f3f-95e1a814e812`). The assignment id is that token; the consultant name is
+   assignment mode**. Listed ids use source prefixes: `a` for
+   allakonsultuppdrag.se (`a6236`), `v` for Verama (`v81387`), `c` for Chas
+   Partner Network (`c19622`), `m` for Magnit Source
+   (`mcbbe63d1-d81a-bff3-1f3f-95e1a814e812`), and `n` for Cinode Market
+   (`n12345`). The assignment id is that token; the consultant name is
    the rest of the tokens joined with spaces.
 3. Otherwise use **pasted ad mode**. The consultant name is all remaining
    tokens joined with spaces. There is no assignment id in the command.
@@ -42,7 +45,7 @@ Do not require an assignment id when the parent message is pasted ad text.
 The Slack parent message comes from the assignment-listing automation. It
 contains:
 
-- `[assignment-id]` in square brackets
+- a source-prefixed assignment id
 - assignment title and summary
 - a link to the full online ad
 
