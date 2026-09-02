@@ -462,7 +462,8 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     text = f"{assignment.description} {assignment.duration}"
     duration = assignment.duration.strip()
     if re.fullmatch(r"\d{1,3}\s*%", duration):
-        return re.sub(r"\s+", "", duration)
+        value = int(re.sub(r"\D", "", duration))
+        return f"{value}%" if value > 0 else UNKNOWN_HOURS_LABEL
     hours_match = re.search(r"\b(\d{1,2})\s*(?:h|hours?|timmar)\s*/?\s*(?:week|vecka)\b", duration, re.I)
     if hours_match:
         return f"{hours_match.group(1)} h/week"
@@ -495,11 +496,6 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
-    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&(). -]{3,80})", assignment.title)
-    if title_match:
-        client = title_match.group(1).strip(" .")
-        if client:
-            return client
     return UNKNOWN_CLIENT_LABEL
 
 
