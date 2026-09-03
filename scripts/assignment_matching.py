@@ -541,6 +541,13 @@ def slack_title_link(url: str, title: str) -> str:
     return f"<{url}|{label}>"
 
 
+def known_display_value(value: str | None) -> str:
+    text = (value or "").strip()
+    if normalize_text(text) in {"unknown", "n/a", "not stated", "none"}:
+        return ""
+    return text
+
+
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
     consultants = ", ".join(match.consultants)
@@ -549,10 +556,12 @@ def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
         posted_date_label(assignment, scan_date),
         slack_title_link(assignment.source_url, assignment.title),
     ]
-    if assignment.location:
-        segments.append(assignment.location)
-    if assignment.work_mode:
-        segments.append(assignment.work_mode)
+    location = known_display_value(assignment.location)
+    work_mode = known_display_value(assignment.work_mode)
+    if location:
+        segments.append(location)
+    if work_mode:
+        segments.append(work_mode)
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
     if match.client_label != UNKNOWN_CLIENT_LABEL:
