@@ -473,14 +473,14 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     ):
         return f"{duration_percent.group(1)}%"
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}([1-9]\d?|100)\s*%",
         text,
         re.I,
     )
     if scope_match:
         return f"{scope_match.group(2)}%"
     reverse_scope_match = re.search(
-        r"\b(\d{1,3})\s*%[^.\n]{0,40}(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)",
+        r"\b([1-9]\d?|100)\s*%[^.\n]{0,40}(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)",
         text,
         re.I,
     )
