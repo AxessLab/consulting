@@ -462,8 +462,15 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     hours = re.search(r"\b(\d{1,3})\s*(?:h/week|hours/week|timmar(?:/vecka)?|h/vecka)\b", duration, re.I)
     if hours:
         return f"{hours.group(1)} h/week"
-    duration_percent = re.search(r"\b(\d{1,3})\s*%", duration)
-    if duration_percent:
+    exact_duration_percent = re.fullmatch(r"\s*([1-9]\d?|100)\s*%\s*", duration)
+    if exact_duration_percent:
+        return f"{exact_duration_percent.group(1)}%"
+    duration_percent = re.search(r"\b([1-9]\d?|100)\s*%", duration)
+    if duration_percent and re.search(
+        r"\b(omfattning|scope|utilization|beläggning|belaggning|engagemang|max|extent)\b",
+        duration,
+        re.I,
+    ):
         return f"{duration_percent.group(1)}%"
     scope_match = re.search(
         r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
@@ -498,7 +505,11 @@ def parse_client_label(assignment: AssignmentRecord) -> str:
                 "client",
             }:
                 return client
-    title_match = re.search(r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&.\-\s]{3,60})", assignment.title)
+    title_match = re.search(
+        r"\btill\s+([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&.\-\s]{3,60}?"
+        r"(?:AB|Kommun|Region|Myndigheten|verket|styrelsen|förvaltningen))\b",
+        assignment.title,
+    )
     if title_match:
         client = title_match.group(1).strip(" .")
         if client:
