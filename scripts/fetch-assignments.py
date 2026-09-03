@@ -35,7 +35,7 @@ def build_platform_summary(platform_results: list[dict[str, Any]]) -> str:
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
 
 
 def prepare_candidates(
@@ -47,12 +47,14 @@ def prepare_candidates(
     headless: bool = True,
     with_suggestions: bool = True,
 ) -> dict[str, Any]:
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, memory_data = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
         max_pages=max_pages,
         headless=headless,
+        seen_keys=seen_keys,
+        scan_date=scan_date,
     )
     deduped_assignments = cross_platform_dedupe(raw_assignments)
     new_assignments = [
@@ -60,6 +62,12 @@ def prepare_candidates(
         for assignment in deduped_assignments
         if assignment.dedupe_key not in seen_keys
     ]
+    visible_by_source: dict[str, set[str]] = {}
+    new_by_source: dict[str, set[str]] = {}
+    for assignment in raw_assignments:
+        visible_by_source.setdefault(assignment.platform, set()).add(assignment.source_id)
+        if assignment.dedupe_key not in seen_keys:
+            new_by_source.setdefault(assignment.platform, set()).add(assignment.source_id)
 
     profiles = load_consultant_profiles()
     suggestions: list[dict[str, Any]] = []
@@ -84,9 +92,10 @@ def prepare_candidates(
     ]
 
     memory_update = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        previous_data=memory_data,
     )
 
     suggested_report = [
@@ -109,6 +118,14 @@ def prepare_candidates(
             "expired_new_ids": len(expired),
             "script_suggestions": len(suggested_report),
             "active_consultants": len(profiles),
+            "visible_by_source": {
+                platform: len(source_ids)
+                for platform, source_ids in sorted(visible_by_source.items())
+            },
+            "new_ids_by_source": {
+                platform: len(source_ids)
+                for platform, source_ids in sorted(new_by_source.items())
+            },
         },
         "assignments": [record.to_dict() for record in deduped_assignments],
         "new_dedupe_keys": [assignment.dedupe_key for assignment in new_assignments],
