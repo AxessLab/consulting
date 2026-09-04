@@ -424,7 +424,7 @@ Apply to **new** records after cross-source dedupe.
 
 1. Only report assignments new per source (`source_id` not in that source's `seen_ids`).
 2. Exclude assignments whose `lastApplicationDate` is before the scan date.
-3. Match role against the consultant list.
+3. Match role against active consultants in `consultants.yaml` (and the inhouse accessibility team when applicable).
 4. Location must be remote or Stockholm/Solna/near-Stockholm, except accessibility specialist roles (location ignored) and front-end roles (also accept Gothenburg).
 5. Treat `remote`/`distans`/`fjärrarbete` as remote only when present in `workMode` or `location` (after normalization). Do not let incidental description text make a hybrid non-Stockholm role pass.
 6. `hybrid` alone is not remote. Hybrid is acceptable only if `location` is Stockholm/Solna/near-Stockholm.
@@ -503,22 +503,17 @@ If the first pass produces suspicious matches, refine locally before Slack. Post
 
 ## Consultants
 
-- Joel Holmberg, 14 years, backend Java, fullstack Java + React, frontend React, SCRUM master
-- Nicko Syropoulis, 10 years, UX
-- Karin Toft, 10 years, front-end Angular, WordPress, React
-- Max Rautenberg, 4 years, front-end React
-- Soma Azad, 10 years, UX
-- Erik GS, 15 years, Project Manager (web), Scrum Master, Project coordinator
-- Emma Dawson, 5 years, front-end React
-- Daniel Göransson, 10 years, Accessibility specialist, Assistive tech specialist, Wordpress
-- Hampus Sethfors, 14 years, Accessibility specialist
-- Josefin Wessman, 13 years, Accessibility specialist
-- Eric Eggert, 20 years, Accessibility specialist
-- Henrik, 4 years, Accessibility specialist, Document accessibility specialist
-- Amin Amini, 3 years, Accessibility specialist
-- Nathalie Pentler, 4 years, Accessibility specialist, Physical accessibility specialist
-- Emilia Michanek, 7 years, Front-end react, angular
-- Inhouse accessibility team, 5-20 years, accessibility projects of any kind requiring more than 1 person
+Use **`consultants.yaml`** as the source of truth for who can match (active
+consultants only). Read `canonicalName`, `aliases`, `yearsExperience`,
+`mainRoles`, active `cvs[].roles`, and `locations`. Do not keep a parallel
+hardcoded consultant list in this prompt.
+
+Also match **Inhouse accessibility team** (not a YAML person) for accessibility
+projects that clearly need more than one person (team delivery, multiple
+consultants). Treat that bucket as 5–20 years of mixed accessibility experience.
+
+Use `canonicalName` in Slack `Match:` lines. Include `yearsExperience` when
+judging seniority fit; do not invent years that are not in the YAML.
 
 ## Slack output
 

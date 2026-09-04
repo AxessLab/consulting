@@ -25,6 +25,7 @@
           "canonicalName",
           "aliases",
           "cinodeCompanyUserId",
+          "yearsExperience",
           "mainRoles",
           "locations",
           "cvs",
@@ -45,6 +46,11 @@
           },
           "cinodeCompanyUserId": {
             "description": "Cinode company user id used in the CompanyUserProfile endpoint.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "yearsExperience": {
+            "description": "Approximate years of professional experience, used when matching assignment seniority.",
             "type": "integer",
             "minimum": 0
           },

@@ -125,6 +125,7 @@ ROLE_CATEGORY_TAGS: dict[str, set[str]] = {
 @dataclass
 class ConsultantProfile:
     name: str
+    years_experience: int | None
     main_roles: set[str]
     role_tags: set[str]
     locations: set[str]
@@ -162,9 +163,11 @@ def load_consultant_profiles() -> list[ConsultantProfile]:
                 continue
             role_tags.update(normalize_text(role) for role in variant.get("roles", []))
         locations = {normalize_text(loc) for loc in consultant.get("locations", [])}
+        years = consultant.get("yearsExperience")
         profiles.append(
             ConsultantProfile(
                 name=consultant["canonicalName"],
+                years_experience=int(years) if years is not None else None,
                 main_roles=main_roles,
                 role_tags=role_tags,
                 locations=locations,
@@ -564,6 +567,7 @@ def export_consultant_summaries(
     return [
         {
             "name": profile.name,
+            "yearsExperience": profile.years_experience,
             "mainRoles": sorted(profile.main_roles),
             "roleTags": sorted(profile.role_tags),
             "locations": sorted(profile.locations),

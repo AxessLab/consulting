@@ -6,6 +6,7 @@ consultants:
       - Amin Amini
       - A Amini
     cinodeCompanyUserId: 168092
+    yearsExperience: 3
     mainRoles:
       - accessibility
       - ux
@@ -41,6 +42,7 @@ consultants:
       - Daniel Göransson
       - D Göransson
     cinodeCompanyUserId: 90479
+    yearsExperience: 10
     mainRoles:
       - accessibility
       - frontend
@@ -74,8 +76,11 @@ consultants:
       - Emilia Michanek
       - E Michanek
     cinodeCompanyUserId: 90477
+    yearsExperience: 7
     mainRoles:
       - frontend
+      - react
+      - angular
       - accessibility
     locations:
       - stockholm
@@ -103,6 +108,7 @@ consultants:
       - Emma Dawson
       - E Dawson
     cinodeCompanyUserId: 193022
+    yearsExperience: 5
     mainRoles:
       - frontend
       - accessibility
@@ -134,6 +140,7 @@ consultants:
       - Eric Eggert
       - E Eggert
     cinodeCompanyUserId: 99406
+    yearsExperience: 20
     mainRoles:
       - accessibility
       - training
@@ -165,6 +172,7 @@ consultants:
       - Erik Gustafsson Spagnoli
       - E Gustafsson
     cinodeCompanyUserId: 90483
+    yearsExperience: 15
     mainRoles:
       - project-manager
       - accessibility
@@ -195,6 +203,7 @@ consultants:
       - Hampus Sethfors
       - H Sethfors
     cinodeCompanyUserId: 90429
+    yearsExperience: 14
     mainRoles:
       - accessibility
       - training
@@ -226,6 +235,7 @@ consultants:
       - Henrik Qvarfordt
       - H Qvarfordt
     cinodeCompanyUserId: 124101
+    yearsExperience: 4
     mainRoles:
       - accessibility
       - documents
@@ -254,6 +264,7 @@ consultants:
       - Joel Holmberg
       - J Holmberg
     cinodeCompanyUserId: 89506
+    yearsExperience: 14
     mainRoles:
       - fullstack
       - backend
@@ -261,6 +272,7 @@ consultants:
       - architect
       - accessibility
       - ai-assisted-development
+      - scrum-master
     locations:
       - stockholm
     cvs:
@@ -303,6 +315,7 @@ consultants:
       - Josefin Wessman
       - J Wessman
     cinodeCompanyUserId: 90486
+    yearsExperience: 13
     mainRoles:
       - ux
       - accessibility
@@ -333,8 +346,12 @@ consultants:
       - Karin Toft
       - K Toft
     cinodeCompanyUserId: 90533
+    yearsExperience: 10
     mainRoles:
       - frontend
+      - angular
+      - wordpress
+      - react
       - accessibility
     locations:
       - gothenburg
@@ -379,6 +396,7 @@ consultants:
       - Max Rautenberg
       - M Rautenberg
     cinodeCompanyUserId: 193111
+    yearsExperience: 4
     mainRoles:
       - frontend
       - accessibility
@@ -408,6 +426,7 @@ consultants:
       - Nathalie Pentler
       - N Pentler
     cinodeCompanyUserId: 118858
+    yearsExperience: 4
     mainRoles:
       - accessibility
       - physical-accessibility
@@ -439,6 +458,7 @@ consultants:
       - Nikolaos Syropoulos
       - N Syropoulos
     cinodeCompanyUserId: 100531
+    yearsExperience: 10
     mainRoles:
       - ux
       - ui
@@ -471,6 +491,7 @@ consultants:
       - Soma Azad
       - S Azad
     cinodeCompanyUserId: 261380
+    yearsExperience: 10
     mainRoles:
       - ux
       - accessibility

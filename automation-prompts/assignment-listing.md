@@ -47,7 +47,7 @@ This scans every platform in `scripts/assignment_platforms.py`, dedupes against
 
 - `assignments` — all currently visible unique records (for lookup)
 - `new_dedupe_keys` — ids not posted before
-- `consultants` — active profiles from `consultants.yaml`
+- `consultants` — active profiles from `consultants.yaml` (name, years, roles, locations)
 - `suggestions` — **heuristic hints only** from `assignment_matching.py`; often
   wrong, do not post verbatim
 - `memory_update` — draft memory (do not commit until after Slack post)
@@ -147,9 +147,10 @@ Apply to **new** assignments only.
 
 1. Exclude assignments whose `lastApplicationDate` is before the scan date
    (already flagged in `expired` from fetch).
-2. Match role against consultants in `consultants.yaml` (`mainRoles`, active
-   `cvs[].roles`, `locations`). Use `consultants` in the fetch output as a
-   shortcut.
+2. Match role against consultants in `consultants.yaml` (`mainRoles`,
+   `yearsExperience`, active `cvs[].roles`, `locations`). Use `consultants` in
+   the fetch output as a shortcut. Also match **Inhouse accessibility team**
+   for accessibility work that clearly needs more than one person.
 3. Location must be remote or Stockholm/Solna/near-Stockholm, except
    accessibility specialist roles (location ignored) and front-end roles (also
    accept Gothenburg).
@@ -284,7 +285,7 @@ generate c19622 Joel english
 | Memory bridge (cloud) | `scripts/listing-memory-bridge.py` |
 | Heuristic hints (not final) | `scripts/assignment_matching.py` |
 | Slack formatting + memory | `scripts/finalize-listing.py` |
-| Consultant names, roles, locations | `consultants.yaml` |
+| Consultant names, years, roles, locations | `consultants.yaml` |
 
 When adding a new platform, register a scanner in `assignment_platforms.py`.
 

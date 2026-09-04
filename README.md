@@ -19,6 +19,7 @@ Each consultant entry includes:
 - `canonicalName`: the preferred display name.
 - `aliases`: names the Slack automation may fuzzy match against.
 - `cinodeCompanyUserId`: the consultant's Cinode company user id.
+- `yearsExperience`: approximate years of professional experience.
 - `mainRoles`: short role tags used for assignment matching.
 - `locations`: location tags used for assignment matching.
 - `cvs`: one or more CV variants for this consultant (see below).
