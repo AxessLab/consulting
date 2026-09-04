@@ -461,12 +461,18 @@ UNKNOWN_CLIENT_LABEL = "not stated"
 def parse_hours_label(assignment: AssignmentRecord) -> str:
     duration = assignment.duration or ""
     duration_scope = re.search(r"\b(\d{1,3})\s*%\b", duration)
+    duration_scope_value = int(duration_scope.group(1)) if duration_scope else None
     if duration_scope and (
+        duration_scope_value
+        and duration_scope_value > 0
+        and duration_scope_value <= 100
+        and (
         len(duration) <= 20
         or re.search(
             r"\b(omfattning|scope|utilization|beläggning|belaggning|engagemang|max|extent)\b",
             duration,
             re.I,
+        )
         )
     ):
         return f"{duration_scope.group(1)}%"
