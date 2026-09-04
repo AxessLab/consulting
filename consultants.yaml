@@ -1,37 +1,5 @@
 companyId: 0
 consultants:
-  - canonicalName: Ahmed Abdi
-    aliases:
-      - Ahmed
-      - Ahmed Abdi
-      - A Abdi
-    cinodeCompanyUserId: 261383
-    mainRoles:
-      - frontend
-      - scrum-master
-      - accessibility
-    locations:
-      - stockholm
-    cvs:
-      - id: frontend-engineer
-        label: Frontend Engineer
-        summaryFile: cv-summaries/ahmed-abdi-frontend-engineer.md
-        rawFiles:
-          - cvs/Axessibility_Lab_AB_Ahmed_Abdi_Frontend_Engineer.docx
-        roles:
-          - frontend
-          - react
-          - typescript
-          - react-native
-          - accessibility
-          - scrum-master
-          - design-system
-          - wcag
-          - aws
-        emphasis: React/TypeScript frontend with accessibility, design systems, and Scrum Master experience
-        active: true
-    active: true
-
   - canonicalName: Amin Amini
     aliases:
       - Amin
@@ -66,60 +34,7 @@ consultants:
         emphasis: CPACC-certified accessibility specialist with audits, strategy, training, and remediation across web, mobile, TV, and PDF
         active: true
     active: true
-
-  - canonicalName: Anders Söderström
-    aliases:
-      - Anders
-      - Anders Söderström
-      - A Söderström
-    cinodeCompanyUserId: 90325
-    mainRoles:
-      - frontend
-      - fullstack
-      - accessibility
-      - scrum-master
-    locations:
-      - stockholm
-    cvs:
-      - id: senior-frontend-developer
-        label: Senior frontendutvecklare
-        summaryFile: cv-summaries/anders-soderstrom-senior-frontend.md
-        rawFiles:
-          - cvs/Axessibility_Lab_AB_Anders_Söderström_Senior_frontendutvecklare.docx
-          - cvs/Axessibility_Lab_AB_Anders_Söderström_Senior_frontendutvecklare.pdf
-        roles:
-          - frontend
-          - react
-          - typescript
-          - nextjs
-          - accessibility
-          - design-system
-          - wcag
-          - scrum-master
-          - cypress
-        emphasis: React/TypeScript/Next.js frontend with CPWA certification and design-system accessibility in complex codebases
-        active: true
-      - id: fullstack-accessibility-specialist
-        label: Fullstackutvecklare och CPWA-certifierad tillgänglighetsspecialist
-        summaryFile: cv-summaries/anders-soderstrom-fullstack-accessibility.md
-        rawFiles:
-          - cvs/Axessibility_Lab_AB_Anders_Söderström_Fullstackutvecklare_och_CPWAcertifierad_tillgänglighetsspecialist.docx
-        roles:
-          - fullstack
-          - frontend
-          - react
-          - typescript
-          - java
-          - accessibility
-          - accessibility-specialist
-          - wcag
-          - audits
-          - scrum-master
-          - drupal
-        emphasis: Fullstack React/TypeScript delivery combined with CPWA-certified accessibility audits, coaching, and inclusive product development
-        active: true
-    active: true
-
+  
   - canonicalName: Daniel Göransson
     aliases:
       - Daniel
@@ -412,37 +327,7 @@ consultants:
         emphasis: UX design and research combined with accessibility audits and organizational support
         active: true
     active: true
-
-  - canonicalName: Karin Skog
-    aliases:
-      - Karin
-      - Karin Skog
-      - K Skog
-    cinodeCompanyUserId: 90481
-    mainRoles:
-      - project-manager
-      - agile-coach
-      - accessibility
-    locations:
-      - stockholm
-    cvs:
-      - id: project-manager-accessibility
-        label: Projektledare
-        summaryFile: cv-summaries/karin-skog-project-manager.md
-        rawFiles:
-          - cvs/Axessibility_Lab_AB_Karin_Skog_Östgöta_Projektledare__till_anbudet.docx
-        roles:
-          - project-manager
-          - agile-coach
-          - scrum-master
-          - accessibility
-          - gap-analysis
-          - public-sector
-          - strategy
-        emphasis: Cross-functional project leadership with accessibility strategy and agile delivery
-        active: true
-    active: true
-
+    
   - canonicalName: Karin Toft
     aliases:
       - Karin Toft
