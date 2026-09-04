@@ -486,12 +486,15 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
 
     text = f"{assignment.description} {duration}"
     scope_match = re.search(
-        r"(omfattning|scope|utilization|beläggning|belaggning|engagemang|max)[^%\n]{0,40}(\d{1,3})\s*%",
+        r"(?:omfattning|scope|utilization|beläggning|belaggning|engagemang|max)"
+        r"\s*:?\s*[^0-9%\n]{0,40}?(\d{1,3})\s*%",
         text,
         re.I,
     )
     if scope_match:
-        return f"{scope_match.group(2)}%"
+        percent = int(scope_match.group(1))
+        if 0 < percent <= 100:
+            return f"{percent}%"
 
     return UNKNOWN_HOURS_LABEL
 
