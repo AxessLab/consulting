@@ -95,15 +95,32 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    new_by_source: dict[str, int] = {}
+    for key in candidates.get("new_dedupe_keys", []):
+        if not isinstance(key, str) or ":" not in key:
+            continue
+        source_key, _ = key.split(":", 1)
+        new_by_source[source_key] = new_by_source.get(source_key, 0) + 1
+
+    visible_parts: list[str] = []
+    for result in candidates.get("platform_results", []):
+        source_key = result.get("platform", "?")
+        status = result.get("status")
+        if status == "ok":
+            visible_parts.append(
+                f"{source_key}: visible {result.get('count', 0)}, "
+                f"new {new_by_source.get(source_key, 0)}"
+            )
+        elif status == "skipped":
+            visible_parts.append(f"{source_key}: skipped")
+        else:
+            visible_parts.append(f"{source_key}: error")
+
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
-        (
-            "Visible assignments: "
-            f"{stats.get('total_visible', 0)} "
-            f"(unique after cross-platform dedupe: {stats.get('total_unique_visible', 0)})"
-        ),
-        f"New ids: {stats.get('new_ids', 0)}",
+        "Per-source totals: " + "; ".join(visible_parts),
+        f"New ids after per-source dedupe: {stats.get('new_ids', 0)}",
         f"Reported matches: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
         "",
