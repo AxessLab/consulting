@@ -503,17 +503,13 @@ If the first pass produces suspicious matches, refine locally before Slack. Post
 
 ## Consultants
 
-Use **`consultants.yaml`** as the source of truth for who can match (active
-consultants only). Read `canonicalName`, `aliases`, `yearsExperience`,
-`mainRoles`, active `cvs[].roles`, and `locations`. Do not keep a parallel
-hardcoded consultant list in this prompt.
+Use **`consultants.yaml`** as the source of truth for who can match
 
 Also match **Inhouse accessibility team** (not a YAML person) for accessibility
-projects that clearly need more than one person (team delivery, multiple
-consultants). Treat that bucket as 5–20 years of mixed accessibility experience.
+projects that clearly need more than one person or where a deliverable is requested without focus on CV for a person. 
+Treat that bucket as 5–20 years of mixed accessibility experience.
 
-Use `canonicalName` in Slack `Match:` lines. Include `yearsExperience` when
-judging seniority fit; do not invent years that are not in the YAML.
+Use `canonicalName` in Slack `Match:` lines. 
 
 ## Slack output
 
