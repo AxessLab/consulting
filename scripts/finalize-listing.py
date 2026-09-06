@@ -95,8 +95,30 @@ def build_slack_debug(
     reported_count: int,
 ) -> str:
     stats = candidates.get("stats", {})
+    source_stats = candidates.get("source_stats") or {}
+    source_parts: list[str] = []
+    for result in candidates.get("platform_results", []):
+        source_key = result.get("platform", "")
+        status = result.get("status")
+        if status == "ok":
+            source_parts.append(f"{source_key} ({result.get('count', 0)})")
+        elif status == "skipped":
+            source_parts.append(f"{source_key} (skipped)")
+        else:
+            source_parts.append(f"{source_key} (error)")
+
+    per_source_lines = []
+    for source_key, values in source_stats.items():
+        per_source_lines.append(
+            f"- {source_key}: visible {values.get('total_visible', 0)}, "
+            f"unique {values.get('total_unique_visible', 0)}, "
+            f"new {values.get('new_ids', 0)}"
+        )
+
     lines = [
-        candidates.get("platform_summary", "Scanned platforms: (unknown)"),
+        "Scanned sources: " + ", ".join(source_parts)
+        if source_parts
+        else candidates.get("platform_summary", "Scanned sources: (unknown)"),
         f"Scan date: {candidates.get('scan_date', '')}",
         (
             "Visible assignments: "
@@ -106,6 +128,8 @@ def build_slack_debug(
         f"New ids: {stats.get('new_ids', 0)}",
         f"Reported matches: {reported_count}",
         f"Script suggestions (heuristic): {stats.get('script_suggestions', 0)}",
+        "Per-source counts:",
+        *(per_source_lines or ["- unavailable"]),
         "",
         "Close non-matches (sample):",
     ]
