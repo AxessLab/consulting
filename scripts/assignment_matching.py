@@ -448,7 +448,7 @@ def match_consultants_for_assignment(
     return section, matched
 
 
-UNKNOWN_HOURS_LABEL = "not stated (probably full time)"
+UNKNOWN_HOURS_LABEL = "not stated"
 UNKNOWN_CLIENT_LABEL = "not stated"
 
 
@@ -462,10 +462,17 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     if scope_match:
         return f"{scope_match.group(2)}%"
 
-    if re.search(r"\b100\s*%", text):
-        return "100%"
-    if re.search(r"\b50\s*%", text):
-        return "50%"
+    duration = assignment.duration or ""
+    duration_percent = re.search(r"\b(\d{1,3})\s*%", duration)
+    if duration_percent:
+        return f"{duration_percent.group(1)}%"
+
+    hours = re.search(r"\b(\d{1,2})\s*h(?:ours)?/?(?:week|vecka)\b", duration, re.I)
+    if hours:
+        return f"{hours.group(1)} h/week"
+
+    if re.search(r"\b(part[- ]?time|deltid)\b", text, re.I):
+        return "Part time"
     return UNKNOWN_HOURS_LABEL
 
 
@@ -514,22 +521,25 @@ def slack_title_link(url: str, title: str) -> str:
 
 def format_slack_line(match: MatchedAssignment, scan_date: date) -> str:
     assignment = match.assignment
-    location = f"{assignment.location} | {assignment.work_mode}".strip(" |")
+    location = assignment.location.strip()
+    work_mode = assignment.work_mode.strip()
     consultants = ", ".join(match.consultants)
     segments = [
-        f"{assignment.listing_id} | {slack_title_link(assignment.source_url, assignment.title)} | {location}",
+        assignment.listing_id,
+        posted_date_label(assignment, scan_date),
+        slack_title_link(assignment.source_url, assignment.title),
     ]
+    if location:
+        segments.append(location)
+    if work_mode:
+        segments.append(work_mode)
     if match.hours_label != UNKNOWN_HOURS_LABEL:
         segments.append(match.hours_label)
     if match.client_label != UNKNOWN_CLIENT_LABEL:
         segments.append(f"Client: {match.client_label}")
-    segments.extend(
-        [
-            assignment.broker,
-            posted_date_label(assignment, scan_date),
-            f"Match: {consultants}",
-        ]
-    )
+    if assignment.broker:
+        segments.append(assignment.broker)
+    segments.append(f"Match: {consultants}")
     return " | ".join(segments)
 
 

@@ -55,7 +55,33 @@ def build_platform_summary(platform_results: list[PlatformScanResult]) -> str:
             parts.append(f"{result.platform} (skipped)")
         else:
             parts.append(f"{result.platform} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
+
+
+def build_source_stats(
+    *,
+    assignments: list[AssignmentRecord],
+    platform_results: list[PlatformScanResult],
+    seen_keys: set[str],
+) -> dict[str, dict[str, Any]]:
+    visible_by_source: dict[str, set[str]] = {}
+    for assignment in assignments:
+        visible_by_source.setdefault(assignment.platform, set()).add(assignment.source_id)
+
+    stats: dict[str, dict[str, Any]] = {}
+    for result in platform_results:
+        visible_ids = visible_by_source.get(result.platform, set())
+        stats[result.platform] = {
+            "status": result.status,
+            "total_visible": result.count,
+            "total_unique_visible": len(visible_ids),
+            "new_ids": sum(
+                1
+                for source_id in visible_ids
+                if f"{result.platform}:{source_id}" not in seen_keys
+            ),
+        }
+    return stats
 
 
 def build_slack_debug(
@@ -67,10 +93,20 @@ def build_slack_debug(
     new_count: int,
     reported_count: int,
     rejects: list[dict[str, Any]],
+    by_source: dict[str, dict[str, Any]],
 ) -> str:
+    source_parts = [
+        (
+            f"{source}: visible {stats.get('total_visible', 0)}, "
+            f"unique {stats.get('total_unique_visible', 0)}, "
+            f"new {stats.get('new_ids', 0)}"
+        )
+        for source, stats in by_source.items()
+    ]
     lines = [
         build_platform_summary(platform_results),
         f"Scan date: {scan_date.isoformat()}",
+        "Per-source counts: " + "; ".join(source_parts),
         f"Visible assignments: {total_visible} (unique after cross-platform dedupe: {total_unique_visible})",
         f"New ids: {new_count}",
         f"Reported matches: {reported_count}",
@@ -106,7 +142,7 @@ def prepare_listing(
     headless: bool = True,
 ) -> dict[str, Any]:
     scan_date = scan_date or date.today()
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, memory_data = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
@@ -127,9 +163,15 @@ def prepare_listing(
     )
 
     memory_payload = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        existing_memory=memory_data,
+    )
+    by_source = build_source_stats(
+        assignments=raw_assignments,
+        platform_results=platform_results,
+        seen_keys=seen_keys,
     )
 
     return {
@@ -154,6 +196,7 @@ def prepare_listing(
             "reported_matches": len(matches),
             "rejected": len(rejects),
             "active_consultants": len(profiles),
+            "by_source": by_source,
         },
         "slack_main": build_slack_main(matches, scan_date),
         "slack_debug": build_slack_debug(
@@ -164,6 +207,7 @@ def prepare_listing(
             new_count=len(new_assignments),
             reported_count=len(matches),
             rejects=rejects,
+            by_source=by_source,
         ),
         "memory_update": memory_payload,
         "matches": [

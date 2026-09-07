@@ -35,7 +35,32 @@ def build_platform_summary(platform_results: list[dict[str, Any]]) -> str:
             parts.append(f"{label} (skipped)")
         else:
             parts.append(f"{label} (error)")
-    return "Scanned platforms: " + ", ".join(parts)
+    return "Scanned sources: " + ", ".join(parts)
+
+
+def build_source_stats(
+    *,
+    assignments: list[AssignmentRecord],
+    platform_results: list[dict[str, Any]],
+    seen_keys: set[str],
+) -> dict[str, dict[str, Any]]:
+    visible_by_source: dict[str, set[str]] = {}
+    for assignment in assignments:
+        visible_by_source.setdefault(assignment.platform, set()).add(assignment.source_id)
+
+    stats: dict[str, dict[str, Any]] = {}
+    for result in platform_results:
+        platform = result["platform"]
+        visible_ids = visible_by_source.get(platform, set())
+        stats[platform] = {
+            "status": result["status"],
+            "total_visible": result["count"],
+            "total_unique_visible": len(visible_ids),
+            "new_ids": sum(
+                1 for source_id in visible_ids if f"{platform}:{source_id}" not in seen_keys
+            ),
+        }
+    return stats
 
 
 def prepare_candidates(
@@ -47,7 +72,7 @@ def prepare_candidates(
     headless: bool = True,
     with_suggestions: bool = True,
 ) -> dict[str, Any]:
-    seen_keys, _ = load_memory(memory_path)
+    seen_keys, memory_data = load_memory(memory_path)
 
     raw_assignments, platform_results = scan_platforms(
         platform_ids,
@@ -82,11 +107,17 @@ def prepare_candidates(
         }
         for result in platform_results
     ]
+    by_source = build_source_stats(
+        assignments=raw_assignments,
+        platform_results=platform_payload,
+        seen_keys=seen_keys,
+    )
 
     memory_update = build_memory_payload(
-        assignments=deduped_assignments,
+        assignments=raw_assignments,
         platform_results=platform_results,
         scan_date=scan_date,
+        existing_memory=memory_data,
     )
 
     suggested_report = [
@@ -109,6 +140,7 @@ def prepare_candidates(
             "expired_new_ids": len(expired),
             "script_suggestions": len(suggested_report),
             "active_consultants": len(profiles),
+            "by_source": by_source,
         },
         "assignments": [record.to_dict() for record in deduped_assignments],
         "new_dedupe_keys": [assignment.dedupe_key for assignment in new_assignments],
