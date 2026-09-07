@@ -138,8 +138,9 @@ Verify the next run will restore correctly: `stats.previously_seen` in
 `listing-candidates.json` should be greater than zero after the first successful
 persist (except on the very first run ever).
 
-Persistent dedupe shape: unified `seen_keys` (`platform:source_id`), plus
-per-platform scan metadata under `platforms` (status and counts only).
+Persistent dedupe shape: a `sources` object keyed by source, with each source
+holding its listing prefix, bare native `seen_ids`, and visible counts. Legacy
+`seen_keys` / `platforms` memory is accepted only for migration.
 
 ## Filtering rules
 
@@ -248,8 +249,8 @@ Three sections (built by `finalize-listing.py`). Section titles are **bold** in 
 2. Other roles mentioning accessibility related terms
 3. Other roles where accessibility is not mentioned
 
-Pipe-separated lines. Verama ids use a `v` prefix; Chas Partner Network ids use a
-`c` prefix. Platform is implied by the assignment link. Title is a Slack link
+Pipe-separated lines. Listing ids use source prefixes (`a`, `v`, `c`, `m`, `n`).
+Platform is implied by the assignment link. Title is a Slack link
 (`<url|title>`). Omit client and hours/scope when unknown.
 
 ```text
