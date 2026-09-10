@@ -14,8 +14,8 @@ fit <name>                   # pasted ad text (new)
 Examples:
 
 ```text
-fit 12345 Joel
-fit 12345 Joel Andersson
+fit a12345 Joel
+fit a12345 Joel Andersson
 fit v81387 Soma
 fit c19622 Joel
 fit Karin Toft
@@ -25,11 +25,11 @@ fit Karin Toft
 
 1. Parse the thread reply as `fit …`.
 2. If the first remaining token is a listed assignment id, use **listed
-   assignment mode**. Listed ids are all digits (`6236`), Verama ids with a
-   `v` prefix (`v81387`), Chas Partner Network ids with a `c` prefix
-   (`c19622`), or Magnit Source ids with an `m` prefix
-   (`mcbbe63d1-d81a-bff3-1f3f-95e1a814e812`). The assignment id is that token; the consultant name is
-   the rest of the tokens joined with spaces.
+   assignment mode**. Listed ids use the registered source prefix:
+   allakonsultuppdrag.se (`a6236`), Verama (`v81387`), Chas Partner Network
+   (`c19622`), Magnit Source (`mcbbe63d1-d81a-bff3-1f3f-95e1a814e812`), or
+   Cinode Market (`n22106`). The assignment id is that token; the consultant
+   name is the rest of the tokens joined with spaces.
 3. Otherwise use **pasted ad mode**. The consultant name is all remaining
    tokens joined with spaces. There is no assignment id in the command.
 
@@ -175,7 +175,7 @@ are necessary and appropriate for the Slack audience.
 
 ## Clarification example
 
-If `fit 12345 Joel` or `fit Joel` matches more than one active consultant, reply:
+If `fit a12345 Joel` or `fit Joel` matches more than one active consultant, reply:
 
 ```text
 I found multiple active consultants matching "Joel". Which one should I analyze?
