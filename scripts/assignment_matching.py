@@ -215,6 +215,8 @@ def is_active_assignment(assignment: AssignmentRecord, scan_date: date) -> bool:
 
 def is_remote(work_mode: str, location: str) -> bool:
     fields = normalize_text(f"{work_mode} {location}")
+    if "hybrid" in fields:
+        return False
     return any(term in fields for term in ("remote", "distans", "fjarrarbete", "fjärrarbete"))
 
 
@@ -458,9 +460,18 @@ def parse_hours_label(assignment: AssignmentRecord) -> str:
     duration = (assignment.duration or "").strip()
     if re.fullmatch(r"\d{1,3}\s*%", duration):
         return duration.replace(" ", "")
-    hours_match = re.search(r"\b(\d{1,3})\s*(?:h|hours?|timmar)\s*/?\s*(?:week|vecka|v)\b", duration, re.I)
+    hours_match = re.search(
+        r"\b(\d{1,3})\s*(?:h|hours?|timmar)\s*/?\s*(?:week|vecka|v)\b",
+        duration,
+        re.I,
+    )
     if hours_match:
         return f"{hours_match.group(1)} h/week"
+    fixed_hours_match = re.search(r"\b(\d{2,5})\s*(?:hours?|timmar)\b", duration, re.I)
+    if fixed_hours_match:
+        return f"{fixed_hours_match.group(1)} hours"
+    if re.search(r"\b(full[- ]time|heltid)\b", duration, re.I):
+        return "Full-time"
     if re.search(r"\b(part[- ]time|deltid)\b", duration, re.I):
         return "Part time"
 

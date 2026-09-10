@@ -250,6 +250,8 @@ _VERAMA_A11Y_TITLE_RE = re.compile(
 
 def _verama_is_remote(work_mode: str, location: str) -> bool:
     fields = _simple_normalize(f"{work_mode} {location}")
+    if "hybrid" in fields:
+        return False
     return any(term in fields for term in ("remote", "distans", "fjärrarbete", "fjarrarbete"))
 
 
@@ -429,7 +431,7 @@ def scan_verama(
                     if remoteness == 100:
                         work_mode = "remote"
                     elif remoteness is not None:
-                        work_mode = f"{remoteness}% remote"
+                        work_mode = f"hybrid; {remoteness}% remote"
                     else:
                         work_mode = ""
                     record = AssignmentRecord(
