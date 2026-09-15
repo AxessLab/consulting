@@ -91,9 +91,10 @@ Before rendering CVs, install Python dependencies once in the automation runtime
 
 ```bash
 pip install -r requirements.txt
+python -m playwright install chromium
 ```
 
-PDF rendering requires a Chromium-based browser (`msedge`, `chrome`, or `chromium`) available on `PATH` or in a standard install location. See `scripts/README.md`.
+PDF rendering requires a Chromium-based browser (`msedge`, `chrome`, or `chromium`) available on `PATH`, in a standard install location, or from Playwright's Chromium cache. See `scripts/README.md`.
 
 ## Required flow
 
