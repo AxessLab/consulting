@@ -21,5 +21,8 @@ fi
 
 $PYTHON -m pip install -r requirements.txt
 $PYTHON -m playwright install chromium
-sudo apt-get update
-sudo apt-get install -y chromium || sudo apt-get install -y chromium-browser
+
+# Avoid Ubuntu's snap-backed chromium/chromium-browser packages in Cloud builds:
+# they can pull snapd/fuse and stop at interactive dpkg conffile prompts.
+# Cursor Cloud provides Google Chrome, and render-cv.py can also use the
+# Playwright-managed Chromium installed above.

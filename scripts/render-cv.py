@@ -146,6 +146,15 @@ def find_browser() -> list[str] | None:
         resolved = shutil.which(command)
         if resolved:
             return [resolved]
+    playwright_cache = Path.home() / ".cache" / "ms-playwright"
+    if playwright_cache.is_dir():
+        playwright_candidates = [
+            *playwright_cache.glob("chromium-*/chrome-linux*/chrome"),
+            *playwright_cache.glob("chromium_headless_shell-*/chrome-linux*/headless_shell"),
+        ]
+        for candidate in sorted(playwright_candidates, reverse=True):
+            if candidate.is_file():
+                return [str(candidate)]
     return None
 
 
@@ -154,7 +163,7 @@ def render_pdf(html_path: Path, pdf_path: Path) -> None:
     if not browser:
         raise RuntimeError(
             "No Chromium-based browser found for PDF rendering. "
-            "Install Edge/Chrome or print the HTML file manually."
+            "Install Edge/Chrome or run `python -m playwright install chromium`."
         )
 
     html_uri = html_path.resolve().as_uri()

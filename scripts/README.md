@@ -9,7 +9,8 @@ pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
-PDF rendering uses a Chromium-based browser (Edge or Chrome) in headless mode.
+PDF rendering uses a Chromium-based browser in headless mode. It can use Edge,
+Chrome, Chromium, or the Playwright-managed Chromium installed above.
 Verama raw scanning also uses Playwright when enabled.
 
 ## List assignments (Slack listing)
