@@ -15,7 +15,11 @@ fi
 # Provide `python` for prompts/scripts that call it explicitly.
 if ! command -v python >/dev/null 2>&1; then
   if command -v python3 >/dev/null 2>&1; then
-    sudo apt-get install -y python-is-python3 2>/dev/null || true
+    sudo ln -sf "$(command -v python3)" /usr/local/bin/python 2>/dev/null || {
+      mkdir -p "$HOME/.local/bin"
+      ln -sf "$(command -v python3)" "$HOME/.local/bin/python"
+      export PATH="$HOME/.local/bin:$PATH"
+    }
   fi
 fi
 
